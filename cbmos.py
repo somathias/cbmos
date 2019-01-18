@@ -4,7 +4,7 @@ import numpy.random as npr
 
 DT = 0.01
 NU = 1
-X, Y, Z = 2, 2, 2
+X, Y, Z = [4]*3
 
 class Cell:
     def __init__(self, coords):
@@ -35,7 +35,8 @@ pop = db.from_sequence([Cell(np.array([x, y, z], dtype=np.float64))# + npr.unifo
 
 for _ in range(200):
     forces = pop.product(pop).filter(lambda cij: cij[0].id != cij[1].id)\
-            .map(lambda cij: (cij[0], force(cij))).foldby(lambda cif: cif[0], lambda cif, cjf: (cif[0], cif[1] + cjf[1]))
+            .map(lambda cij: (cij[0], force(cij)))\
+            .foldby(lambda cif: cif[0], lambda cif, cjf: (cif[0], cif[1] + cjf[1]))
     pop = forces.map(lambda cif: cif[1][0].move(DT*cif[1][1]/NU))
 
 cells = pop.compute()
