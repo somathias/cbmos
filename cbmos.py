@@ -30,7 +30,8 @@ def force(cij):
     M = 0.01
     return -4 * M * ((S/r)**12 - (S/r)**6) * (cj.coords-ci.coords) / r
 
-pop = db.from_sequence([Cell(np.array([x, y, z], dtype=np.float64) + npr.uniform(0, 0.1, 3)) for x in range(X) for y in range(Y) for z in range(Z)])
+pop = db.from_sequence([Cell(np.array([x, y, z], dtype=np.float64))# + npr.uniform(0, 0.1, 3))
+    for x in range(X) for y in range(Y) for z in range(Z)], npartitions=4)
 
 for _ in range(200):
     forces = pop.product(pop).filter(lambda cij: cij[0].id != cij[1].id)\
