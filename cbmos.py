@@ -37,4 +37,17 @@ for _ in range(10):
             .map(lambda cij: (cij[0], force(cij))).foldby(lambda cif: cif[0], lambda cif, cjf: (cif[0], cif[1] + cjf[1]))
     pop = forces.map(lambda cif: cif[1][0].move(DT*cif[1][1]/NU))
 
-print(pop.compute())
+cells = pop.compute()
+
+for cell in cells:
+    print(cell)
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+x, y, z = [[c.coords[i] for c in cells] for i in range(3)]
+ax.scatter(x, y, z)
+plt.show()
