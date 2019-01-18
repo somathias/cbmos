@@ -2,7 +2,7 @@ import numpy as np
 import dask.bag as db
 import numpy.random as npr
 
-DT = 0.1
+DT = 0.01
 NU = 1
 X, Y, Z = 2, 2, 2
 
@@ -26,13 +26,13 @@ def distance(ci, cj):
 def force(cij):
     ci, cj = cij
     r = distance(ci, cj)
-    S = 1
-    M = 1
-    return 4 * M * ((S/r)**12 - (S/r)**6) * (cj.coords-ci.coords) / r
+    S = 0.5
+    M = 0.01
+    return -4 * M * ((S/r)**12 - (S/r)**6) * (cj.coords-ci.coords) / r
 
 pop = db.from_sequence([Cell(np.array([x, y, z], dtype=np.float64) + npr.uniform(0, 0.1, 3)) for x in range(X) for y in range(Y) for z in range(Z)])
 
-for _ in range(10):
+for _ in range(200):
     forces = pop.product(pop).filter(lambda cij: cij[0].id != cij[1].id)\
             .map(lambda cij: (cij[0], force(cij))).foldby(lambda cif: cif[0], lambda cif, cjf: (cif[0], cif[1] + cjf[1]))
     pop = forces.map(lambda cif: cif[1][0].move(DT*cif[1][1]/NU))
