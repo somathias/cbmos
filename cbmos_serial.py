@@ -35,6 +35,6 @@ if __name__ == "__main__":
     y0 = np.array([[x, y, z] for x in range(X) for y in range(Y) for z in range(Z)],
             dtype=np.float64).reshape(-1)
 
-    sol = cbm_solver.simulate(T, y0, {'S': 0.5, 'M': 3}, {})
+    sol = cbm_solver.simulate(T, y0, {'S': 0.5, 'M': 3}, {'method': 'RK45'})
 
     print(sol.y)
