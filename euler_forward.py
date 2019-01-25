@@ -12,9 +12,7 @@ import matplotlib.pyplot as plt
 plt.style.use('seaborn')
 
 
-dt = 0.01
-
-def solve_ivp(fun, t_span, y0, t_eval=None):
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01):
     
     t0, tf = float(t_span[0]), float(t_span[1])
     
@@ -30,6 +28,9 @@ def solve_ivp(fun, t_span, y0, t_eval=None):
                 
         ts.append(t)
         ys.append(y) 
+        
+    ts = np.hstack(ts)
+    ys = np.hstack(ys)
 
     return OdeResult(t=ts, y=ys)
 
