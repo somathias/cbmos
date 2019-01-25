@@ -2,6 +2,8 @@ import numpy as np
 import numpy.random as npr
 import scipy.integrate as scpi
 
+import force_functions as ff
+
 NU = 1
 
 class CBMSolver:
@@ -19,15 +21,10 @@ class CBMSolver:
 
         return self.solver(f, (t_eval[0], t_eval[-1]), y0, t_eval=t_eval, **solver_args)
 
-if __name__ == "__main__":
-    @np.vectorize
-    def force(r, S, M):
-        if not r:
-            return 0.
+if __name__ == "__main__":  
 
-        return 4. * M * ((S/r)**12 - (S/r)**6)
 
-    cbm_solver = CBMSolver(force, scpi.solve_ivp)
+    cbm_solver = CBMSolver(ff.cubic, scpi.solve_ivp)
 
     T = np.linspace(0, 1, num=100)
 
@@ -35,6 +32,6 @@ if __name__ == "__main__":
     y0 = np.array([[x, y, z] for x in range(X) for y in range(Y) for z in range(Z)],
             dtype=np.float64).reshape(-1)
 
-    sol = cbm_solver.simulate(T, y0, {'S': 0.5, 'M': 3}, {'method': 'RK45'})
+    sol = cbm_solver.simulate(T, y0, {'s': 1.0, 'mu': 1.0, 'rA':1.5}, {'method': 'RK45'})
 
     print(sol.y)
