@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Dec  5 14:43:56 2018
+Created on Jan 23 14:43:56 2019
+
+This script tests the force functions by plotting them.
 
 @author: Sonja Mathias
 """
@@ -20,27 +22,27 @@ rR = s+0.2 # set maximum repulsive interaction distance to 1.2 cell diameter
 rN = 0.3 # radius of nuclei for hard-core model
 
 
-linear_spring = lambda mu, r: ff.linear_spring(r, {"mu":mu, "s":s})
+linear_spring = lambda mu, r: ff.linear_spring(r, **{"mu":mu, "s":s})
 
-morse = lambda m, a, r: ff.morse(r, {"m":m, "a":a,  "s":s})
+morse = lambda m, a, r: ff.morse(r, **{"m":m, "a":a,  "s":s})
 
-lennard_jones = lambda m, r: ff.lennard_jones(r, {"m":m,  "s":s})
+lennard_jones = lambda m, r: ff.lennard_jones(r, **{"m":m,  "s":s})
 
-linear_exponential_product = lambda mu, a, r: ff.linear_exponential(r,  {"mu":mu, "a":a,  "s":s, "rA":rA})
+linear_exponential_product = lambda mu, a, r: ff.linear_exponential(r,  **{"mu":mu, "a":a,  "s":s, "rA":rA})
 
-cubic_law = lambda mu, r: ff.cubic(r, {"mu":mu, "s":s, "rA":rA})
+cubic_law = lambda mu, r: ff.cubic(r, **{"mu":mu, "s":s, "rA":rA})
 
-logarithmic = lambda mu, r: ff.logarithmic(r, {"mu":mu,  "s":s})
+logarithmic = lambda mu, r: ff.logarithmic(r, **{"mu":mu,  "s":s})
 
-linear_logarithmic_product = lambda mu, r: ff.linear_logarithmic(r, {"mu":mu,  "s":s })
+linear_logarithmic_product = lambda mu, r: ff.linear_logarithmic(r, **{"mu":mu,  "s":s })
 
-hard_core = lambda mu, r: ff.hard_core(r, {"mu":mu, "s":s, "rN":rN})
+hard_core = lambda mu, r: ff.hard_core(r, **{"mu":mu, "s":s, "rN":rN})
 
 polynomial_repulsion = lambda mu, m, r : np.where(r<=rR, -mu*(1-r/rR)**(m+1), 0.)
 
 polynomial_adhesion = lambda mu, n, r : np.where(r<=rA, mu*(1-r/rA)**(n+1), 0.)
 
-polynomial = lambda muA, muR, n, p, r: ff.general_polynomial(r, {"muA":muA, "muR":muR, "rA":rA, "rR":rR, "n":n, "p":p})
+polynomial = lambda muA, muR, n, p, r: ff.general_polynomial(r, **{"muA":muA, "muR":muR, "rA":rA, "rR":rR, "n":n, "p":p})
 
 
 ## Parameters

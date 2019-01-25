@@ -10,7 +10,8 @@ import numpy as np
 
 
 ## Linear spring
-def linear_spring(r, parameters={}): 
+@np.vectorize
+def linear_spring(r, mu=1.0, s=1.0): 
     """
     Linear spring force function.
     
@@ -19,18 +20,13 @@ def linear_spring(r, parameters={}):
       s: rest length, default 1.0  
     
     """
-    if "mu" in parameters:
-        mu = parameters["mu"]
-    else:
-        mu = 1.0
-    if "s" in parameters:
-        s = parameters["s"]
-    else:
-        s = 1.0
+    if not r:
+        return 0.
     return mu*(r-s)
 
 ## Morse
-def morse(r, parameters={}): 
+@np.vectorize
+def morse(r, m=1.0, a=1.0, s=1.0): 
     """
     Morse potential. (slope at r = s  is 4*a*m)
     
@@ -40,22 +36,13 @@ def morse(r, parameters={}):
       s: rest length, default 1.0  
     
     """
-    if "m" in parameters:
-        m = parameters["m"]
-    else:
-        m = 1.0
-    if "a" in parameters:
-        a = parameters["a"]
-    else:
-        a = 1.0
-    if "s" in parameters:
-        s = parameters["s"]
-    else:
-        s = 1.0
+    if not r:
+        return 0.
     return - m*(np.exp(-2*a*(r-s-np.log(2)/a)) -2*np.exp(-a*(r-s-np.log(2)/a)))
     
 ## Lennard-Jones
-def lennard_jones(r, parameters={}): 
+@np.vectorize
+def lennard_jones(r, m=1.0, s=1.0): 
     """
     Lennard-Jones potential
     
@@ -64,18 +51,13 @@ def lennard_jones(r, parameters={}):
       s: rest length, default 1.0  
     
     """
-    if "m" in parameters:
-        m = parameters["m"]
-    else:
-        m = 1.0
-    if "s" in parameters:
-        s = parameters["s"]
-    else:
-        s = 1.0
+    if not r:
+        return 0.
     return -4*m*(np.power(s/r,12)-np.power(s/r,6))
     
 ## Linear-exponential
-def linear_exponential(r, parameters={}): 
+@np.vectorize
+def linear_exponential(r, mu=1.0, s=1.0, a=1.0, rA=1.5): 
     """
     Linear exponential force function
     
@@ -87,26 +69,13 @@ def linear_exponential(r, parameters={}):
  
     
     """
-    if "mu" in parameters:
-        mu = parameters["mu"]
-    else:
-        mu = 1.0
-    if "s" in parameters:
-        s = parameters["s"]
-    else:
-        s = 1.0
-    if "a" in parameters:
-        a = parameters["a"]
-    else:
-        a = 1.0
-    if "rA" in parameters:
-        rA = parameters["rA"]
-    else:
-        rA = 1.5
+    if not r:
+        return 0.
     return np.where(r<=rA, mu*(r-s)*np.exp(-a*(r-s)), 0.)
 
 ## cubic
-def cubic(r, parameters={}): 
+@np.vectorize
+def cubic(r, mu=1.0, s=1.0, rA=1.5): 
     """
     Cubic force function
     
@@ -117,22 +86,13 @@ def cubic(r, parameters={}):
  
     
     """
-    if "mu" in parameters:
-        mu = parameters["mu"]
-    else:
-        mu = 1.0
-    if "s" in parameters:
-        s = parameters["s"]
-    else:
-        s = 1.0
-    if "rA" in parameters:
-        rA = parameters["rA"]
-    else:
-        rA = 1.0
+    if not r:
+        return 0.
     return np.where(r<=rA, mu*(r-rA)**2*(r-s), 0.)
     
 ## general polynomial
-def general_polynomial(r, parameters={}): 
+@np.vectorize
+def general_polynomial(r, muA=1.0, muR=1.0, rA=1.5, rR=1.2, n=1.0, p=1.0): 
     """
     General polynomial force function
     
@@ -145,34 +105,13 @@ def general_polynomial(r, parameters={}):
       m: exponent repulsive part 
     
     """
-    if "muA" in parameters:
-        muA = parameters["muA"]
-    else:
-        muA = 1.0
-    if "muR" in parameters:
-        muR = parameters["muR"]
-    else:
-        muR = 1.0
-    if "rA" in parameters:
-        rA = parameters["rA"]
-    else:
-        rA = 1.0
-    if "rR" in parameters:
-        rR = parameters["rR"]
-    else:
-        rR = 1.0
-    if "n" in parameters:
-        n = parameters["n"]
-    else:
-        n = 1.0
-    if "p" in parameters:
-        p = parameters["p"]
-    else:
-        p = 1.0
-    return np.where(r<=rR, muA*(1-r/rA)(n+1)+muR*(1-r/rR)(p+1), np.where(r<=rA, muA*(1-r/rA)(n+1), 0.))
+    if not r:
+        return 0.
+    return np.where(r<=rR, muA*(1-r/rA)**(n+1)+muR*(1-r/rR)**(p+1), np.where(r<=rA, muA*(1-r/rA)**(n+1), 0.))
 
 ## logarithmic
-def logarithmic(r, parameters={}): 
+@np.vectorize
+def logarithmic(r, mu=1.0, s=1.0): 
     """
     Logarithmic force function
     
@@ -181,18 +120,13 @@ def logarithmic(r, parameters={}):
       s: rest length, default 1.0  
     
     """
-    if "mu" in parameters:
-        mu = parameters["mu"]
-    else:
-        mu = 1.0
-    if "s" in parameters:
-        s = parameters["s"]
-    else:
-        s = 1.0
+    if not r:
+        return 0.
     return np.where(r<=s, mu*np.log(1+(r-s)),0.)
     
 ## linear-logarithmic
-def linear_logarithmic(r, parameters={}): 
+@np.vectorize
+def linear_logarithmic(r, mu=1.0, s=1.0): 
     """
     Linear logarithmic force function
     
@@ -201,18 +135,13 @@ def linear_logarithmic(r, parameters={}):
       s: rest length, default 1.0  
     
     """
-    if "mu" in parameters:
-        mu = parameters["mu"]
-    else:
-        mu = 1.0
-    if "s" in parameters:
-        s = parameters["s"]
-    else:
-        s = 1.0
+    if not r:
+        return 0.
     return np.where(r<=s, -mu*(r-s)*np.log(1+(r-s)),0.)
 
 ## hard-core model
-def hard_core(r, parameters={}): 
+@np.vectorize
+def hard_core(r, mu=1.0, s=1.0, rN=0.3): 
     """
     Hard-core model force function
     
@@ -222,18 +151,8 @@ def hard_core(r, parameters={}):
       rN: radius of nucleus, default 0.3
     
     """
-    if "mu" in parameters:
-        mu = parameters["mu"]
-    else:
-        mu = 1.0
-    if "s" in parameters:
-        s = parameters["s"]
-    else:
-        s = 1.0
-    if "rN" in parameters:
-        rN = parameters["rN"]
-    else:
-        rN = 0.3
+    if not r:
+        return 0.
     return np.where(r<=s-2*rN, np.inf, np.where(r<=s, mu*(r-s)/(r-(s-2*rN)), 0.))
 
 
