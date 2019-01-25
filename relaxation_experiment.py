@@ -13,11 +13,12 @@ import matplotlib.pyplot as plt
 
 import cbmos_serial as cbmos
 import force_functions as ff
+import euler_forward as ef
 
 plt.style.use('seaborn')
 
 
-cbm_solver = cbmos.CBMSolver(ff.linear_spring, scpi.solve_ivp)
+cbm_solver = cbmos.CBMSolver(ff.linear_spring, ef.solve_ivp)
 
 T = np.linspace(0, 10, num=1000)
 
