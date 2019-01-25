@@ -14,7 +14,7 @@ plt.style.use('seaborn')
 
 dt = 0.01
 
-def solve_ivp(fun, t_span, y0):
+def solve_ivp(fun, t_span, y0, t_eval=None):
     
     t0, tf = float(t_span[0]), float(t_span[1])
     

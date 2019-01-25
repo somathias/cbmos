@@ -3,6 +3,7 @@ import numpy.random as npr
 import scipy.integrate as scpi
 
 import force_functions as ff
+import euler_forward as ef
 
 NU = 1
 
@@ -24,7 +25,7 @@ class CBMSolver:
 if __name__ == "__main__":  
 
 
-    cbm_solver = CBMSolver(ff.cubic, scpi.solve_ivp)
+    cbm_solver = CBMSolver(ff.cubic, ef.solve_ivp)
 
     T = np.linspace(0, 1, num=100)
 
@@ -32,6 +33,6 @@ if __name__ == "__main__":
     y0 = np.array([[x, y, z] for x in range(X) for y in range(Y) for z in range(Z)],
             dtype=np.float64).reshape(-1)
 
-    sol = cbm_solver.simulate(T, y0, {'s': 1.0, 'mu': 1.0, 'rA':1.5}, {'method': 'RK45'})
+    sol = cbm_solver.simulate(T, y0, {'s': 1.0, 'mu': 1.0, 'rA':1.5}, {})
 
     print(sol.y)
