@@ -23,7 +23,7 @@ class CBMSolver:
 
         return self.solver(f, (t_eval[0], t_eval[-1]), y0, t_eval=t_eval, **solver_args)
 
-if __name__ == "__main__":  
+if __name__ == "__main__":
 
 
     cbm_solver = CBMSolver(ff.cubic, ef.solve_ivp)

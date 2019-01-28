@@ -16,7 +16,7 @@ plt.style.use('seaborn')
 
 
 
-s = 1.0 # equilibrium rest length, set to 1 cell diameter 
+s = 1.0 # equilibrium rest length, set to 1 cell diameter
 rA = s+0.5 # set maximum interaction distance to 1.5 cell diameter
 rR = s+0.2 # set maximum repulsive interaction distance to 1.2 cell diameter
 rN = 0.3 # radius of nuclei for hard-core model
@@ -49,7 +49,7 @@ polynomial = lambda muA, muR, n, p, r: ff.general_polynomial(r, **{"muA":muA, "m
 m = 2.0 # maximum value for Morse and LJ
 aMorse = 8.0 # Morse parameter, controls the location of the maximum
 muGLSA = 120.0
-#muGLSR = 240.0 
+#muGLSR = 240.0
 aGLS = -2*np.log(0.002/muGLSA)
 muCUBER = 79*1.3697
 muCUBEA = 79*1.3697

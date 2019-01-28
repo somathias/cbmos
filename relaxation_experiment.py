@@ -3,7 +3,7 @@
 """
 Created on Fri Jan 25 13:35:37 2019
 
-Relaxation experiment: two cells initially placed at overlap of 
+Relaxation experiment: two cells initially placed at overlap of
 
 @author: Sonja Mathias
 """
