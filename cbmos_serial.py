@@ -3,6 +3,7 @@ import numpy.random as npr
 import scipy.integrate as scpi
 
 import force_functions as ff
+import euler_forward as ef
 
 NU = 1
 
@@ -14,17 +15,18 @@ class CBMSolver:
         def f(t, y):
             y_r = y.reshape((-1, 3))
             tmp = np.repeat(y_r[:, :, np.newaxis], y_r.shape[0], axis=2)
-            forces = self.force(np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1)), **force_args)
-            total_force = (np.repeat(forces[:, np.newaxis, :], 3, axis=1)*(tmp - tmp.transpose())
+            normalization = np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1))
+            forces = self.force(normalization)/(normalization + np.diag(np.ones(y_r.shape[0])))
+            total_force = (np.repeat(forces[:, np.newaxis, :], 3, axis=1)*(tmp.transpose()-tmp)
                     ).sum(axis=2)
             return (NU*total_force).reshape(-1)
 
         return self.solver(f, (t_eval[0], t_eval[-1]), y0, t_eval=t_eval, **solver_args)
 
-if __name__ == "__main__":  
+if __name__ == "__main__":
 
 
-    cbm_solver = CBMSolver(ff.cubic, scpi.solve_ivp)
+    cbm_solver = CBMSolver(ff.cubic, ef.solve_ivp)
 
     T = np.linspace(0, 1, num=100)
 
@@ -32,6 +34,6 @@ if __name__ == "__main__":
     y0 = np.array([[x, y, z] for x in range(X) for y in range(Y) for z in range(Z)],
             dtype=np.float64).reshape(-1)
 
-    sol = cbm_solver.simulate(T, y0, {'s': 1.0, 'mu': 1.0, 'rA':1.5}, {'method': 'RK45'})
+    sol = cbm_solver.simulate(T, y0, {'s': 1.0, 'mu': 1.0, 'rA':1.5}, {})
 
     print(sol.y)
