@@ -15,8 +15,8 @@ class CBMSolver:
         def f(t, y):
             y_r = y.reshape((-1, 3))
             tmp = np.repeat(y_r[:, :, np.newaxis], y_r.shape[0], axis=2)
-            normalization = np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1)) + np.diag(np.ones(y_r.shape[0]))
-            forces = self.force(np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1)), **force_args)/normalization
+            normalization = np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1))
+            forces = self.force(normalization)/(normalization + np.diag(np.ones(y_r.shape[0])))
             total_force = (np.repeat(forces[:, np.newaxis, :], 3, axis=1)*(tmp.transpose()-tmp)
                     ).sum(axis=2)
             return (NU*total_force).reshape(-1)
