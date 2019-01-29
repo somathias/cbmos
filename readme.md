@@ -4,9 +4,11 @@
 
 ### Relaxation experiment (*exp-relaxation*)
 
+Checkout *exp-relaxation* branch. Run **relaxation_experiment.py**.
+
 ### Force function plots (*exp-plot_forces*)
 
-We plot the force laws for comparison. 
+Plots the force laws for comparison. To do so, checkout the *exp-plot_forces* and run **plot_force_function.py**.
 The first figure shows force laws fitted to cubic force law in both height and location of the maximum. 
 The second figure shows force laws fitted only in height of the maximum and chosen to be small at the maximum interaction distance.
 The third figure shows details of the general polynomial force law.
@@ -20,15 +22,11 @@ The third figure shows details of the general polynomial force law.
   - rR = s+0.2  # set maximum repulsive interaction distance to 1.2 cell diameter
   - rN = 0.3  # radius of nuclei for hard-core model
 
-  Then we use the cubic force law as a basis, since it only has a
-  single free parameter left (the spring stiffness mu).
+  Then we use the cubic force law as a basis, since it only has a single free parameter left (the spring stiffness mu).
 
-  We can fix the force amplitude such that f_max^cubic = 1.0, ie then
-  everything is in relation to the maximum force value of the cubic
-  force law.
+  We can fix the force amplitude such that f_max^cubic = 1.0, ie then everything is in relation to the maximum force value of the cubic force law.
 
-  The maximum of the cubic force law is attained at r=7/6 for the
-  above parameter values. Its value is mu_cubic/54, hence 
+  The maximum of the cubic force law is attained at r=7/6 for the above parameter values. Its value is mu_cubic/54, hence 
 
   f_max^cubic = 1.0 <=> mu_cubic=54
 
