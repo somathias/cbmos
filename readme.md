@@ -1,7 +1,15 @@
 # CBMOS
 
 ## Experiments
-### Force function plots (exp-plot_forces)
+
+### Relaxation experiment (*exp-relaxation*)
+
+### Force function plots (*exp-plot_forces*)
+
+We plot the force laws for comparison. 
+The first figure shows force laws fitted to cubic force law in both height and location of the maximum. 
+The second figure shows force laws fitted only in height of the maximum and chosen to be small at the maximum interaction distance.
+The third figure shows details of the general polynomial force law.
 
 #### Parameter settings
 
@@ -33,4 +41,6 @@
        m=1.0, a = 16.58759909 (found by scipy.optimize.minimize with
        BFGS method)
   - linear-exponential: same two options
+    1. fit maximum in height and location: 
+    2. fit maximum in height and make potential <10^-3 at rA=1.5:
   - quadratic:
