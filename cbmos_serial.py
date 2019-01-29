@@ -14,21 +14,38 @@ class CBMSolver:
         self.solver = solver
 
     def simulate(self, t_eval, y0, force_args, solver_args):
-        def f(t, y):
-            y_r = y.reshape((-1, 3))
-            tmp = np.repeat(y_r[:, :, np.newaxis], y_r.shape[0], axis=2)
-            norm = np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1))
-            forces = self.force(norm)/(norm
-                                       + np.diag(np.ones(y_r.shape[0])))
-            total_force = (np.repeat(forces[:, np.newaxis, :], 3,
-                                     axis=1)*(tmp.transpose()-tmp)).sum(axis=2)
-            return (NU*total_force).reshape(-1)
-
-        return self.solver(f,
+        return self.solver(ode_force(self.force, force_args),
                            (t_eval[0], t_eval[-1]),
                            y0,
                            t_eval=t_eval,
                            **solver_args)
+
+    def ode_force(force, force_args):
+        """ Generate ODE force function from cell-cell force function
+
+        Parameters
+        ----------
+        force: (r, **kwargs) -> float
+            describes the force applying between two cells at distance r
+        force_args:
+            extra arguments for the force function
+
+        Returns
+        -------
+        (t, y) -> dy/dt
+
+        """
+        def f(t,y):
+            y_r = y.reshape((-1, 3))
+            tmp = np.repeat(y_r[:, :, np.newaxis], y_r.shape[0], axis=2)
+            norm = np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1))
+            forces = force(norm, **force_args)\
+                    /(norm + np.diag(np.ones(y_r.shape[0])))
+            total_force = (np.repeat(forces[:, np.newaxis, :], 3, axis=1)
+                    *(tmp.transpose()-tmp)).sum(axis=2)
+            return (NU*total_force).reshape(-1)
+
+        return f
 
 
 if __name__ == "__main__":
