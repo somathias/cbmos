@@ -39,6 +39,8 @@ The third figure shows details of the general polynomial force law.
        m=1.0, a = 16.58759909 (found by scipy.optimize.minimize with
        BFGS method)
   - linear-exponential: same two options
-    1. fit maximum in height and location: 
+    1. fit maximum in height and location: mu = 6*e, a = 6
     2. fit maximum in height and make potential <10^-3 at rA=1.5:
+       mu=55.63460379 (found by scipy.optimize.minimize with BFGS
+       method), a=-2*np.log(0.002/mu)
   - quadratic:
