@@ -22,16 +22,16 @@ cbm_solver = cbmos.CBMSolver(ff.linear_spring, ef.solve_ivp)
 
 T = np.linspace(0, 1, num=10)
 
-x1=np.array([0., 0., 0.])
-x2=np.array([0.3, 0., 0.])
+x1 = np.array([0., 0., 0.])
+x2 = np.array([0.3, 0., 0.])
 
 y0 = np.array([x1, x2]).reshape(-1)
 
-sol = cbm_solver.simulate(T, y0, {'s': 1.0, 'mu': 1.0}, {'dt':0.1})
+sol = cbm_solver.simulate(T, y0, {'s': 1.0, 'mu': 1.0}, {'dt': 0.1})
 
-#print(sol.y)
+# print(sol.y)
 
-y = sol.y.reshape(11,6)
+y = sol.y.reshape(11, 6)
 
 plt.figure()
-plt.plot(sol.t, np.abs(y[:,0] - y[:,3]))
+plt.plot(sol.t, np.abs(y[:, 0] - y[:, 3]))
