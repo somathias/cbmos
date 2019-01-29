@@ -31,7 +31,7 @@ sol = cbm_solver.simulate(T, y0, {'s': 1.0, 'mu': 1.0}, {'dt': 0.1})
 
 # print(sol.y)
 
-y = sol.y.reshape(11, 6)
+y = sol.y.reshape(-1, 6)
 
 plt.figure()
 plt.plot(sol.t, np.abs(y[:, 0] - y[:, 3]))
