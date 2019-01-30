@@ -14,13 +14,13 @@ class CBMSolver:
         self.solver = solver
 
     def simulate(self, t_eval, y0, force_args, solver_args):
-        return self.solver(self.ode_force(self.force, force_args),
+        return self.solver(self.ode_force(force_args),
                            (t_eval[0], t_eval[-1]),
                            y0,
                            t_eval=t_eval,
                            **solver_args)
 
-    def ode_force(self, force, force_args):
+    def ode_force(self, force_args):
         """ Generate ODE force function from cell-cell force function
 
         Parameters
@@ -39,7 +39,7 @@ class CBMSolver:
             y_r = y.reshape((-1, 3))
             tmp = np.repeat(y_r[:, :, np.newaxis], y_r.shape[0], axis=2)
             norm = np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1))
-            forces = force(norm, **force_args)\
+            forces = self.force(norm, **force_args)\
                 / (norm + np.diag(np.ones(y_r.shape[0])))
             total_force = (np.repeat(forces[:, np.newaxis, :], 3, axis=1)
                            * (tmp.transpose()-tmp)).sum(axis=2)
