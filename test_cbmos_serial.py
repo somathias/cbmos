@@ -12,6 +12,10 @@ import numpy as np
 import cbmos_serial as cbmos
 import scipy.integrate as scpi
 
+import force_functions as ff
+import euler_forward as ef
+
+
 @pytest.fixture
 def two_cells():
     return np.array([[0., 0., 0.], [0.5, 0., 0.]]).reshape(-1)
@@ -39,3 +43,16 @@ def test_ode_force(two_cells):
     total_force = f(0., two_cells).reshape(2, 3)
     assert np.array_equal(total_force[0], np.array([1., 0., 0.]))
     assert np.array_equal(total_force[0], -total_force[1])
+
+
+def test_simulate(two_cells):
+    cbm_solver = cbmos.CBMSolver(ff.linear_spring, ef.solve_ivp)
+
+    T = np.linspace(0, 10, num=10)
+
+    # Check cells end up at the resting length
+    for s in [1., 2., 3.]:
+        sol = cbm_solver.simulate(T, two_cells,
+                                  {'s': s, 'mu': 1.0},
+                                  {'dt': 0.1}).y.reshape(-1, 6)
+        assert np.abs(sol[-1][:3] - sol[-1][3:]).sum() - s < 0.01
