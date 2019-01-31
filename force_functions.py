@@ -180,7 +180,7 @@ if __name__ == "__main__":
     plt.plot(x_vals, lennard_jones(x_vals), label='LJ')
     plt.plot(x_vals, cubic(x_vals), label='cubic')
     plt.plot(x_vals, general_polynomial(x_vals),
-             label='polynomial, n=1 ($\mu_A/\mu_R$ fixed, f_max fitted)')
+             label=r'polynomial, n=1 ($\mu_A/\mu_R$ fixed, f_max fitted)')
     plt.plot((1.5, 1.5), (-0.5, 1.5), linestyle='-', color='grey', alpha=0.5)
     plt.text(1.525, -0.35, 'maximum adhesive distance', color='grey')
     plt.plot(1.0, 0.0, linestyle='', marker='o', color='grey')
