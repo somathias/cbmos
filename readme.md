@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CBMOS
 
 ## Experiments
@@ -44,3 +45,7 @@ The third figure shows details of the general polynomial force law.
        mu=55.63460379 (found by scipy.optimize.minimize with BFGS
        method), a=-2*np.log(0.002/mu)
   - quadratic:
+
+## Unit Testing
+Test are run through `pytest` or `python -m pytest`. Test functions are
+automatically found by pytest (https://docs.pytest.org/en/latest/goodpractices.html#test-discovery). All the tests are run automatically on bitbucket upon pushing.
