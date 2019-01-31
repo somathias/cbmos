@@ -9,9 +9,10 @@ NU = 1
 
 
 class CBMSolver:
-    def __init__(self, force, solver):
+    def __init__(self, force, solver, dimension=3):
         self.force = force
         self.solver = solver
+        self.dim = dimension
 
     def simulate(self, t_eval, y0, force_args, solver_args):
         return self.solver(self.ode_force(force_args),
@@ -36,12 +37,13 @@ class CBMSolver:
 
         """
         def f(t, y):
-            y_r = y.reshape((-1, 3))
+            y_r = y.reshape((-1, self.dim))
             tmp = np.repeat(y_r[:, :, np.newaxis], y_r.shape[0], axis=2)
             norm = np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1))
             forces = self.force(norm, **force_args)\
                 / (norm + np.diag(np.ones(y_r.shape[0])))
-            total_force = (np.repeat(forces[:, np.newaxis, :], 3, axis=1)
+            total_force = (np.repeat(forces[:, np.newaxis, :],
+                                     self.dim, axis=1)
                            * (tmp.transpose()-tmp)).sum(axis=2)
             return (NU*total_force).reshape(-1)
 

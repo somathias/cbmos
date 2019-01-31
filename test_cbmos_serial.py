@@ -46,13 +46,17 @@ def test_ode_force(two_cells):
 
 
 def test_simulate(two_cells):
-    cbm_solver = cbmos.CBMSolver(ff.linear_spring, ef.solve_ivp)
+    for dim in [1, 2, 3]:
+        cbm_solver = cbmos.CBMSolver(ff.linear_spring, ef.solve_ivp, dim)
 
-    T = np.linspace(0, 10, num=10)
+        T = np.linspace(0, 10, num=10)
 
-    # Check cells end up at the resting length
-    for s in [1., 2., 3.]:
-        sol = cbm_solver.simulate(T, two_cells,
-                                  {'s': s, 'mu': 1.0},
-                                  {'dt': 0.1}).y.reshape(-1, 6)
-        assert np.abs(sol[-1][:3] - sol[-1][3:]).sum() - s < 0.01
+        # Check cells end up at the resting length
+        for s in [1., 2., 3.]:
+            sol = cbm_solver.simulate(
+                    T,
+                    two_cells.reshape(-1, 3)[:, :dim].reshape(-1),
+                    {'s': s, 'mu': 1.0},
+                    {'dt': 0.1}
+                    ).y.reshape(-1, 2*dim)
+            assert np.abs(sol[-1][:dim] - sol[-1][dim:]).sum() - s < 0.01
