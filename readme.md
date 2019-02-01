@@ -43,7 +43,7 @@ The third figure shows details of the general polynomial force law.
     2. fit maximum in height and make potential <10^-3 at rA=1.5:
        mu=55.63460379 (found by scipy.optimize.minimize with BFGS
        method), a=-2*np.log(0.002/mu)
-  - quadratic: fit maximum in height: muR = 84, muA= 0.25*mR = 21 (location of maximum is then r=8/7)
+  - piecewise quadratic: fit maximum in height: muR = 84, muA= 0.25*mR = 21 (location of maximum is then r=8/7)
 
 ## Unit Testing
 Test are run through `pytest` or `python -m pytest`. Test functions are
