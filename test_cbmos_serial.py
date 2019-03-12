@@ -22,7 +22,7 @@ def two_cells():
 
 
 def test_ode_force(two_cells):
-    # Check that the force is made used of
+    # Check that the force is made use of
     solver = cbmos.CBMSolver(lambda r: 0., scpi.solve_ivp)
     f = solver.ode_force({})
     assert not f(0., two_cells).any()
@@ -30,7 +30,7 @@ def test_ode_force(two_cells):
     f = solver.ode_force({})
     assert f(0., two_cells).any()
 
-    # Check parameters are made used of
+    # Check parameters are made use of
     solver = cbmos.CBMSolver(lambda r, p=1.: p, scpi.solve_ivp)
     f = solver.ode_force({})
     assert f(0., two_cells).any()
@@ -47,7 +47,7 @@ def test_ode_force(two_cells):
 
 def test_simulate(two_cells):
     for dim in [1, 2, 3]:
-        cbm_solver = cbmos.CBMSolver(ff.linear_spring, ef.solve_ivp, dim)
+        cbm_solver = cbmos.CBMSolver(ff.linear, ef.solve_ivp, dim)
 
         T = np.linspace(0, 10, num=10)
 
