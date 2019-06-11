@@ -14,7 +14,7 @@ class CBMSolver:
         self.solver = solver
         self.dim = dimension
 
-    def simulate(self, t_eval, y0, force_args, solver_args):
+    def calculate_positions(self, t_eval, y0, force_args, solver_args):
         return self.solver(self.ode_force(force_args),
                            (t_eval[0], t_eval[-1]),
                            y0,
@@ -62,6 +62,6 @@ if __name__ == "__main__":
                     z] for x in range(X) for y in range(Y) for z in range(Z)],
                   dtype=np.float64).reshape(-1)
 
-    sol = cbm_solver.simulate(T, y0, {'s': 1.0, 'mu': 1.0, 'rA': 1.5}, {})
+    sol = cbm_solver.calculate_positions(T, y0, {'s': 1.0, 'mu': 1.0, 'rA': 1.5}, {})
 
     print(sol.y)

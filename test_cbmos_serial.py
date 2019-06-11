@@ -45,7 +45,7 @@ def test_ode_force(two_cells):
     assert np.array_equal(total_force[0], -total_force[1])
 
 
-def test_simulate(two_cells):
+def test_calculate_positions(two_cells):
     for dim in [1, 2, 3]:
         cbm_solver = cbmos.CBMSolver(ff.linear, ef.solve_ivp, dim)
 
@@ -53,7 +53,7 @@ def test_simulate(two_cells):
 
         # Check cells end up at the resting length
         for s in [1., 2., 3.]:
-            sol = cbm_solver.simulate(
+            sol = cbm_solver.calculate_positions(
                     T,
                     two_cells.reshape(-1, 3)[:, :dim].reshape(-1),
                     {'s': s, 'mu': 1.0},
