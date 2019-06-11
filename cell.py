@@ -16,6 +16,16 @@ import numpy as np
 
 
 class Cell:
+    """
+    Parameters
+    ----------
+    position : numpy array
+        The position of this cell (1, 2, or 3d)
+    division_time : float
+        Absolute simulation time when division will take place for this cell
+
+
+    """
     def __init__(self, ID, position, age=0.0, proliferating=False):
         self.ID = ID
         self.position = position
@@ -23,7 +33,12 @@ class Cell:
         self.proliferating = proliferating
         self.division_time = self.generate_division_time()
 
+    def __lt__(self, other):
+        return self.division_time < other.division_time
+
     def generate_division_time(self):
+        # TODO fix division_time to be absolute
+        raise NotImplementedError('Division time needs to be absolute.')
         if self.proliferating:
             return np.random.randn() + 24.0 - self.age
         else:

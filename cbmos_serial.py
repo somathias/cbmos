@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.random as npr
 import scipy.integrate as scpi
+import heapq as hq
 
 import force_functions as ff
 import euler_forward as ef
@@ -13,6 +14,53 @@ class CBMSolver:
         self.force = force
         self.solver = solver
         self.dim = dimension
+
+    def simulate(self, cells, t_data, force_args, solver_args):
+        """
+
+        Note
+        ----
+        Cell ordering in the output can vary between timepoints.
+
+        """
+
+        t = t_data[0]
+        t_end = t_data[-1]
+
+        # build event queue once, since independent of environment (for now)
+        event_queue = self.build_event_queue(cells)
+
+        while t < t_end :
+
+            # generate next event
+            tau, cell = self.get_next_event(event_queue)
+
+            # calculate positions until time min(tau, t_end)
+            t_eval = [t] + [time for time in t_data if t < time < tau] + [tau]
+            y0 = np.array([cell.position for cell in cells]).reshape(-1)
+            self.calculate_positions(t_eval, y0, force_args, solver_args)
+
+        # apply event if tau <= t_end
+
+        # update current time t to min(tau, t_end)
+
+        # if t<t_end go to first step
+
+        return None
+
+
+
+    def get_next_event(self, event_queue):
+        return hq.heappop(event_queue)
+
+
+    def build_event_queue(self, cells):
+        events = [(cell.division_time, cell) for cell in cells]
+        hq.heapify(events)
+        return events
+
+
+
 
     def calculate_positions(self, t_eval, y0, force_args, solver_args):
         return self.solver(self.ode_force(force_args),
