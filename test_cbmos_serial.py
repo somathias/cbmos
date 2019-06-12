@@ -24,22 +24,22 @@ def two_cells():
 def test_ode_force(two_cells):
     # Check that the force is made use of
     solver = cbmos.CBMSolver(lambda r: 0., scpi.solve_ivp)
-    f = solver.ode_force({})
+    f = solver._ode_force({})
     assert not f(0., two_cells).any()
     solver = cbmos.CBMSolver(lambda r: 1., scpi.solve_ivp)
-    f = solver.ode_force({})
+    f = solver._ode_force({})
     assert f(0., two_cells).any()
 
     # Check parameters are made use of
     solver = cbmos.CBMSolver(lambda r, p=1.: p, scpi.solve_ivp)
-    f = solver.ode_force({})
+    f = solver._ode_force({})
     assert f(0., two_cells).any()
-    f = solver.ode_force({'p': 0.})
+    f = solver._ode_force({'p': 0.})
     assert not f(0., two_cells).any()
 
     # Check force computation is correct
     solver = cbmos.CBMSolver(lambda r: 1., scpi.solve_ivp)
-    f = solver.ode_force({})
+    f = solver._ode_force({})
     total_force = f(0., two_cells).reshape(2, 3)
     assert np.array_equal(total_force[0], np.array([1., 0., 0.]))
     assert np.array_equal(total_force[0], -total_force[1])
@@ -53,7 +53,7 @@ def test_calculate_positions(two_cells):
 
         # Check cells end up at the resting length
         for s in [1., 2., 3.]:
-            sol = cbm_solver.calculate_positions(
+            sol = cbm_solver._calculate_positions(
                     T,
                     two_cells.reshape(-1, 3)[:, :dim].reshape(-1),
                     {'s': s, 'mu': 1.0},
