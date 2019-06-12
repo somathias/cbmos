@@ -85,3 +85,23 @@ def test_update_event_queue():
     assert solver.event_queue[0][0] <= solver.event_queue[1][0]
     assert solver.event_queue[1][0] <= solver.event_queue[2][0]
 
+def test_get_next_event():
+    solver = cbmos.CBMSolver(lambda r: 0., scpi.solve_ivp)
+
+    cell_list = [cl.Cell(i, np.array([0, 0, i]), 0.0, True) for i in [0, 1, 2]]
+    solver._build_event_queue(cell_list)
+    assert len(solver.event_queue) == 3
+
+    solver._get_next_event()
+    assert len(solver.event_queue) == 2
+
+    solver._get_next_event()
+    assert len(solver.event_queue) == 1
+
+    solver._get_next_event()
+    assert len(solver.event_queue) == 0
+
+
+
+
+

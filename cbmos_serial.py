@@ -73,8 +73,8 @@ class CBMSolver:
         event = (cell.division_time, cell)
         hq.heappush(self.event_queue, event)
 
-    def _get_next_event(self, event_queue):
-        return hq.heappop(event_queue)
+    def _get_next_event(self):
+        return hq.heappop(self.event_queue)
 
     def _apply_division(self, cell_list, cell, tau):
         """
