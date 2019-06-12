@@ -32,6 +32,8 @@ class CBMSolver:
         t_end = t_data[-1]
         self.next_cell_index = max(cell_list, key=lambda cell: cell.ID).ID + 1
 
+        self.cell_list = cell_list
+
         # build event queue once, since independent of environment (for now)
         self._build_event_queue(cell_list)
 
@@ -44,20 +46,20 @@ class CBMSolver:
             t_eval = [t] \
                 + [time for time in t_data if t < time < min(tau, t_end)] \
                 + [min(tau, t_end)]
-            y0 = np.array([cell.position for cell in cell_list]).reshape(-1)
+            y0 = np.array([cell.position for cell in self.cell_list]).reshape(-1)
             sol = self._calculate_positions(t_eval, y0, force_args, solver_args)
-            cell_list = self._update_positions(cell_list, sol)
+            self.cell_list = self._update_positions(sol)
 
             # apply event if tau <= t_end
             if tau <= t_end:
-                cell_list = self._apply_division(cell_list, cell, tau)
+                self.cell_list = self._apply_division(cell, tau)
 
             # update current time t to min(tau, t_end)
             t = min(tau, t_end)
 
         # TODO: build history (right now only the state at t_end is returned)
         wg.warn('TODO: build history')
-        return cell_list
+        return self.cell_list
 
     def _build_event_queue(self, cells):
         events = [(cell.division_time, cell) for cell in cells]
@@ -76,7 +78,7 @@ class CBMSolver:
     def _get_next_event(self, event_queue):
         return hq.heappop(event_queue)
 
-    def _apply_division(self, cell_list, cell, tau):
+    def _apply_division(self, cell, tau):
         """
         Note
         ----
@@ -91,14 +93,12 @@ class CBMSolver:
         daughter_cell = cl.Cell(
                 self.next_cell_index, position_daughter, tau, True)
         self.next_cell_index = self.next_cell_index + 1
-        cell_list.append(daughter_cell)
+        self.cell_list.append(daughter_cell)
         self._update_event_queue(daughter_cell)
 
         cell.position = updated_position_parent
         cell.division_time = cell.generate_division_time(tau)
         self._update_event_queue(cell)
-
-        return cell_list
 
     def _get_division_direction(self, parent_cell):
 
@@ -129,7 +129,7 @@ class CBMSolver:
                            t_eval=t_eval,
                            **solver_args)
 
-    def _update_positions(self, cell_list, sol):
+    def _update_positions(self, sol):
         """
         Note
         ----
@@ -138,10 +138,8 @@ class CBMSolver:
 
         y = sol.y.reshape(-1, self.dim).tolist()
 
-        for cell, pos in zip(cell_list, y):
+        for cell, pos in zip(self.cell_list, y):
             cell.position = np.array(pos)
-
-        return cell_list
 
     def _ode_force(self, force_args):
         """ Generate ODE force function from cell-cell force function
