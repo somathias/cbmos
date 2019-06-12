@@ -26,10 +26,10 @@ class Cell:
 
 
     """
-    def __init__(self, ID, position, age=0.0, proliferating=False):
+    def __init__(self, ID, position, birthtime=0.0, proliferating=False):
         self.ID = ID
         self.position = position
-        self.age = age
+        self.birthtime = birthtime
         self.proliferating = proliferating
         self.division_time = self.generate_division_time()
 
@@ -37,9 +37,7 @@ class Cell:
         return self.division_time < other.division_time
 
     def generate_division_time(self):
-        # TODO fix division_time to be absolute
-        raise NotImplementedError('Division time needs to be absolute.')
         if self.proliferating:
-            return np.random.randn() + 24.0 - self.age
+            return np.random.randn() + 24.0 + self.birthtime
         else:
-            return None
+            return np.inf

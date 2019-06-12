@@ -2,9 +2,11 @@ import numpy as np
 import numpy.random as npr
 import scipy.integrate as scpi
 import heapq as hq
+import warnings as wg
 
 import force_functions as ff
 import euler_forward as ef
+import cell
 
 NU = 1
 
@@ -15,7 +17,7 @@ class CBMSolver:
         self.solver = solver
         self.dim = dimension
 
-    def simulate(self, cells, t_data, force_args, solver_args):
+    def simulate(self, cell_list, t_data, force_args, solver_args):
         """
 
         Note
@@ -28,25 +30,30 @@ class CBMSolver:
         t_end = t_data[-1]
 
         # build event queue once, since independent of environment (for now)
-        event_queue = self.build_event_queue(cells)
+        event_queue = self.build_event_queue(cell_list)
 
-        while t < t_end :
+        while t < t_end:
 
             # generate next event
             tau, cell = self.get_next_event(event_queue)
 
             # calculate positions until time min(tau, t_end)
             t_eval = [t] + [time for time in t_data if t < time < tau] + [tau]
-            y0 = np.array([cell.position for cell in cells]).reshape(-1)
-            self.calculate_positions(t_eval, y0, force_args, solver_args)
+            y0 = np.array([cell.position for cell in cell_list]).reshape(-1)
+            sol = self.calculate_positions(t_eval, y0, force_args, solver_args)
+            cell_list = self.update_cell_positions(cell_list, sol)
 
-        # apply event if tau <= t_end
+            # apply event if tau <= t_end
+            if tau <= t_end :
+                cell_list = self.apply_division(cell_list, cell)
 
-        # update current time t to min(tau, t_end)
+            # update current time t to min(tau, t_end)
+            t = min(tau, t_end)
+            print(t)
 
-        # if t<t_end go to first step
-
-        return None
+        # TODO: build history (right now only the state at t_end is returned)
+        wg.warn('TODO: build history')
+        return cell_list
 
 
 
@@ -59,7 +66,13 @@ class CBMSolver:
         hq.heapify(events)
         return events
 
+    def apply_division(self, cell_list, cell):
+        raise NotImplementedError('The apply_event function is not yet implemented.')
+        return cell_list
 
+    def update_cell_positions(self, cell_list, sol):
+        raise NotImplementedError('The update_cell_position function is not yet implemented.')
+        return cell_list
 
 
     def calculate_positions(self, t_eval, y0, force_args, solver_args):
@@ -102,14 +115,11 @@ if __name__ == "__main__":
 
     cbm_solver = CBMSolver(ff.cubic, ef.solve_ivp)
 
-    T = np.linspace(0, 1, num=100)
+    # three cells at rest
+    cell_list = [cell.Cell(i, np.array([0,0,i])) for i in [0,1,2]]
+    t_data = np.linspace(0, 5, 10)
 
-    X, Y, Z = [4]*3
-    y0 = np.array([[x,
-                    y,
-                    z] for x in range(X) for y in range(Y) for z in range(Z)],
-                  dtype=np.float64).reshape(-1)
+    updated_cell_list = cbm_solver.simulate(
+            cell_list, t_data, {'s': 1.0, 'mu': 1.0, 'rA': 1.5}, {})
 
-    sol = cbm_solver.calculate_positions(T, y0, {'s': 1.0, 'mu': 1.0, 'rA': 1.5}, {})
 
-    print(sol.y)
