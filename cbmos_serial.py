@@ -38,7 +38,7 @@ class CBMSolver:
             tau, cell = self.get_next_event(event_queue)
 
             # calculate positions until time min(tau, t_end)
-            t_eval = [t] + [time for time in t_data if t < time < tau] + [tau]
+            t_eval = [t] + [time for time in t_data if t < time < min(tau, t_end)] + [min(tau, t_end)]
             y0 = np.array([cell.position for cell in cell_list]).reshape(-1)
             sol = self.calculate_positions(t_eval, y0, force_args, solver_args)
             cell_list = self.update_cell_positions(cell_list, sol)
