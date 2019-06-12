@@ -33,7 +33,7 @@ class CBMSolver:
         self.next_cell_index = max(cell_list, key=lambda cell: cell.ID).ID + 1
 
         # build event queue once, since independent of environment (for now)
-        self.event_queue = self._build_event_queue(cell_list)
+        self._build_event_queue(cell_list)
 
         while t < t_end:
 
@@ -62,7 +62,7 @@ class CBMSolver:
     def _build_event_queue(self, cells):
         events = [(cell.division_time, cell) for cell in cells]
         hq.heapify(events)
-        return events
+        self.event_queue = events
 
     def _update_event_queue(self, cell):
         """
