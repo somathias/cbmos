@@ -100,8 +100,6 @@ class CBMSolver:
         cell.division_time = cell.generate_division_time(tau)
         self._update_event_queue(cell)
 
-        return cell_list
-
     def _get_division_direction(self):
 
         if self.dim == 1:

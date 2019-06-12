@@ -136,7 +136,21 @@ def test_get_division_direction():
 
         assert np.all(abs(mean_division_direction/N) < 1)
 
+def test_apply_division():
+    dim = 3
+    cbm_solver = cbmos.CBMSolver(ff.linear, ef.solve_ivp, dim)
 
+    cell_list = [cl.Cell(i, [0, 0, i]) for i in range(5)]
+    for i, cell in enumerate(cell_list):
+        cell.division_time = cell.ID
 
+    cbm_solver.cell_list = cell_list
+    cbm_solver.next_cell_index = 5
+    cbm_solver._build_event_queue(cell_list)
 
+    cbm_solver._apply_division(cell_list[0], 1)
 
+    assert len(cbm_solver.cell_list) == 6
+    assert cbm_solver.cell_list[5].ID == 5
+    assert cbm_solver.next_cell_index == 6
+    assert cell_list[0].division_time != 0
