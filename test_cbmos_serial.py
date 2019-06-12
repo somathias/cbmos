@@ -14,6 +14,7 @@ import scipy.integrate as scpi
 
 import force_functions as ff
 import euler_forward as ef
+import heapq as hq
 import cell as cl
 
 
@@ -62,6 +63,25 @@ def test_calculate_positions(two_cells):
                     ).y.reshape(-1, 2*dim)
             assert np.abs(sol[-1][:dim] - sol[-1][dim:]).sum() - s < 0.01
 
+
+def test_build_event_queue():
+    """
+    Note
+    ----
+    Assumes the event list is using heapq. This test will break if we change
+    data structure
+    """
+    dim = 3
+    cbm_solver = cbmos.CBMSolver(ff.linear, ef.solve_ivp, dim)
+
+    cells = [cl.Cell(i, [0, 0, i]) for i in range(5)]
+    for i, cell in enumerate(cells):
+        cell.division_time = cell.ID
+
+    cbm_solver._build_event_queue(cells)
+
+    for i in range(5):
+        assert hq.heappop(cbm_solver.event_queue)[1].ID == i
 
 def test_update_event_queue():
     solver = cbmos.CBMSolver(lambda r: 0., scpi.solve_ivp)
