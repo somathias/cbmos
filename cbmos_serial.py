@@ -82,7 +82,7 @@ class CBMSolver:
         ----
         The code assumes that all cell events are division events,
         """
-        division_direction = self._get_division_direction(cell)
+        division_direction = self._get_division_direction()
         updated_position_parent = cell.position -\
             0.5 * self.separation * division_direction
         position_daughter = cell.position +\
@@ -100,7 +100,7 @@ class CBMSolver:
 
         return cell_list
 
-    def _get_division_direction(self, parent_cell):
+    def _get_division_direction(self):
 
         if self.dim == 1:
             division_direction = np.array([-1.0 + 2.0 * npr.randint(2)])

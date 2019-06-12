@@ -102,6 +102,21 @@ def test_get_next_event():
     assert len(solver.event_queue) == 0
 
 
+def test_get_division_direction():
+    for dim in [1, 2, 3]:
+        cbm_solver = cbmos.CBMSolver(lambda r: 0., ef.solve_ivp, dim)
+
+        mean_division_direction = cbm_solver._get_division_direction()
+        assert mean_division_direction.shape == (dim,)
+        N = 1000
+        for i in range(N):
+            mean_division_direction += cbm_solver._get_division_direction()
+
+        print(mean_division_direction)
+
+        assert np.all(abs(mean_division_direction/N) < 1)
+
+
 
 
 
