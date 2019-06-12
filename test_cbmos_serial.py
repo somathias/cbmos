@@ -14,6 +14,7 @@ import scipy.integrate as scpi
 
 import force_functions as ff
 import euler_forward as ef
+import cell as cl
 
 
 @pytest.fixture
@@ -60,3 +61,27 @@ def test_calculate_positions(two_cells):
                     {'dt': 0.1}
                     ).y.reshape(-1, 2*dim)
             assert np.abs(sol[-1][:dim] - sol[-1][dim:]).sum() - s < 0.01
+
+
+def test_update_event_queue():
+    solver = cbmos.CBMSolver(lambda r: 0., scpi.solve_ivp)
+    cell = cl.Cell(0, np.zeros((1, 3)))
+
+    solver.event_queue = []
+    solver._update_event_queue(cell)
+    # check that event gets added
+    assert len(solver.event_queue) == 1
+    # check that it's the correct event
+    event = solver.event_queue[0]
+    assert event[0] == cell.division_time
+    assert event[1] == cell
+    # add more cells
+    cell2 = cl.Cell(1, np.zeros((1, 3))+0.25)
+    cell3 = cl.Cell(2, np.zeros((1, 3))+0.5)
+    solver._update_event_queue(cell2)
+    solver._update_event_queue(cell3)
+    assert len(solver.event_queue) == 3
+    #check that sorting is correct
+    assert solver.event_queue[0][0] <= solver.event_queue[1][0]
+    assert solver.event_queue[1][0] <= solver.event_queue[2][0]
+
