@@ -36,8 +36,9 @@ class Cell:
     def __lt__(self, other):
         return self.division_time < other.division_time
 
-    def generate_division_time(self):
+    def generate_division_time(self, current_time=None):
+        current_time = current_time if current_time is not None else self.birthtime
         if self.proliferating:
-            return np.random.randn() + 24.0 + self.birthtime
+            return np.random.randn() + 24.0 + current_time
         else:
             return np.inf
