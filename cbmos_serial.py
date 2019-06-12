@@ -175,7 +175,7 @@ class CBMSolver:
 
         Returns
         -------
-        (t, y) -> dy/dt
+        f: (t, y) -> dy/dt
 
         """
         def f(t, y):
