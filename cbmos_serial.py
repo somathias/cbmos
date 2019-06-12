@@ -45,7 +45,7 @@ class CBMSolver:
                 + [min(tau, t_end)]
             y0 = np.array([cell.position for cell in cell_list]).reshape(-1)
             sol = self.calculate_positions(t_eval, y0, force_args, solver_args)
-            cell_list = self.update_cell_positions(cell_list, sol)
+            cell_list = self.update_positions(cell_list, sol)
 
             # apply event if tau <= t_end
             if tau <= t_end:
@@ -57,9 +57,6 @@ class CBMSolver:
         # TODO: build history (right now only the state at t_end is returned)
         wg.warn('TODO: build history')
         return cell_list
-
-    def get_next_event(self, event_queue):
-        return hq.heappop(event_queue)
 
     def build_event_queue(self, cells):
         events = [(cell.division_time, cell) for cell in cells]
@@ -74,6 +71,9 @@ class CBMSolver:
         """
         event = (cell.division_time, cell)
         hq.heappush(self.event_queue, event)
+
+    def get_next_event(self, event_queue):
+        return hq.heappop(event_queue)
 
     def apply_division(self, cell_list, cell, tau):
         """
@@ -121,7 +121,14 @@ class CBMSolver:
                 np.cos(random_zenith_angle)])
         return division_direction
 
-    def update_cell_positions(self, cell_list, sol):
+    def calculate_positions(self, t_eval, y0, force_args, solver_args):
+        return self.solver(self.ode_force(force_args),
+                           (t_eval[0], t_eval[-1]),
+                           y0,
+                           t_eval=t_eval,
+                           **solver_args)
+
+    def update_positions(self, cell_list, sol):
         """
         Note
         ----
@@ -134,13 +141,6 @@ class CBMSolver:
             cell.position = np.array(pos)
 
         return cell_list
-
-    def calculate_positions(self, t_eval, y0, force_args, solver_args):
-        return self.solver(self.ode_force(force_args),
-                           (t_eval[0], t_eval[-1]),
-                           y0,
-                           t_eval=t_eval,
-                           **solver_args)
 
     def ode_force(self, force_args):
         """ Generate ODE force function from cell-cell force function
