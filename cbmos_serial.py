@@ -48,7 +48,7 @@ class CBMSolver:
                 + [min(tau, t_end)]
             y0 = np.array([cell.position for cell in self.cell_list]).reshape(-1)
             sol = self._calculate_positions(t_eval, y0, force_args, solver_args)
-            self.cell_list = self._update_positions(sol)
+            self.cell_list = self._update_positions(sol.y.reshape(-1, self.dim).tolist())
 
             # apply event if tau <= t_end
             if tau <= t_end:
@@ -129,14 +129,12 @@ class CBMSolver:
                            t_eval=t_eval,
                            **solver_args)
 
-    def _update_positions(self, sol):
+    def _update_positions(self, y):
         """
         Note
         ----
         The ordering in cell_list and sol.y has to match.
         """
-
-        y = sol.y.reshape(-1, self.dim).tolist()
 
         for cell, pos in zip(self.cell_list, y):
             cell.position = np.array(pos)

@@ -154,3 +154,19 @@ def test_apply_division():
     assert cbm_solver.cell_list[5].ID == 5
     assert cbm_solver.next_cell_index == 6
     assert cell_list[0].division_time != 0
+
+def test_update_positions():
+    dim = 3
+    cbm_solver = cbmos.CBMSolver(ff.linear, ef.solve_ivp, dim)
+
+    cell_list = [cl.Cell(i, [0, 0, i]) for i in range(5)]
+    for i, cell in enumerate(cell_list):
+        cell.division_time = cell.ID
+
+    cbm_solver.cell_list = cell_list
+
+    new_positions = [[0, i, i] for i in range(5)]
+    cbm_solver._update_positions(new_positions)
+    for i, cell in enumerate(cbm_solver.cell_list):
+        print(cell.position)
+        assert cell.position.tolist() == [0, i, i]
