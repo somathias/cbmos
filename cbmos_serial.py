@@ -33,14 +33,16 @@ class CBMSolver:
         self.next_cell_index = max(cell_list, key=lambda cell: cell.ID).ID + 1
 
         self.cell_list = cell_list
+        self.history = []
+        self._save_data()
 
         # build event queue once, since independent of environment (for now)
-        self._build_event_queue(cell_list)
+        self._build_event_queue()
 
         while t < t_end:
 
             # generate next event
-            tau, cell = self._get_next_event(self.event_queue)
+            tau, cell = self._get_next_event()
 
             # calculate positions until time min(tau, t_end)
             t_eval = [t] \
@@ -48,21 +50,43 @@ class CBMSolver:
                 + [min(tau, t_end)]
             y0 = np.array([cell.position for cell in self.cell_list]).reshape(-1)
             sol = self._calculate_positions(t_eval, y0, force_args, solver_args)
-            self.cell_list = self._update_positions(sol.y.reshape(-1, self.dim).tolist())
+
+            # save data for all t_data points passed
+            for y_t in sol.y[:, 1:-1].T:
+                self._save_data(y_t.reshape(-1, self.dim))
+
+            # update the positions for the current time point
+            self._update_positions(sol.y[:,-1].reshape(-1, self.dim).tolist())
 
             # apply event if tau <= t_end
             if tau <= t_end:
-                self.cell_list = self._apply_division(cell, tau)
+                self._apply_division(cell, tau)
 
             # update current time t to min(tau, t_end)
             t = min(tau, t_end)
 
-        # TODO: build history (right now only the state at t_end is returned)
-        wg.warn('TODO: build history')
-        return self.cell_list
+        # save the last time point
+        self._save_data()
 
-    def _build_event_queue(self, cells):
-        events = [(cell.division_time, cell) for cell in cells]
+        return self.history
+
+    def _save_data(self, positions=None):
+        """
+        Note
+        ----
+        self.history has to be instantiated before the first call to _save_data
+        as an empty list.
+        """
+        if positions is not None:
+            self.history.append([cl.Cell(cell.ID, pos, cell.birthtime, cell.proliferating)
+                for cell, pos in zip(self.cell_list, positions)])
+        else:
+            self.history.append([cl.Cell(cell.ID, cell.position, cell.birthtime, cell.proliferating)
+                for cell in self.cell_list])
+
+
+    def _build_event_queue(self):
+        events = [(cell.division_time, cell) for cell in self.cell_list]
         hq.heapify(events)
         self.event_queue = events
 
@@ -169,19 +193,30 @@ class CBMSolver:
 
 
 if __name__ == "__main__":
+#
+#    cbm_solver = CBMSolver(ff.cubic, ef.solve_ivp)
+#
+#    # three non-proliferating cells at rest
+#    cell_list = [cl.Cell(i, np.array([0, 0, i])) for i in [0, 1, 2]]
+#    t_data = np.linspace(0, 5, 10)
+#
+#    updated_cell_list = cbm_solver.simulate(
+#            cell_list, t_data, {'s': 1.0, 'mu': 1.0, 'rA': 1.5}, {})
+#
+#    # three non-proliferating cells at rest
+#    cell_list2 = [cl.Cell(i, np.array([0, 0, i]), -21.0, True) for i in [0, 1, 2]]
+#
+#    updated_cell_list2 = cbm_solver.simulate(
+#            cell_list2, t_data, {'s': 1.0, 'mu': 1.0, 'rA': 1.5}, {})
+#
+    dim = 1
+    cbm_solver = CBMSolver(ff.linear, scpi.solve_ivp, dim)
+    cell_list = [cl.Cell(0, [0]), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list[1].division_time = 1.05  # make sure not to divide at t_data
 
-    cbm_solver = CBMSolver(ff.cubic, ef.solve_ivp)
+    t_data = np.linspace(0, 10, 100)
+    history = cbm_solver.simulate(cell_list, t_data, {}, {})
 
-    # three non-proliferating cells at rest
-    cell_list = [cl.Cell(i, np.array([0, 0, i])) for i in [0, 1, 2]]
-    t_data = np.linspace(0, 5, 10)
+    assert len(history) == 100
 
-    updated_cell_list = cbm_solver.simulate(
-            cell_list, t_data, {'s': 1.0, 'mu': 1.0, 'rA': 1.5}, {})
-
-    # three non-proliferating cells at rest
-    cell_list2 = [cl.Cell(i, np.array([0, 0, i]), -21.0, True) for i in [0, 1, 2]]
-
-    updated_cell_list2 = cbm_solver.simulate(
-            cell_list2, t_data, {'s': 1.0, 'mu': 1.0, 'rA': 1.5}, {})
 

@@ -78,7 +78,8 @@ def test_build_event_queue():
     for i, cell in enumerate(cells):
         cell.division_time = cell.ID
 
-    cbm_solver._build_event_queue(cells)
+    cbm_solver.cell_list = cells
+    cbm_solver._build_event_queue()
 
     for i in range(5):
         assert hq.heappop(cbm_solver.event_queue)[1].ID == i
@@ -111,7 +112,8 @@ def test_get_next_event():
     solver = cbmos.CBMSolver(lambda r: 0., scpi.solve_ivp)
 
     cell_list = [cl.Cell(i, np.array([0, 0, i]), 0.0, True) for i in [0, 1, 2]]
-    solver._build_event_queue(cell_list)
+    solver.cell_list = cell_list
+    solver._build_event_queue()
     assert len(solver.event_queue) == 3
 
     solver._get_next_event()
@@ -130,7 +132,7 @@ def test_get_division_direction():
 
         mean_division_direction = cbm_solver._get_division_direction()
         assert mean_division_direction.shape == (dim,)
-        assert np.linalg.norm(mean_division_direction) == 1
+        assert np.isclose(np.linalg.norm(mean_division_direction), 1)
 
 #        N = 1000
 #        for i in range(N):
@@ -148,7 +150,7 @@ def test_apply_division():
 
     cbm_solver.cell_list = cell_list
     cbm_solver.next_cell_index = 5
-    cbm_solver._build_event_queue(cell_list)
+    cbm_solver._build_event_queue()
 
     cbm_solver._apply_division(cell_list[0], 1)
 
@@ -156,6 +158,8 @@ def test_apply_division():
     assert cbm_solver.cell_list[5].ID == 5
     assert cbm_solver.next_cell_index == 6
     assert cell_list[0].division_time != 0
+
+
 
 
 def test_update_positions():
@@ -173,3 +177,17 @@ def test_update_positions():
     for i, cell in enumerate(cbm_solver.cell_list):
         print(cell.position)
         assert cell.position.tolist() == [0, i, i]
+
+
+def test_simulate():
+    dim = 1
+    cbm_solver = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
+    cell_list = [cl.Cell(0, [0]), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list[1].division_time = 1.05  # make sure not to divide at t_data
+
+    t_data = np.linspace(0, 10, 100)
+    history = cbm_solver.simulate(cell_list, t_data, {}, {})
+
+    assert len(history) == 100
+
+
