@@ -83,6 +83,7 @@ def test_build_event_queue():
     for i in range(5):
         assert hq.heappop(cbm_solver.event_queue)[1].ID == i
 
+
 def test_update_event_queue():
     solver = cbmos.CBMSolver(lambda r: 0., scpi.solve_ivp)
     cell = cl.Cell(0, np.zeros((1, 3)))
@@ -101,9 +102,10 @@ def test_update_event_queue():
     solver._update_event_queue(cell2)
     solver._update_event_queue(cell3)
     assert len(solver.event_queue) == 3
-    #check that sorting is correct
+    # check that sorting is correct
     assert solver.event_queue[0][0] <= solver.event_queue[1][0]
     assert solver.event_queue[1][0] <= solver.event_queue[2][0]
+
 
 def test_get_next_event():
     solver = cbmos.CBMSolver(lambda r: 0., scpi.solve_ivp)
@@ -128,13 +130,13 @@ def test_get_division_direction():
 
         mean_division_direction = cbm_solver._get_division_direction()
         assert mean_division_direction.shape == (dim,)
-        N = 1000
-        for i in range(N):
-            mean_division_direction += cbm_solver._get_division_direction()
+        assert np.linalg.norm(mean_division_direction) == 1
 
-        print(mean_division_direction)
+#        N = 1000
+#        for i in range(N):
+#            mean_division_direction += cbm_solver._get_division_direction()
+#        assert np.all(abs(mean_division_direction/N) < 1)
 
-        assert np.all(abs(mean_division_direction/N) < 1)
 
 def test_apply_division():
     dim = 3
@@ -154,6 +156,7 @@ def test_apply_division():
     assert cbm_solver.cell_list[5].ID == 5
     assert cbm_solver.next_cell_index == 6
     assert cell_list[0].division_time != 0
+
 
 def test_update_positions():
     dim = 3
