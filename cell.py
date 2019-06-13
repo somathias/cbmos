@@ -28,7 +28,7 @@ class Cell:
     """
     def __init__(self, ID, position, birthtime=0.0, proliferating=False):
         self.ID = ID
-        self.position = position
+        self.position = np.array(position)
         self.birthtime = birthtime
         self.proliferating = proliferating
         self.division_time = self.generate_division_time()
