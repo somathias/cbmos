@@ -159,7 +159,9 @@ def test_apply_division():
     assert cbm_solver.next_cell_index == 6
     assert cell_list[0].division_time != 0
 
-
+    assert np.isclose(
+            np.linalg.norm(cell_list[0].position - cell_list[5].position),
+            cbm_solver.separation)
 
 
 def test_update_positions():
