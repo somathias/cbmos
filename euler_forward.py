@@ -13,6 +13,13 @@ plt.style.use('seaborn')
 
 
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01):
+    """
+    Note
+    ----
+    This implementation does not take into account t_eval. Hence using this
+    function will mess up the t_data parameter of cbmos_serial, because it
+    will return the solution calculated at many more time points than expected.
+    """
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -30,7 +37,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01):
         ys.append(y)
 
     ts = np.hstack(ts)
-    ys = np.hstack(ys)
+    ys = np.vstack(ys).T
 
     return OdeResult(t=ts, y=ys)
 
@@ -42,7 +49,7 @@ if __name__ == "__main__":
         return -50*y
 
     t_span = (0,1)
-    y0 = 1
+    y0 = np.array([1,1])
 
     sol = solve_ivp(func, t_span, y0 )
 
