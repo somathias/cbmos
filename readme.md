@@ -1,10 +1,46 @@
 # CBMOS
 
+## Code structure
+
+The main solver is found in cbmos_serial.py. Check it's __main__ function for an example on how to use it. All other file names aim to be self-explanatory. 
+
+Files starting with *test_* are for testing the code in the correspoding python file using pytest (see below).
+
+## Unit Testing
+Test are run through `pytest` or `python -m pytest`. Test functions are
+automatically found by pytest (https://docs.pytest.org/en/latest/goodpractices.html#test-discovery). All the tests are run automatically on bitbucket upon pushing.
+
+## Development 
+
+Branches implementing new features should start with *dev-*. Currently we have 
+
+ - *dev-ode_solvers*: implementing several explicit solvers
+ - *dev-proliferation*: currently merged with master. Might use it in the future for more features or we might delete it.
+ - *force_functions*: started work on implementing the derivatives needed for implicit solvers
+
 ## Experiments
+
+All experiments should be done in branches (off *master*) with names starting with *exp-*. We recommend running the experiments in jupyter notebooks for a nicer workflow :)
 
 ### Relaxation experiment (*exp-relaxation*)
 
-Checkout *exp-relaxation* branch. Run **relaxation_experiment.py**.
+Checkout *exp-relaxation* branch. Open the jupyter notebook *exp-relaxation.ipynb*. 
+
+**Note** that this branch does not yet use the new code implementing proliferation (everything after commit 7197dd7).
+
+### Adhesion experiment (*exp-adhesion*)
+Checkout *exp-adhesion* branch. Open the jupyter notebook *exp-adhesion.ipynb*. 
+
+**Note** that this branch does not yet use the new code implementing proliferation (everything after commit 7197dd7).
+
+### Collapsing volumes (*exp-collapsing_volumes*)
+Checkout *exp-collapsing_volumes* branch. There are three jupyter notebooks. Note that *exp-collapsing_volumes_1d.ipynb* and *exp-collapsing_volumes_2d.ipynb* need to be updated to work with the newer code (which has been merged into this branch). 
+*exp-collapsing_volumes_sheet.ipynb* is up-to-date and should run. 
+
+### Tumor growth (*exp-tumor_growth*)
+Checkout *exp-tumor_growth* branch. Open the jupyter notebook *exp-tumor_growth.ipynb*.
+
+Note the changes in cell.py. Cells have a default mean cell cycle duration of 6 hours in this branch (normal distribution N(6, 0.25)). 
 
 ### Force function plots (*exp-plot_forces*)
 
@@ -13,7 +49,7 @@ The first figure shows force laws fitted to cubic force law in both height and l
 The second figure shows force laws fitted only in height of the maximum and chosen to be small at the maximum interaction distance.
 The third figure shows details of the general polynomial force law.
 
-#### Parameter settings
+#### Parameter settings (for *exp-plot_forces*)
 
   We fix 
 
@@ -45,6 +81,4 @@ The third figure shows details of the general polynomial force law.
        method), a=-2*np.log(0.002/mu)
   - piecewise quadratic: fit maximum in height: muR = 84, muA= 0.25*mR = 21 (location of maximum is then r=8/7)
 
-## Unit Testing
-Test are run through `pytest` or `python -m pytest`. Test functions are
-automatically found by pytest (https://docs.pytest.org/en/latest/goodpractices.html#test-discovery). All the tests are run automatically on bitbucket upon pushing.
+
