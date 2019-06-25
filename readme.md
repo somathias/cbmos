@@ -2,6 +2,8 @@
 
 ## Code structure
 
+The *master* branch has the currently stable version of the code.
+
 The main solver is found in cbmos_serial.py. Check it's __main__ function for an example on how to use it. All other file names aim to be self-explanatory. 
 
 Files starting with *test_* are for testing the code in the correspoding python file using pytest (see below).
