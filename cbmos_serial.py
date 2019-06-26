@@ -109,6 +109,10 @@ class CBMSolver:
         ----
         The code assumes that all cell events are division events,
         """
+
+        #check that the parent cell has set its proliferating flag to True
+        assert cell.proliferating
+
         division_direction = self._get_division_direction()
         updated_position_parent = cell.position -\
             0.5 * self.separation * division_direction
@@ -212,7 +216,7 @@ if __name__ == "__main__":
 #
     dim = 1
     cbm_solver = CBMSolver(ff.linear, scpi.solve_ivp, dim)
-    cell_list = [cl.Cell(0, [0]), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
     cell_list[0].division_time = 1.0  # make sure not to divide at t_data
     cell_list[1].division_time = 1.0  # make sure not to divide at t_data
 
@@ -220,5 +224,14 @@ if __name__ == "__main__":
     history = cbm_solver.simulate(cell_list, t_data, {}, {})
 
     assert len(history) == len(t_data)
+
+    #try that we can continue
+    t_data_c = np.linspace(10, 30, 202)
+    history_c = cbm_solver.simulate(history[-1], t_data_c, {}, {})
+
+    assert len(history_c) == len(t_data_c)
+    assert len(history_c[-1]) == 6
+
+
 
 
