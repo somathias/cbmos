@@ -45,19 +45,22 @@ class CBMSolver:
             tau, cell = self._get_next_event()
 
             if tau > t:
-                # calculate positions until time min(tau, t_end)
+                # calculate positions until the last t_data smaller or equal to min(tau, t_end)
                 t_eval = [t] \
-                    + [time for time in t_data if t < time < min(tau, t_end)] \
-                    + [min(tau, t_end)]
+                    + [time for time in t_data if t < time <= min(tau, t_end)]
                 y0 = np.array([cell.position for cell in self.cell_list]).reshape(-1)
                 sol = self._calculate_positions(t_eval, y0, force_args, solver_args)
 
                 # save data for all t_data points passed
-                for y_t in sol.y[:, 1:-1].T:
+                for y_t in sol.y[:, 1:].T:
                     self._save_data(y_t.reshape(-1, self.dim))
 
+                # continue the simulation until tau if necessary
+                if tau > t_eval[-1] :
+                    sol = self._calculate_positions([t_eval[-1], tau], sol.y[:, -1], force_args, solver_args)
+
                 # update the positions for the current time point
-                self._update_positions(sol.y[:,-1].reshape(-1, self.dim).tolist())
+                self._update_positions(sol.y[:, -1].reshape(-1, self.dim).tolist())
 
             # apply event if tau <= t_end
             if tau <= t_end:
@@ -65,9 +68,6 @@ class CBMSolver:
 
             # update current time t to min(tau, t_end)
             t = min(tau, t_end)
-
-        # save the last time point
-        self._save_data()
 
         return self.history
 
@@ -213,12 +213,12 @@ if __name__ == "__main__":
     dim = 1
     cbm_solver = CBMSolver(ff.linear, scpi.solve_ivp, dim)
     cell_list = [cl.Cell(0, [0]), cl.Cell(1, [1.0], 0.0, True)]
-    cell_list[0].division_time = 1.05  # make sure not to divide at t_data
-    cell_list[1].division_time = 1.05  # make sure not to divide at t_data
+    cell_list[0].division_time = 1.0  # make sure not to divide at t_data
+    cell_list[1].division_time = 1.0  # make sure not to divide at t_data
 
-    t_data = np.linspace(0, 10, 100)
+    t_data = np.linspace(0, 10, 101)
     history = cbm_solver.simulate(cell_list, t_data, {}, {})
 
-    assert len(history) == 100
+    assert len(history) == len(t_data)
 
 
