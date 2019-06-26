@@ -144,7 +144,7 @@ def test_apply_division():
     dim = 3
     cbm_solver = cbmos.CBMSolver(ff.linear, ef.solve_ivp, dim)
 
-    cell_list = [cl.Cell(i, [0, 0, i]) for i in range(5)]
+    cell_list = [cl.Cell(i, [0, 0, i], proliferating=True) for i in range(5)]
     for i, cell in enumerate(cell_list):
         cell.division_time = cell.ID
 
@@ -205,8 +205,8 @@ def test_two_events_at_once():
     dim = 1
     cbm_solver = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
-    cell_list[0].division_time = 1.05  # make sure not to divide at t_data
-    cell_list[1].division_time = 1.05  # make sure not to divide at t_data
+    cell_list[0].division_time = 1.05
+    cell_list[1].division_time = 1.05
 
     t_data = np.linspace(0, 10, 100)
     history = cbm_solver.simulate(cell_list, t_data, {}, {})
@@ -217,10 +217,34 @@ def test_event_at_t_data():
     dim = 1
     cbm_solver = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
-    cell_list[0].division_time = 1.0  # make sure not to divide at t_data
-    cell_list[1].division_time = 1.0  # make sure not to divide at t_data
+    cell_list[0].division_time = 1.0
+    cell_list[1].division_time = 1.0
 
     t_data = np.linspace(0, 10, 101)
     history = cbm_solver.simulate(cell_list, t_data, {}, {})
 
     assert len(history) == len(t_data)
+
+def test_no_division_skipped():
+
+    dim = 1
+    cbm_solver = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
+    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list[0].division_time = 1.0
+    cell_list[1].division_time = 1.0
+
+    t_data = np.linspace(0, 30, 101)
+    history = cbm_solver.simulate(cell_list, t_data, {}, {})
+
+    eq = [hq.heappop(cbm_solver.event_queue) for i in range(len(cbm_solver.event_queue))]
+    assert eq == sorted(eq)
+
+    assert len(eq) == len(history[-1]) - 1
+
+    for t, cells in zip(t_data, history):
+        for c in cells:
+            assert c.birthtime <= t
+            assert c.division_time > t
+
+
+

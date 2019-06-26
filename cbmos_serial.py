@@ -48,12 +48,14 @@ class CBMSolver:
                 # calculate positions until the last t_data smaller or equal to min(tau, t_end)
                 t_eval = [t] \
                     + [time for time in t_data if t < time <= min(tau, t_end)]
-                y0 = np.array([cell.position for cell in self.cell_list]).reshape(-1)
-                sol = self._calculate_positions(t_eval, y0, force_args, solver_args)
+                # only calculate positions if there is t_data before tau
+                if len(t_eval) > 1:
+                    y0 = np.array([cell.position for cell in self.cell_list]).reshape(-1)
+                    sol = self._calculate_positions(t_eval, y0, force_args, solver_args)
 
-                # save data for all t_data points passed
-                for y_t in sol.y[:, 1:].T:
-                    self._save_data(y_t.reshape(-1, self.dim))
+                    # save data for all t_data points passed
+                    for y_t in sol.y[:, 1:].T:
+                        self._save_data(y_t.reshape(-1, self.dim))
 
                 # continue the simulation until tau if necessary
                 if tau > t_eval[-1] :
@@ -221,20 +223,22 @@ if __name__ == "__main__":
     dim = 1
     cbm_solver = CBMSolver(ff.linear, scpi.solve_ivp, dim)
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
-    cell_list[0].division_time = 1.0  # make sure not to divide at t_data
-    cell_list[1].division_time = 1.0  # make sure not to divide at t_data
+    cell_list[0].division_time = 1.0
+    cell_list[1].division_time = 1.0
 
-    t_data = np.linspace(0, 10, 101)
+    t_data = np.linspace(0, 30, 101)
     history = cbm_solver.simulate(cell_list, t_data, {}, {})
+    print('Simulation done.')
 
-    assert len(history) == len(t_data)
+    eq = [hq.heappop(cbm_solver.event_queue) for i in range(len(cbm_solver.event_queue))]
+    assert eq == sorted(eq)
 
-    #try that we can continue
-    t_data_c = np.linspace(10, 30, 202)
-    history_c = cbm_solver.simulate(history[-1], t_data_c, {}, {})
+    assert len(eq) == len(history[-1]) - 1
 
-    assert len(history_c) == len(t_data_c)
-    assert len(history_c[-1]) == 6
+    for t, cells in zip(t_data, history):
+        for c in cells:
+            assert c.birthtime <= t
+            assert c.division_time > t
 
 
 
