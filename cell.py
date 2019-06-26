@@ -26,12 +26,13 @@ class Cell:
 
 
     """
-    def __init__(self, ID, position, birthtime=0.0, proliferating=False):
+    def __init__(self, ID, position, birthtime=0.0, proliferating=False, parent_ID=None):
         self.ID = ID
         self.position = np.array(position)
         self.birthtime = birthtime
         self.proliferating = proliferating
         self.division_time = self.generate_division_time()
+        self.parent_ID = parent_ID if parent_ID is not None else ID
 
     def __lt__(self, other):
         return self.division_time < other.division_time
