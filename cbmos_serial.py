@@ -78,13 +78,17 @@ class CBMSolver:
         self.history has to be instantiated before the first call to _save_data
         as an empty list.
         """
+        # copy correct positions to cell list that is stored
         if positions is not None:
-            self.history.append([cl.Cell(cell.ID, pos, cell.birthtime, cell.proliferating)
+            self.history.append([cl.Cell(
+                    cell.ID, pos, cell.birthtime, cell.proliferating,
+                    cell.division_time, cell.parent_ID)
                 for cell, pos in zip(self.cell_list, positions)])
         else:
-            self.history.append([cl.Cell(cell.ID, cell.position, cell.birthtime, cell.proliferating)
+            self.history.append([cl.Cell(
+                    cell.ID, cell.position, cell.birthtime, cell.proliferating,
+                    cell.division_time, cell.parent_ID)
                 for cell in self.cell_list])
-
 
     def _build_event_queue(self):
         events = [(cell.division_time, cell) for cell in self.cell_list]
@@ -120,7 +124,7 @@ class CBMSolver:
             0.5 * self.separation * division_direction
 
         daughter_cell = cl.Cell(
-                self.next_cell_index, position_daughter, tau, True)
+                self.next_cell_index, position_daughter, birthtime=tau, proliferating=True, parent_ID=cell.ID)
         self.next_cell_index = self.next_cell_index + 1
         self.cell_list.append(daughter_cell)
         self._update_event_queue(daughter_cell)
