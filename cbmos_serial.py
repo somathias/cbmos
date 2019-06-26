@@ -44,19 +44,20 @@ class CBMSolver:
             # generate next event
             tau, cell = self._get_next_event()
 
-            # calculate positions until time min(tau, t_end)
-            t_eval = [t] \
-                + [time for time in t_data if t < time < min(tau, t_end)] \
-                + [min(tau, t_end)]
-            y0 = np.array([cell.position for cell in self.cell_list]).reshape(-1)
-            sol = self._calculate_positions(t_eval, y0, force_args, solver_args)
+            if tau > t:
+                # calculate positions until time min(tau, t_end)
+                t_eval = [t] \
+                    + [time for time in t_data if t < time < min(tau, t_end)] \
+                    + [min(tau, t_end)]
+                y0 = np.array([cell.position for cell in self.cell_list]).reshape(-1)
+                sol = self._calculate_positions(t_eval, y0, force_args, solver_args)
 
-            # save data for all t_data points passed
-            for y_t in sol.y[:, 1:-1].T:
-                self._save_data(y_t.reshape(-1, self.dim))
+                # save data for all t_data points passed
+                for y_t in sol.y[:, 1:-1].T:
+                    self._save_data(y_t.reshape(-1, self.dim))
 
-            # update the positions for the current time point
-            self._update_positions(sol.y[:,-1].reshape(-1, self.dim).tolist())
+                # update the positions for the current time point
+                self._update_positions(sol.y[:,-1].reshape(-1, self.dim).tolist())
 
             # apply event if tau <= t_end
             if tau <= t_end:
@@ -212,6 +213,7 @@ if __name__ == "__main__":
     dim = 1
     cbm_solver = CBMSolver(ff.linear, scpi.solve_ivp, dim)
     cell_list = [cl.Cell(0, [0]), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list[0].division_time = 1.05  # make sure not to divide at t_data
     cell_list[1].division_time = 1.05  # make sure not to divide at t_data
 
     t_data = np.linspace(0, 10, 100)

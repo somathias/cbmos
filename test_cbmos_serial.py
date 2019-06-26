@@ -201,4 +201,14 @@ def test_simulate():
     assert np.isclose(abs(scells[0].position - scells[1].position), 1, atol=1e-03)
     assert np.isclose(abs(scells[1].position - scells[2].position), 1, atol=1e-03)
 
+def test_two_events_at_once():
+    dim = 1
+    cbm_solver = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
+    cell_list = [cl.Cell(0, [0]), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list[0].division_time = 1.05  # make sure not to divide at t_data
+    cell_list[1].division_time = 1.05  # make sure not to divide at t_data
 
+    t_data = np.linspace(0, 10, 100)
+    history = cbm_solver.simulate(cell_list, t_data, {}, {})
+
+    assert len(history) == 100
