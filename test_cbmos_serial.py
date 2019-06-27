@@ -246,5 +246,23 @@ def test_no_division_skipped():
             assert c.birthtime <= t
             assert c.division_time > t
 
+def test_cell_list_copied():
+
+    dim = 1
+    cbm_solver_one = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
+    cbm_solver_two = cbmos.CBMSolver(ff.logarithmic, scpi.solve_ivp, dim)
+
+    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
+    t_data = np.linspace(0, 1, 101)
+
+    history_one = cbm_solver_one.simulate(cell_list, t_data, {}, {})
+    history_two = cbm_solver_two.simulate(cell_list, t_data, {}, {})
+
+    assert history_two[0][0].position == np.array([0])
+    assert history_two[0][1].position == np.array([0.3])
+
+
+
+
 
 

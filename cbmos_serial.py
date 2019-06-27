@@ -30,9 +30,12 @@ class CBMSolver:
 
         t = t_data[0]
         t_end = t_data[-1]
-        self.next_cell_index = max(cell_list, key=lambda cell: cell.ID).ID + 1
+        self.cell_list = [cl.Cell(
+                            cell.ID, cell.position, cell.birthtime,
+                            cell.proliferating, cell.division_time,
+                            cell.parent_ID) for cell in cell_list]
 
-        self.cell_list = cell_list
+        self.next_cell_index = max(self.cell_list, key=lambda cell: cell.ID).ID + 1
         self.history = []
         self._save_data()
 
