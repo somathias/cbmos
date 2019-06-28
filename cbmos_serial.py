@@ -61,7 +61,7 @@ class CBMSolver:
                         self._save_data(y_t.reshape(-1, self.dim))
 
                 # continue the simulation until tau if necessary
-                if tau > t_eval[-1] :
+                if tau > t_eval[-1] and tau <=t_end:
                     sol = self._calculate_positions([t_eval[-1], tau], sol.y[:, -1], force_args, solver_args)
 
                 # update the positions for the current time point
@@ -225,23 +225,18 @@ if __name__ == "__main__":
 #
     dim = 1
     cbm_solver = CBMSolver(ff.linear, scpi.solve_ivp, dim)
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
-    cell_list[0].division_time = 1.0
-    cell_list[1].division_time = 1.0
+    cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [1.0], proliferating=False)]
 
     t_data = np.linspace(0, 30, 101)
-    history = cbm_solver.simulate(cell_list, t_data, {}, {})
+
+    wg.simplefilter("error", RuntimeWarning)
+
+    try:
+        history = cbm_solver.simulate(cell_list, t_data, {}, {})
+    except RuntimeWarning:
+        print('Caught RuntimeWarning')
     print('Simulation done.')
 
-    eq = [hq.heappop(cbm_solver.event_queue) for i in range(len(cbm_solver.event_queue))]
-    assert eq == sorted(eq)
-
-    assert len(eq) == len(history[-1]) - 1
-
-    for t, cells in zip(t_data, history):
-        for c in cells:
-            assert c.birthtime <= t
-            assert c.division_time > t
 
 
 
