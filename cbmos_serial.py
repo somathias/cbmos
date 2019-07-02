@@ -224,17 +224,14 @@ if __name__ == "__main__":
 #            cell_list2, t_data, {'s': 1.0, 'mu': 1.0, 'rA': 1.5}, {})
 #
     dim = 1
-    cbm_solver = CBMSolver(ff.linear, scpi.solve_ivp, dim)
-    cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [1.0], proliferating=False)]
+    cbm_solver_one = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
+    cbm_solver_two = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
 
-    t_data = np.linspace(0, 30, 101)
+    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
+    t_data = np.linspace(0, 1, 101)
 
-    wg.simplefilter("error", RuntimeWarning)
-
-    try:
-        history = cbm_solver.simulate(cell_list, t_data, {}, {})
-    except RuntimeWarning:
-        print('Caught RuntimeWarning')
+    history_one = cbm_solver_one.simulate(cell_list, t_data, {}, {})
+    history_two = cbm_solver_two.simulate(cell_list, t_data, {}, {})
     print('Simulation done.')
 
 

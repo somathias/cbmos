@@ -250,7 +250,7 @@ def test_cell_list_copied():
 
     dim = 1
     cbm_solver_one = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
-    cbm_solver_two = cbmos.CBMSolver(ff.logarithmic, scpi.solve_ivp, dim)
+    cbm_solver_two = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
 
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
     t_data = np.linspace(0, 1, 101)
