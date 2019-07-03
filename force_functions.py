@@ -160,6 +160,20 @@ def hard_core(r, mu=1.0, s=1.0, rN=0.3):
                     np.where(r < s, mu*(r-s)/(r-(s-2*rN)), 0.))
 
 
+def hertz(r, mu=1.0, s=1.0):
+    """
+    (Simplified) Hertz force law for elastic contact.
+
+    Parameters:
+      mu: coefficient, default 1.0
+      s: rest length, default 1.0
+
+    """
+    if r is None:
+        return 0.
+    return np.where(r < s, -mu*(s-r)**(3/2), 0.)
+
+
 if __name__ == "__main__":
 
 
