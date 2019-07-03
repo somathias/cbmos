@@ -125,8 +125,8 @@ def logarithmic(r, mu=1.0, s=1.0):
     """
     if r is None:
         return 0.
+    r[r==0] = 0.0001  # get away from zero - this is an awful hack!
     return np.where(r < s, mu*np.log(1+(r-s)), 0.)
-
 
 # linear-logarithmic
 def linear_logarithmic(r, mu=1.0, s=1.0):
@@ -162,23 +162,27 @@ def hard_core(r, mu=1.0, s=1.0, rN=0.3):
 
 if __name__ == "__main__":
 
-    x_vals = np.linspace(0.8, 2, 200)
 
-    plt.figure()
-    plt.plot(x_vals, linear(x_vals),
-             label='linear')
-    plt.plot(x_vals, linear_exponential(x_vals),
-             label='linear-exponential (f_max fitted, r_cut small)')
-    plt.plot(x_vals, morse(x_vals), label='Morse')
-    plt.plot(x_vals, lennard_jones(x_vals), label='LJ')
-    plt.plot(x_vals, cubic(x_vals), label='cubic')
-    plt.plot(x_vals, piecewise_polynomial(x_vals),
-             label='polynomial, n=1 ($\mu_A/\mu_R$ fixed, f_max fitted)')
-    plt.plot((1.5, 1.5), (-0.5, 1.5), linestyle='-', color='grey', alpha=0.5)
-    plt.text(1.525, -0.35, 'maximum adhesive distance', color='grey')
-    plt.plot(1.0, 0.0, linestyle='', marker='o', color='grey')
-    plt.text(0.8350, -0.25, 'rest length', color='grey')
-    plt.ylim((-2.5, 2.5))
-    plt.xlabel('Cell-cell distance in cell diameters')
-    plt.ylabel('Force intensity F')
-    plt.legend()
+
+    x_vals = np.linspace(0.0, 2, 200)
+
+    print(logarithmic(x_vals))
+#
+#    plt.figure()
+#    plt.plot(x_vals, linear(x_vals),
+#             label='linear')
+#    plt.plot(x_vals, linear_exponential(x_vals),
+#             label='linear-exponential (f_max fitted, r_cut small)')
+#    plt.plot(x_vals, morse(x_vals), label='Morse')
+#    plt.plot(x_vals, lennard_jones(x_vals), label='LJ')
+#    plt.plot(x_vals, cubic(x_vals), label='cubic')
+#    plt.plot(x_vals, piecewise_polynomial(x_vals),
+#             label='polynomial, n=1 ($\mu_A/\mu_R$ fixed, f_max fitted)')
+#    plt.plot((1.5, 1.5), (-0.5, 1.5), linestyle='-', color='grey', alpha=0.5)
+#    plt.text(1.525, -0.35, 'maximum adhesive distance', color='grey')
+#    plt.plot(1.0, 0.0, linestyle='', marker='o', color='grey')
+#    plt.text(0.8350, -0.25, 'rest length', color='grey')
+#    plt.ylim((-2.5, 2.5))
+#    plt.xlabel('Cell-cell distance in cell diameters')
+#    plt.ylabel('Force intensity F')
+#    plt.legend()

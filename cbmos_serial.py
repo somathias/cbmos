@@ -207,31 +207,20 @@ class CBMSolver:
 
 
 if __name__ == "__main__":
-#
-#    cbm_solver = CBMSolver(ff.cubic, ef.solve_ivp)
-#
-#    # three non-proliferating cells at rest
-#    cell_list = [cl.Cell(i, np.array([0, 0, i])) for i in [0, 1, 2]]
-#    t_data = np.linspace(0, 5, 10)
-#
-#    updated_cell_list = cbm_solver.simulate(
-#            cell_list, t_data, {'s': 1.0, 'mu': 1.0, 'rA': 1.5}, {})
-#
-#    # three non-proliferating cells at rest
-#    cell_list2 = [cl.Cell(i, np.array([0, 0, i]), -21.0, True) for i in [0, 1, 2]]
-#
-#    updated_cell_list2 = cbm_solver.simulate(
-#            cell_list2, t_data, {'s': 1.0, 'mu': 1.0, 'rA': 1.5}, {})
-#
+
     dim = 1
-    cbm_solver_one = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
-    cbm_solver_two = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
+    cbm_solver = CBMSolver(ff.logarithmic, ef.solve_ivp, dim)
 
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
     t_data = np.linspace(0, 1, 101)
 
-    history_one = cbm_solver_one.simulate(cell_list, t_data, {}, {})
-    history_two = cbm_solver_two.simulate(cell_list, t_data, {}, {})
+
+    wg.simplefilter("error", RuntimeWarning)
+
+    try:
+        history = cbm_solver.simulate(cell_list, t_data, {}, {})
+    except RuntimeWarning:
+        print('Caught RuntimeWarning.')
     print('Simulation done.')
 
 
