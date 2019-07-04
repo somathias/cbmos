@@ -171,16 +171,19 @@ def hertz(r, mu=1.0, s=1.0):
     """
     if r is None:
         return 0.
-    return np.where(r < s, -mu*(s-r)**(3/2), 0.)
+    return np.where(r < s, mu*np.sign(r-s)*(np.abs(r-s))**(3/2), 0.)
 
 
 if __name__ == "__main__":
 
 
 
-    x_vals = np.linspace(0.0, 2, 200)
+    x_vals = np.linspace(0.0, 1.8, 200)
 
-    print(logarithmic(x_vals))
+    print(hertz(x_vals))
+
+    plt.figure()
+    plt.plot(x_vals, hertz(x_vals), label='hertz')
 #
 #    plt.figure()
 #    plt.plot(x_vals, linear(x_vals),
