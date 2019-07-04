@@ -173,6 +173,23 @@ def hertz(r, mu=1.0, s=1.0):
         return 0.
     return np.where(r < s, mu*np.sign(r-s)*(np.abs(r-s))**(3/2), 0.)
 
+def gls(r, mu=1.0, s=1.0, a=5.0, rA=1.5):
+    """
+    Generalized linear spring using logarithmic for repulsion and linear-
+    exponential for adhesion.
+
+    Parameters:
+      mu: coefficient, default 1.0
+      s: rest length, default 1.0
+      a: controls the bredth of the potential, default 1.0
+      rA: maximum interaction distance (cutoff value), default 1.5
+
+    """
+    if r is None:
+        return 0.
+    r[r==0] = 0.0001  # get away from zero - this is an awful hack! Plus it does not allow for single value evaluation
+    return np.where(r < s, mu*np.log(1+(r-s)), np.where(r < rA, mu*(r-s)*np.exp(-a*(r-s)), 0))
+
 
 if __name__ == "__main__":
 
