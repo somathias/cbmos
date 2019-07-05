@@ -21,5 +21,12 @@ def test_y_shape():
 
     sol = ef.solve_ivp(func, t_span, y0)
 
-    assert len(sol.t) == 100
-    assert sol.y.shape == (2, 100)
+    assert len(sol.t) == 101
+    assert sol.y.shape == (2, 101)
+
+def test_t_eval():
+    t_eval = np.linspace(0,1,10)
+    y0 = np.array([1, -1])
+
+    sol = ef.solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=t_eval)
+    assert len(sol.t) == len(t_eval)
