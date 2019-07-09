@@ -41,7 +41,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01):
                 ts.append(t)
                 ys.append(y)
                 i += 1
-            if t > t_eval[i]:
+            elif t > t_eval[i]:
                 yint = yp + (t_eval[i]-tp)*(y-yp)/(t-tp)
                 ts.append(t_eval[i])
                 ys.append(yint)
