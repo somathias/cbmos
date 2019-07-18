@@ -37,15 +37,16 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01):
         t = t + dt
 
         if t_eval is not None:
-            if t == t_eval[i]:
-                ts.append(t)
-                ys.append(y)
-                i += 1
-            elif t > t_eval[i]:
-                yint = yp + (t_eval[i]-tp)*(y-yp)/(t-tp)
-                ts.append(t_eval[i])
-                ys.append(yint)
-                i += 1
+            while i < len(t_eval) and t >= t_eval[i]:
+                if t == t_eval[i]:
+                    ts.append(t)
+                    ys.append(y)
+                    i += 1
+                elif t > t_eval[i]:
+                    yint = yp + (t_eval[i]-tp)*(y-yp)/(t-tp)
+                    ts.append(t_eval[i])
+                    ys.append(yint)
+                    i += 1
             tp = t
             yp = y
         else:

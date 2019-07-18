@@ -261,7 +261,22 @@ def test_cell_list_copied():
     assert history_two[0][0].position == np.array([0])
     assert history_two[0][1].position == np.array([0.3])
 
+def test_tdata():
+    n = 100
 
+    s = 1.0    # rest length
+    tf = 1.0  # final time
+    rA = 1.5   # maximum interaction distance
+
+    params_cubic = {"mu": 6.91, "s": s, "rA": rA}
+
+    solver_ef = cbmos.CBMSolver(ff.cubic, ef.solve_ivp, 1)
+    t_data = np.linspace(0,1, n)
+    cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [0.3], proliferating=False)]
+    sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03})
+    y = np.array([np.squeeze([clt[0].position, clt[1].position]) for clt in sols])
+
+    assert y.shape == (n, 2)
 
 
 
