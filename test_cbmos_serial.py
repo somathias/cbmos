@@ -278,6 +278,11 @@ def test_tdata():
 
     assert y.shape == (n, 2)
 
-
-
-
+def test_sparse_tdata():
+    dim = 3
+    solver_cubic = cbmos.CBMSolver(ff.cubic, ef.solve_ivp, dim)
+    ancestor = [cl.Cell(0, np.zeros((dim,)), -5, True)]
+    dt = 0.1
+    t_f = 50
+    t_data = np.linspace(0, t_f, 2) 
+    tumor_cubic = solver_cubic.simulate(ancestor, t_data, {"mu":6.91}, {"dt":dt})

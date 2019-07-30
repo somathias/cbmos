@@ -51,9 +51,9 @@ class CBMSolver:
                 # calculate positions until the last t_data smaller or equal to min(tau, t_end)
                 t_eval = [t] \
                     + [time for time in t_data if t < time <= min(tau, t_end)]
+                y0 = np.array([cell.position for cell in self.cell_list]).reshape(-1)
                 # only calculate positions if there is t_data before tau
                 if len(t_eval) > 1:
-                    y0 = np.array([cell.position for cell in self.cell_list]).reshape(-1)
                     sol = self._calculate_positions(t_eval, y0, force_args, solver_args)
 
                     # save data for all t_data points passed
@@ -62,7 +62,8 @@ class CBMSolver:
 
                 # continue the simulation until tau if necessary
                 if tau > t_eval[-1] and tau <=t_end:
-                    sol = self._calculate_positions([t_eval[-1], tau], sol.y[:, -1], force_args, solver_args)
+                    y0 = sol.y[:, -1] if len(t_eval) > 1 else y0
+                    sol = self._calculate_positions([t_eval[-1], tau], y0, force_args, solver_args)
 
                 # update the positions for the current time point
                 self._update_positions(sol.y[:, -1].reshape(-1, self.dim).tolist())
