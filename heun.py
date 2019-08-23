@@ -22,15 +22,8 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01):
     ts = [t]
     ys = [y]
 
-    # start with 1 Euler forward step
-    t = t + dt
-    y = y0 + dt*fun(t,y)
-
-    ts.append(t)
-    ys.append(y)
-
     while t < tf:
-        y = y + dt/2.0*(3*fun(t,y)-fun(ts[-1], ys[-1]))
+        y = y + dt/2.0*(fun(t, y) + fun(t + dt, y + dt*fun(t,y)))
         t = t + dt
 
         ts.append(t)

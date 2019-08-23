@@ -22,7 +22,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01):
     ts = [t]
     ys = [y]
 
-    while t + dt <= tf:
+    while t < tf:
         y = y + dt*fun(t+dt/2.0, y + dt/2.0*fun(t,y))
         t = t + dt
 
@@ -30,7 +30,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01):
         ys.append(y)
 
     ts = np.hstack(ts)
-    ys = np.hstack(ys)
+    ys = np.vstack(ys).T
 
     return OdeResult(t=ts, y=ys)
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     sol = solve_ivp(func, t_span, y0 )
 
     plt.figure()
-    plt.plot(sol.t, sol.y)
+    plt.plot(sol.t, sol.y.T)
 
 
 
