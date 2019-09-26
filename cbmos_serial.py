@@ -3,6 +3,7 @@ import numpy.random as npr
 import scipy.integrate as scpi
 import heapq as hq
 import warnings as wg
+import logging
 
 import force_functions as ff
 import euler_forward as ef
@@ -29,6 +30,8 @@ class CBMSolver:
         """
 
         npr.seed(seed)
+
+        logging.debug("Starting new simulation")
 
         t = t_data[0]
         t_end = t_data[-1]
@@ -140,6 +143,9 @@ class CBMSolver:
         cell.position = updated_position_parent
         cell.division_time = cell.generate_division_time(tau)
         self._update_event_queue(cell)
+
+        logging.debug("Division event: t={}, direction={}".format(
+            tau, division_direction))
 
     def _get_division_direction(self):
 

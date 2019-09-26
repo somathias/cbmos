@@ -11,11 +11,15 @@ import pytest
 import numpy as np
 import cbmos_serial as cbmos
 import scipy.integrate as scpi
+import logging
+import io
 
 import force_functions as ff
 import euler_forward as ef
 import heapq as hq
 import cell as cl
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.fixture
@@ -300,3 +304,22 @@ def test_seed():
     for cells in zip(*[history[-1] for history in histories]):
         assert cells[0].position.tolist() == cells[1].position.tolist()
         assert cells[0].position.tolist() != cells[2].position.tolist()
+
+def test_seed_division_time():
+    logger = logging.getLogger()
+    logs = io.StringIO()
+    logger.addHandler(logging.StreamHandler(logs))
+
+    dim = 3
+    cbm_solver = cbmos.CBMSolver(ff.logarithmic, ef.solve_ivp, dim)
+
+    cell_list = [cl.Cell(0, [0, 0, 0], proliferating=True)]
+    t_data = np.linspace(0, 100, 10)
+
+    history = [
+            cbm_solver.simulate(cell_list, t_data, {}, {}, seed=seed)
+            for seed in [0, 0, 1]]
+
+    division_times = logs.getvalue().split("Starting new simulation\n")[1:]
+    assert division_times[0] == division_times[1]
+    assert division_times[0] != division_times[2]
