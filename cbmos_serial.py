@@ -18,7 +18,7 @@ class CBMSolver:
         self.dim = dimension
         self.separation = separation
 
-    def simulate(self, cell_list, t_data, force_args, solver_args):
+    def simulate(self, cell_list, t_data, force_args, solver_args, seed=None):
         """
 
         Note
@@ -27,6 +27,8 @@ class CBMSolver:
         Cell indices need to be unique for the whole duration of the simulation.
 
         """
+
+        npr.seed(seed)
 
         t = t_data[0]
         t_end = t_data[-1]
