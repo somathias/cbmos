@@ -286,3 +286,19 @@ def test_sparse_tdata():
     t_f = 50
     t_data = np.linspace(0, t_f, 2) 
     tumor_cubic = solver_cubic.simulate(ancestor, t_data, {"mu":6.91}, {"dt":dt})
+
+def test_seed():
+    dim = 3
+    cbm_solver = cbmos.CBMSolver(ff.logarithmic, ef.solve_ivp, dim)
+
+    cell_list = [cl.Cell(0, [0, 0, 0], proliferating=True)]
+    t_data = np.linspace(0, 100, 10)
+    history_a, history_b = [
+            cbm_solver.simulate(cell_list, t_data, {}, {}, seed=0)
+            for _ in range(2)]
+    history_c = cbm_solver.simulate(cell_list, t_data, {}, {}, seed=1)
+
+    for (cell_a, cell_b, cell_c) in zip(
+            history_a[-1], history_b[-1], history_c[-1]):
+        assert cell_a.position.tolist() == cell_b.position.tolist()
+        assert cell_a.position.tolist() != cell_c.position.tolist()
