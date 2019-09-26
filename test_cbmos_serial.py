@@ -324,3 +324,13 @@ def test_seed_division_time():
     division_times = logs.getvalue().split("Starting new simulation\n")[1:]
     assert division_times[0] == division_times[1]
     assert division_times[0] != division_times[2]
+
+def test_cell_dimension():
+    dim = 3
+    cbm_solver = cbmos.CBMSolver(ff.logarithmic, ef.solve_ivp, dim)
+
+    cell_list = [cl.Cell(0, [0, 0], proliferating=True)]
+    t_data = np.linspace(0, 100, 10)
+
+    with pytest.raises(AssertionError):
+        cbm_solver.simulate(cell_list, t_data, {}, {})

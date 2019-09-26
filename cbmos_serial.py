@@ -31,6 +31,9 @@ class CBMSolver:
 
         npr.seed(seed)
 
+        for cell in cell_list:
+                assert len(cell.position) == self.dim
+
         logging.debug("Starting new simulation")
 
         t = t_data[0]
