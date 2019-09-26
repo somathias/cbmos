@@ -14,15 +14,15 @@ def test_parameters():
     position = [17.4]
     birthtime = 0.45
     proliferating = True
-    division_time = 5.89
+    division_time_generator = lambda t: 3
     parent_ID = 5
 
-    cell = cl.Cell(ID, position, birthtime, proliferating, division_time,
-                   parent_ID)
+    cell = cl.Cell(ID, position, birthtime, proliferating, division_time_generator,
+                   None, parent_ID)
 
     assert cell.ID == ID
     assert cell.position == position
     assert cell.birthtime == birthtime
     assert cell.proliferating == proliferating
-    assert cell.division_time == division_time
+    assert cell.division_time == division_time_generator(birthtime)
     assert cell.parent_ID == parent_ID

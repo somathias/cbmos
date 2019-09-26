@@ -38,10 +38,12 @@ class CBMSolver:
 
         t = t_data[0]
         t_end = t_data[-1]
-        self.cell_list = [cl.Cell(
-                            cell.ID, cell.position, cell.birthtime,
-                            cell.proliferating, cell.division_time,
-                            cell.parent_ID) for cell in cell_list]
+        self.cell_list = [
+                cl.Cell(
+                    cell.ID, cell.position, cell.birthtime,
+                    cell.proliferating, cell.generate_division_time,
+                    cell.division_time, cell.parent_ID)
+                for cell in cell_list]
 
         self.next_cell_index = max(self.cell_list, key=lambda cell: cell.ID).ID + 1
         self.history = []
@@ -96,12 +98,14 @@ class CBMSolver:
         if positions is not None:
             self.history.append([cl.Cell(
                     cell.ID, pos, cell.birthtime, cell.proliferating,
-                    cell.division_time, cell.parent_ID)
+                    cell.generate_division_time, cell.division_time,
+                    cell.parent_ID)
                 for cell, pos in zip(self.cell_list, positions)])
         else:
             self.history.append([cl.Cell(
                     cell.ID, cell.position, cell.birthtime, cell.proliferating,
-                    cell.division_time, cell.parent_ID)
+                    cell.generate_division_time, cell.division_time,
+                    cell.parent_ID)
                 for cell in self.cell_list])
 
     def _build_event_queue(self):
@@ -138,7 +142,10 @@ class CBMSolver:
             0.5 * self.separation * division_direction
 
         daughter_cell = cl.Cell(
-                self.next_cell_index, position_daughter, birthtime=tau, proliferating=True, parent_ID=cell.ID)
+                self.next_cell_index, position_daughter, birthtime=tau,
+                proliferating=True,
+                division_time_generator=cell.generate_division_time,
+                parent_ID=cell.ID)
         self.next_cell_index = self.next_cell_index + 1
         self.cell_list.append(daughter_cell)
         self._update_event_queue(daughter_cell)

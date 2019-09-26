@@ -9,6 +9,7 @@ Unit tests of the CBM solver
 """
 import pytest
 import numpy as np
+import numpy.random as npr
 import cbmos_serial as cbmos
 import scipy.integrate as scpi
 import logging
@@ -115,7 +116,15 @@ def test_update_event_queue():
 def test_get_next_event():
     solver = cbmos.CBMSolver(lambda r: 0., scpi.solve_ivp)
 
-    cell_list = [cl.Cell(i, np.array([0, 0, i]), 0.0, True) for i in [0, 1, 2]]
+    cell_list = [
+            cl.Cell(
+                ID=i,
+                position=np.array([0, 0, i]),
+                birthtime=0.0,
+                proliferating=True,
+                division_time_generator=lambda t: npr.normal(24 + t)
+                )
+            for i in [0, 1, 2]]
     solver.cell_list = cell_list
     solver._build_event_queue()
     assert len(solver.event_queue) == 3
