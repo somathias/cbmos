@@ -299,11 +299,12 @@ def test_seed():
     t_data = np.linspace(0, 100, 10)
     histories = [
             cbm_solver.simulate(cell_list, t_data, {}, {}, seed=seed)
-            for seed in [0, 0, 1]]
+            for seed in [0, 0, 1, None, None]]
 
     for cells in zip(*[history[-1] for history in histories]):
         assert cells[0].position.tolist() == cells[1].position.tolist()
         assert cells[0].position.tolist() != cells[2].position.tolist()
+        assert cells[3].position.tolist() != cells[4].position.tolist()
 
 def test_seed_division_time():
     logger = logging.getLogger()
