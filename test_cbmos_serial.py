@@ -334,7 +334,7 @@ def test_seed_division_time():
     assert division_times[0] == division_times[1]
     assert division_times[0] != division_times[2]
 
-def test_cell_dimension():
+def test_cell_dimension_exception():
     dim = 3
     cbm_solver = cbmos.CBMSolver(ff.logarithmic, ef.solve_ivp, dim)
 
