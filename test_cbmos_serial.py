@@ -14,6 +14,7 @@ import cbmos_serial as cbmos
 import scipy.integrate as scpi
 import logging
 import io
+import parse
 
 import force_functions as ff
 import euler_forward as ef
@@ -343,3 +344,19 @@ def test_cell_dimension_exception():
 
     with pytest.raises(AssertionError):
         cbm_solver.simulate(cell_list, t_data, {}, {})
+
+def test_cell_birth():
+    logger = logging.getLogger()
+    logs = io.StringIO()
+    logger.addHandler(logging.StreamHandler(logs))
+
+    dim = 2
+    cbm_solver = cbmos.CBMSolver(ff.cubic, ef.solve_ivp, dim)
+
+    cell_list = [cl.Cell(0, [0, 0], -5.5, True, division_time_generator = lambda t: 6 + t )]
+    t_data = np.linspace(0, 1, 10)
+
+    cbm_solver.simulate(cell_list, t_data, {}, {})
+
+    division_times = logs.getvalue()
+    assert parse.search("Division event: t={:f}", division_times)[0] == 0.5
