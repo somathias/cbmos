@@ -298,8 +298,9 @@ def test_sparse_tdata():
     ancestor = [cl.Cell(0, np.zeros((dim,)), -5, True)]
     dt = 0.1
     t_f = 50
-    t_data = np.linspace(0, t_f, 2) 
+    t_data = np.linspace(0, t_f, 2)
     tumor_cubic = solver_cubic.simulate(ancestor, t_data, {"mu":6.91}, {"dt":dt})
+
 
 def test_seed():
     dim = 3
@@ -315,6 +316,7 @@ def test_seed():
         assert cells[0].position.tolist() == cells[1].position.tolist()
         assert cells[0].position.tolist() != cells[2].position.tolist()
         assert cells[3].position.tolist() != cells[4].position.tolist()
+
 
 def test_seed_division_time():
     logger = logging.getLogger()
@@ -335,6 +337,7 @@ def test_seed_division_time():
     assert division_times[0] == division_times[1]
     assert division_times[0] != division_times[2]
 
+
 def test_cell_dimension_exception():
     dim = 3
     cbm_solver = cbmos.CBMSolver(ff.logarithmic, ef.solve_ivp, dim)
@@ -345,6 +348,7 @@ def test_cell_dimension_exception():
     with pytest.raises(AssertionError):
         cbm_solver.simulate(cell_list, t_data, {}, {})
 
+
 def test_cell_birth():
     logger = logging.getLogger()
     logs = io.StringIO()
@@ -353,10 +357,42 @@ def test_cell_birth():
     dim = 2
     cbm_solver = cbmos.CBMSolver(ff.cubic, ef.solve_ivp, dim)
 
-    cell_list = [cl.Cell(0, [0, 0], -5.5, True, division_time_generator = lambda t: 6 + t )]
+    cell_list = [
+                cl.Cell(0, [0, 0], -5.5, True,
+                        division_time_generator=lambda t: 6 + t)]
     t_data = np.linspace(0, 1, 10)
 
     cbm_solver.simulate(cell_list, t_data, {}, {})
 
     division_times = logs.getvalue()
     assert parse.search("Division event: t={:f}", division_times)[0] == 0.5
+
+
+def test_cell_list_order():
+    # 2D honeycomb mesh
+    n_x = 5
+    n_y = 5
+    xcrds = [(2 * i + (j % 2)) * 0.5 for j in range(n_y) for i in range(n_x)]
+    ycrds = [np.sqrt(3) * j * 0.5 for j in range(n_y) for i in range(n_x)]
+
+    # make cell_list for the sheet
+    sheet = [
+            cl.Cell(i, [x, y], -6.0, True, lambda t: 6 + t)
+            for i, x, y in zip(range(n_x*n_y), xcrds, ycrds)]
+    # delete cells to make it circular
+    del sheet[24]
+    del sheet[20]
+    del sheet[19]
+    del sheet[9]
+    del sheet[4]
+    del sheet[0]
+
+    solver = cbmos.CBMSolver(ff.cubic, ef.solve_ivp, 2)
+    dt = 0.01
+    t_data = np.arange(0, 3, dt)
+
+    history = solver.simulate(sheet, t_data, {"mu": 6.91}, {'dt': dt}, seed=17)
+    history = history[1:]  # delete initial data because that's less cells
+
+    ids = [cell.ID for cell in history[0]]
+    assert np.all([ids == [cell.ID for cell in clt] for clt in history[1:]])
