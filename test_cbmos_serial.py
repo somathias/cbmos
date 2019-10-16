@@ -15,6 +15,7 @@ import scipy.integrate as scpi
 import logging
 import io
 import parse
+import os
 
 import force_functions as ff
 import euler_forward as ef
@@ -396,3 +397,17 @@ def test_cell_list_order():
 
     ids = [cell.ID for cell in history[0]]
     assert np.all([ids == [cell.ID for cell in clt] for clt in history[1:]])
+
+def test_consistency_ts_history_length():
+
+    cell_list = [cl.Cell(0, [0], -6.0, True, lambda t: 6 + t)]
+    t_data = np.linspace(0, 37.0, 100)
+    solver = cbmos.CBMSolver(ff.cubic, ef.solve_ivp, 1)
+
+    os.remove('step_sizes.txt')
+    os.remove('time_points.txt')
+    history = solver.simulate(cell_list, t_data, {}, {})
+
+    ts = np.loadtxt('time_points.txt')
+    assert len(ts) == len(history)
+
