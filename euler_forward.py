@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 plt.style.use('seaborn')
 
 
-def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01):
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''):
 
 
     t0, tf = float(t_span[0]), float(t_span[-1])
@@ -79,9 +79,9 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01):
     dts = np.hstack(dts)
 #    print('len(dts) '+ str(len(dts)))
 
-    with open('time_points.txt', 'ab') as f:
+    with open('time_points'+out+'.txt', 'ab') as f:
         np.savetxt(f, ts[1:])
-    with open('step_sizes.txt', 'ab') as f:
+    with open('step_sizes'+out+'.txt', 'ab') as f:
         np.savetxt(f, dts)
 
     return OdeResult(t=ts, y=ys)
