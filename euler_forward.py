@@ -13,7 +13,7 @@ import copy
 plt.style.use('seaborn')
 
 
-def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, local_adaptivity=False, p=0.1):
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out='', local_adaptivity=False, p=0.1):
 
 
     t0, tf = float(t_span[0]), float(t_span[-1])
@@ -102,11 +102,11 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, local_
     dts_local = np.hstack(dts_local)
 
 
-    with open('time_points.txt', 'ab') as f:
+    with open('time_points'+out+'.txt', 'ab') as f:
         np.savetxt(f, ts[1:])
-    with open('step_sizes.txt', 'ab') as f:
+    with open('step_sizes'+out+'.txt', 'ab') as f:
         np.savetxt(f, dts)
-    with open('step_sizes_local.txt', 'ab') as f:
+    with open('step_sizes_local'+out+'.txt', 'ab') as f:
         np.savetxt(f, dts_local)
 
     return OdeResult(t=ts, y=ys)
