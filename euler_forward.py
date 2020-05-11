@@ -42,7 +42,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
             F = fun(t,y)
             norm_AF = np.linalg.norm(1/eta*(fun(t, y + eta * F) - F), np.inf)
             #print('AF'+ str(AF))
-            dt = 2*eps/norm_AF if norm_AF > 0.0 else tf - t
+            dt = np.sqrt(2*eps/norm_AF) if norm_AF > 0.0 else tf - t
             #print('dt' + str(dt))
 
             y = y + dt*F
