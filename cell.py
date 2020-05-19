@@ -25,6 +25,11 @@ class Cell:
     division_time : float -> float
         function that takes the current time to generate the absolute next
         division time.
+        
+    NOTE: One should always use the constructor to access member variables, 
+    in order to ensure correct behavior. Eg. it is not possible to set the 
+    proliferating flag outside of the constructor because the division time 
+    would not be updated in that case.
 
 
     """
