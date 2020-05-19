@@ -75,6 +75,10 @@ class CBMSolver:
                     y0 = sol.y[:, -1] if len(t_eval) > 1 else y0
                     sol = self._calculate_positions([t_eval[-1], tau], y0, force_args, solver_args)
 
+                    # save data for all t_data points passed
+                    for y_t in sol.y[:, 1:].T:
+                        self._save_data(y_t.reshape(-1, self.dim))
+
                 # update the positions for the current time point
                 self._update_positions(sol.y[:, -1].reshape(-1, self.dim).tolist())
 
