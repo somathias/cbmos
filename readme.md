@@ -2,7 +2,9 @@
 
 ## Code structure
 
-The *master* branch has the currently stable version of the code.
+The *master* branch has the currently stable version of the code - with EF handling t_eval.
+
+The *EF_for_benchmarks* branch has the currently stable version of the code - without EF handling t_eval, but with global adaptivity.
 
 The main solver is found in cbmos_serial.py. Check it's __main__ function for an example on how to use it. All other file names aim to be self-explanatory. 
 
@@ -16,8 +18,7 @@ automatically found by pytest (https://docs.pytest.org/en/latest/goodpractices.h
 
 Branches implementing new features should start with *dev-*. Currently we have 
 
- - *dev-ode_solvers*: implementing several explicit solvers
- - *dev-proliferation*: currently merged with master. Might use it in the future for more features or we might delete it.
+ - *dev-local_adaptivity*: started implementing local adaptivity
  - *force_functions*: started work on implementing the derivatives needed for implicit solvers
 
 ## Experiments
