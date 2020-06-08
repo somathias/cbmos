@@ -13,7 +13,7 @@ import copy
 plt.style.use('seaborn')
 
 
-def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out='', local_adaptivity=False, p=0.1):
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out='', local_adaptivity=False, m0=2, m1=2):
 
 
     t0, tf = float(t_span[0]), float(t_span[-1])
@@ -36,45 +36,67 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
     dts_local = []
 
     adaptive_dt = True if dt is None else False
-
-    while t < tf :
+    while t < tf:
 
         y = copy.deepcopy(y)
 
         if len(y0) > 1 and local_adaptivity:
             # choose time step adaptively locally (if we have a system of eqs)
-            F = fun(t,y)
-            AF = 1/eta*(fun(t, y + eta * F) - F)
+            F = fun(t, y)
+            af = 1/eta*(fun(t, y + eta * F) - F)
             # sort the indices such that AF(inds) is decreasing
-            inds = np.argsort(-abs(AF))
-            n_K0 = int(np.ceil(p*len(y0)))
-            eta_0 = np.max(np.abs(AF[inds[:n_K0]]))
-            eta_1 = np.max(np.abs(AF[inds[n_K0:]]))
-            m = int(np.floor(eta_0/eta_1))
+            inds = np.argsort(-abs(af))
+            # find largest eta_k
+            Xi_0 = af[inds[0]]
+            # calculate time steps for different levels
+            dt_0 = np.sqrt(2*eps / (m0*m1*Xi_0))
+            dt_1 = m0*dt_0
+            dt_2 = m1*dt_1
+            # calculate corresponding maximum eta for each level
+            Xi_1 = 2*eps/(m1*dt_1**2)
+            Xi_2 = 2*eps/(dt_2**2)
+            # find corresponding indices
+            min_ind_1 = np.argmin(af[inds] >= Xi_1)
+            min_ind_2 = np.argmin(af[inds] >= Xi_2)
 
-            dt_0 = np.sqrt(2*eps*eta_1)/eta_0
-            dt = m*dt_0
+            if min_ind_2 < len(y0):
+                # three levels
+                for i in range(m1):
 
-            # advance equations in K\K0 with large timestep
-            y[inds[n_K0:]] = y[inds[n_K0:]] + dt*F[inds[n_K0:]]
-            # advance equations in K0 with several small timesteps
-            for i in range(m):
-                F = fun(t+i*dt_0, y)
-                y[inds[:n_K0]] = y[inds[:n_K0]] + dt_0*F[inds[:n_K0]]
+                    for j in range(m0):
+                        y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+                        dts_local.append(dt_0)
 
-                dts_local.append(dt_0)
+                    y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
 
+                y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
+
+                dt = dt_2
+            elif min_ind_1 < len(y0):
+                # two levels
+                for i in range(m0):
+                    y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+                    dts_local.append(dt_0)
+
+                y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
+
+                dt = dt_1
+
+            else:
+                # single level
+                y = y + dt_0*F
+                dt = dt_0
 
         elif adaptive_dt:
             # choose time step adaptively
-            F = fun(t,y)
+            F = fun(t, y)
             norm_AF = np.linalg.norm(1/eta*(fun(t, y + eta * F) - F), np.inf)
             dt = np.sqrt(2*eps/norm_AF) if norm_AF > 0.0 else tf - t
 
             y = y + dt*F
 
         else:
-            y = y + dt*fun(t,y)
+            y = y + dt*fun(t, y)
 
         t = t + dt
 
