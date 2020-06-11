@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 plt.style.use('seaborn')
 
 
-def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''):
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out='', write_to_file=False):
 
 
     t0, tf = float(t_span[0]), float(t_span[-1])
@@ -34,7 +34,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
     dts = []
 
     adaptive_dt = True if dt is None else False
-    
+
 
     while t < tf :
 
@@ -42,12 +42,12 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
             # choose time step adaptively
             F = fun(t,y)
             AF = 1/eta*(fun(t, y + eta * F) - F)
-            
+
             #print(np.abs(AF))
-            
-            with open('AFs'+out+'.txt', 'ab') as f:
-                np.savetxt(f, np.abs(AF).reshape((1, -1)))
-            
+            if write_to_file:
+                with open('AFs'+out+'.txt', 'ab') as f:
+                    np.savetxt(f, np.abs(AF).reshape((1, -1)))
+
             norm_AF = np.linalg.norm(AF, np.inf)
             #print('AF'+ str(AF))
             dt = np.sqrt(2*eps/norm_AF) if norm_AF > 0.0 else tf - t
@@ -87,10 +87,11 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
     dts = np.hstack(dts)
 #    print('len(dts) '+ str(len(dts)))
 
-    with open('time_points'+out+'.txt', 'ab') as f:
-        np.savetxt(f, ts[1:])
-    with open('step_sizes'+out+'.txt', 'ab') as f:
-        np.savetxt(f, dts)
+    if write_to_file :
+        with open('time_points'+out+'.txt', 'ab') as f:
+            np.savetxt(f, ts[1:])
+        with open('step_sizes'+out+'.txt', 'ab') as f:
+            np.savetxt(f, dts)
 
     return OdeResult(t=ts, y=ys)
 
@@ -112,12 +113,12 @@ if __name__ == "__main__":
     t_eval = np.linspace(0,1,10)
     y0 = np.array([1])
 
-    sol = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, dt=0.01, eps=0.001 )
+    sol = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, dt=0.01, write_to_file=True)
     plt.figure()
     plt.plot(sol.t, sol.y.T)
     plt.plot(sol.t, sol.y.T, '.', color='black')
 
-    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.001 )
+    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.001 , write_to_file=True)
     plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*', color='red')
 
