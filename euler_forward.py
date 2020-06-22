@@ -47,7 +47,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
             # sort the indices such that AF(inds) is decreasing
             inds = np.argsort(-abs(af))
             # find largest eta_k
-            Xi_0 = af[inds[0]]
+            Xi_0 = abs(af[inds[0]])
             # calculate time steps for different levels
             dt_0 = np.sqrt(2*eps / (m0*m1*Xi_0))
             dt_1 = m0*dt_0
@@ -56,10 +56,11 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
             Xi_1 = 2*eps/(m1*dt_1**2)
             Xi_2 = 2*eps/(dt_2**2)
             # find corresponding indices
-            min_ind_1 = np.argmin(af[inds] >= Xi_1)
-            min_ind_2 = np.argmin(af[inds] >= Xi_2)
+            min_ind_1 = np.argmax(af[inds] <= Xi_1)
+            min_ind_2 = np.argmax(af[inds] <= Xi_2)
 
-            if min_ind_2 < len(y0):
+            if min_ind_2 > min_ind_1:
+                print(str(t)+ ': 3 levels')
                 # three levels
                 for i in range(m1):
 
@@ -72,7 +73,8 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
                 y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
 
                 dt = dt_2
-            elif min_ind_1 < len(y0):
+            elif min_ind_1 > 0:
+                print(str(t)+ ': 2 levels')
                 # two levels
                 for i in range(m0):
                     y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
@@ -83,6 +85,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
                 dt = dt_1
 
             else:
+                print(str(t)+ ': 1 level')
                 # single level
                 y = y + dt_0*F
                 dt = dt_0
@@ -121,15 +124,17 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
     ts = np.hstack(ts)
     ys = np.vstack(ys).T
     dts = np.hstack(dts)
-    dts_local = np.hstack(dts_local)
+    if local_adaptivity :
+        dts_local = np.hstack(dts_local)
 
 
-    with open('time_points'+out+'.txt', 'ab') as f:
+    with open('time_points'+out+'.txt', 'wb') as f:
         np.savetxt(f, ts[1:])
-    with open('step_sizes'+out+'.txt', 'ab') as f:
+    with open('step_sizes'+out+'.txt', 'wb') as f:
         np.savetxt(f, dts)
-    with open('step_sizes_local'+out+'.txt', 'ab') as f:
-        np.savetxt(f, dts_local)
+    if local_adaptivity :
+        with open('step_sizes_local'+out+'.txt', 'wb') as f:
+            np.savetxt(f, dts_local)
 
     return OdeResult(t=ts, y=ys)
 
@@ -149,7 +154,7 @@ if __name__ == "__main__":
 #    plt.plot(sol.t, sol.y)
 
     t_eval = np.linspace(0,0.5,10)
-    y0 = np.array([0.5, 0.7, 3.0])
+    y0 = np.array([0.5, 0.7, 1.0, 3.0])
 
 #    sol = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, dt=0.01, eps=0.001 )
 #    plt.figure()
@@ -157,8 +162,8 @@ if __name__ == "__main__":
 #    plt.plot(sol.t, sol.y.T, '.', color='black')
 
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.001, local_adaptivity=True)
-    plt.plot(sol2.t, sol2.y.T)
-    plt.plot(sol2.t, sol2.y.T, '*', color='red')
+    #plt.plot(sol2.t, sol2.y.T)
+    plt.plot(sol2.t, sol2.y.T, '*')
 
 
 
