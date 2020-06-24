@@ -153,7 +153,7 @@ if __name__ == "__main__":
 #    plt.figure()
 #    plt.plot(sol.t, sol.y)
 
-    t_eval = np.linspace(0,0.5,10)
+    t_eval = np.linspace(0,2.5,10)
     y0 = np.array([0.5, 0.7, 1.0, 3.0])
 
 #    sol = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, dt=0.01, eps=0.001 )
@@ -161,9 +161,15 @@ if __name__ == "__main__":
 #    plt.plot(sol.t, sol.y.T)
 #    plt.plot(sol.t, sol.y.T, '.', color='black')
 
-    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.001, local_adaptivity=True)
+    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.001, eta = 0.0001, local_adaptivity=True)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
+
+
+    plt.figure()
+    dt  = np.loadtxt('step_sizes.txt')
+    plt.plot(sol2.t[:-1], dt)
+    plt.plot(sol2.t, 0.04*np.ones(len(sol2.t)))
 
 
 
