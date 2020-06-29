@@ -8,11 +8,12 @@ Created on Fri Jan 25 16:13:35 2019
 import numpy as np
 from scipy.integrate._ivp.ivp import OdeResult
 import matplotlib.pyplot as plt
+import copy
 
 plt.style.use('seaborn')
 
 
-def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''):
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out='', local_adaptivity=False, m0=2, m1=2, write_to_file=False):
 
 
     t0, tf = float(t_span[0]), float(t_span[-1])
@@ -32,65 +33,109 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
     ts = [t]
     ys = [y]
     dts = []
+    dts_local = []
 
     adaptive_dt = True if dt is None else False
-    
 
-    while t < tf :
+    while t < tf:
 
-        if adaptive_dt:
+        y = copy.deepcopy(y)
+
+        if len(y0) > 1 and local_adaptivity:
+            # choose time step adaptively locally (if we have a system of eqs)
+            F = fun(t, y)
+            af = 1/eta*(fun(t, y + eta * F) - F)
+            # sort the indices such that AF(inds) is decreasing
+            inds = np.argsort(-abs(af))
+            # find largest eta_k
+            Xi_0 = abs(af[inds[0]])
+            # calculate time steps for different levels
+            dt_0 = np.sqrt(2*eps / (m0*m1*Xi_0))
+            dt_1 = m0*dt_0
+            dt_2 = m1*dt_1
+            # calculate corresponding maximum eta for each level
+            Xi_1 = 2*eps/(m1*dt_1**2)
+            Xi_2 = 2*eps/(dt_2**2)
+            # find corresponding indices
+            min_ind_1 = np.argmax(af[inds] <= Xi_1)
+            min_ind_2 = np.argmax(af[inds] <= Xi_2)
+
+            if min_ind_2 > min_ind_1:
+                print(str(t)+ ': 3 levels')
+                # three levels
+                for i in range(m1):
+
+                    for j in range(m0):
+                        y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+                        dts_local.append(dt_0)
+
+                    y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
+
+                y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
+
+                dt = dt_2
+            elif min_ind_1 > 0:
+                print(str(t)+ ': 2 levels')
+                # two levels
+                for i in range(m0):
+                    y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+                    dts_local.append(dt_0)
+
+                y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
+
+                dt = dt_1
+
+            else:
+                print(str(t)+ ': 1 level')
+                # single level
+                y = y + dt_0*F
+                dt = dt_0
+
+        elif adaptive_dt:
+
             # choose time step adaptively
             F = fun(t,y)
             AF = 1/eta*(fun(t, y + eta * F) - F)
-            
+
             #print(np.abs(AF))
-            
-            with open('AFs'+out+'.txt', 'ab') as f:
-                np.savetxt(f, np.abs(AF).reshape((1, -1)))
-            
+            if write_to_file:
+                with open('AFs'+out+'.txt', 'ab') as f:
+                    np.savetxt(f, np.abs(AF).reshape((1, -1)))
+
             norm_AF = np.linalg.norm(AF, np.inf)
             #print('AF'+ str(AF))
             dt = np.sqrt(2*eps/norm_AF) if norm_AF > 0.0 else tf - t
-            #print('dt' + str(dt))
 
             y = y + dt*F
+
         else:
-            y = y + dt*fun(t,y)
+            y = y + dt*fun(t, y)
 
         t = t + dt
 
-#        if t_eval is not None:
-#            while i < len(t_eval) and t >= t_eval[i]:
-#                if t == t_eval[i]:
-#                    ts.append(t)
-#                    ys.append(y)
-#                    i += 1
-#                elif t > t_eval[i]:
-#                    yint = yp + (t_eval[i]-tp)*(y-yp)/(t-tp)
-#                    ts.append(t_eval[i])
-#                    ys.append(yint)
-#                    i += 1
-#            tp = t
-#            yp = y
-#        else:
         ts.append(t)
         ys.append(y)
         dts.append(dt)
-#        print('len(ts) '+ str(len(ts)))
-#        print('len(ys) '+ str(len(ys)))
-#        print('len(dts) '+ str(len(dts)))
 
     ts = np.hstack(ts)
-#    print('len(ts) '+ str(len(ts)))
     ys = np.vstack(ys).T
-#    print('len(ys.T) '+ str(len(ys.T)))
     dts = np.hstack(dts)
-#    print('len(dts) '+ str(len(dts)))
 
-    with open('time_points'+out+'.txt', 'ab') as f:
-        np.savetxt(f, ts[1:])
-    with open('step_sizes'+out+'.txt', 'ab') as f:
-        np.savetxt(f, dts)
+    if local_adaptivity :
+        dts_local = np.hstack(dts_local)
+
+
+    # Note that these files need to be appended in case there are cell events happening in between different solves.
+    if write_to_file :
+        with open('time_points'+out+'.txt', 'ab') as f:
+            np.savetxt(f, ts[1:])
+        with open('step_sizes'+out+'.txt', 'ab') as f:
+            np.savetxt(f, dts)
+        if local_adaptivity :
+            with open('step_sizes_local'+out+'.txt', 'ab') as f:
+                np.savetxt(f, dts_local)
+
+
 
     return OdeResult(t=ts, y=ys)
 
@@ -109,17 +154,25 @@ if __name__ == "__main__":
 #    plt.figure()
 #    plt.plot(sol.t, sol.y)
 
-    t_eval = np.linspace(0,1,10)
-    y0 = np.array([1])
+    t_eval = np.linspace(0,2.5,10)
+    y0 = np.array([0.5, 0.7, 1.0, 3.0])
 
-    sol = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, dt=0.01, eps=0.001 )
+#    sol = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, dt=0.01, eps=0.001 )
+#    plt.figure()
+#    plt.plot(sol.t, sol.y.T)
+#    plt.plot(sol.t, sol.y.T, '.', color='black')
+
+    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.001, eta = 0.0001, local_adaptivity=True)
+    #plt.plot(sol2.t, sol2.y.T)
+    plt.plot(sol2.t, sol2.y.T, '*')
+
+
     plt.figure()
-    plt.plot(sol.t, sol.y.T)
-    plt.plot(sol.t, sol.y.T, '.', color='black')
+    dt  = np.loadtxt('step_sizes.txt')
+    plt.plot(sol2.t[:-1], dt)
+    plt.plot(sol2.t, 0.04*np.ones(len(sol2.t)))
 
-    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.001 )
-    plt.plot(sol2.t, sol2.y.T)
-    plt.plot(sol2.t, sol2.y.T, '*', color='red')
+
 
 
 
