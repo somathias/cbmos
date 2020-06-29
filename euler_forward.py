@@ -18,15 +18,6 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
-#    if t_eval is not None:
-#        assert t0 == t_eval[0]
-#        assert tf == t_eval[-1]
-#
-#        # these variables are only needed if t_eval is not None
-#        i = 1
-#        tp = t0
-#        yp = y0
-
     t = t0
     y = y0
 
@@ -34,6 +25,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
     ys = [y]
     dts = []
     dts_local = []
+    levels = []
 
     adaptive_dt = True if dt is None else False
 
@@ -61,7 +53,8 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
             min_ind_2 = np.argmax(af[inds] <= Xi_2)
 
             if min_ind_2 > min_ind_1:
-                print(str(t)+ ': 3 levels')
+
+                levels.append(3);
                 # three levels
                 for i in range(m1):
 
@@ -75,7 +68,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
 
                 dt = dt_2
             elif min_ind_1 > 0:
-                print(str(t)+ ': 2 levels')
+                levels.append(2);
                 # two levels
                 for i in range(m0):
                     y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
@@ -86,10 +79,11 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
                 dt = dt_1
 
             else:
-                print(str(t)+ ': 1 level')
+                levels.append(1);
                 # single level
                 y = y + dt_0*F
                 dt = dt_0
+                dts_local.append(dt_0)
 
         elif adaptive_dt:
 
@@ -134,6 +128,8 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
         if local_adaptivity :
             with open('step_sizes_local'+out+'.txt', 'ab') as f:
                 np.savetxt(f, dts_local)
+            with open('levels'+out+'.txt', 'ab') as f:
+                np.savetxt(f, levels)
 
 
 
@@ -162,15 +158,30 @@ if __name__ == "__main__":
 #    plt.plot(sol.t, sol.y.T)
 #    plt.plot(sol.t, sol.y.T, '.', color='black')
 
-    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.001, eta = 0.0001, local_adaptivity=True)
+    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.001, eta = 0.0001, local_adaptivity=True, write_to_file=True)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
 
+    plt.figure()
+    lev  = np.loadtxt('levels.txt')
+    plt.plot(sol2.t[:-1], lev)
+    plt.xlabel('time')
+    plt.ylabel('#level')
 
     plt.figure()
     dt  = np.loadtxt('step_sizes.txt')
-    plt.plot(sol2.t[:-1], dt)
-    plt.plot(sol2.t, 0.04*np.ones(len(sol2.t)))
+    plt.plot(np.cumsum(dt), dt)
+
+    plt.plot(np.cumsum(dt), 0.04*np.ones(len(np.cumsum(dt))))
+    plt.xlabel('time')
+    plt.ylabel('Global step size')
+
+    plt.figure()
+    dt_locals  = np.loadtxt('step_sizes_local.txt')
+    plt.plot(np.cumsum(dt_locals), dt_locals)
+    plt.xlabel('time')
+    plt.ylabel('Local step size')
+
 
 
 
