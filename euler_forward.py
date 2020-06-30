@@ -7,13 +7,15 @@ Created on Fri Jan 25 16:13:35 2019
 """
 import numpy as np
 from scipy.integrate._ivp.ivp import OdeResult
-import matplotlib.pyplot as plt
 import copy
 
+
+import matplotlib.pyplot as plt
+import os
 plt.style.use('seaborn')
 
 
-def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out='', local_adaptivity=False, m0=2, m1=2, write_to_file=False):
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001, out='', local_adaptivity=False, m0=2, m1=2, write_to_file=False):
 
 
     t0, tf = float(t_span[0]), float(t_span[-1])
@@ -23,9 +25,13 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
 
     ts = [t]
     ys = [y]
+
     dts = []
     dts_local = []
     levels = []
+    n_eq_per_level = []
+
+
 
     adaptive_dt = True if dt is None else False
     while t < tf:
@@ -36,49 +42,76 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
             # choose time step adaptively locally (if we have a system of eqs)
             F = fun(t, y)
             af = 1/eta*(fun(t, y + eta * F) - F)
-            # sort the indices such that AF(inds) is decreasing
+
+            if write_to_file:
+                with open('AFs'+out+'.txt', 'ab') as f:
+                    np.savetxt(f, np.abs(af).reshape((1, -1)))
+
+            # sort the indices such that abs(AF(inds)) is decreasing
             inds = np.argsort(-abs(af))
-            # find largest eta_k
+            # find largest and smallest eta_k
             Xi_0 = abs(af[inds[0]])
+
+            Xi_min = abs(af[inds[-1]])
+            dt_max = np.sqrt(2*eps/Xi_min) if Xi_min > 0.0 else tf - t
+
             # calculate time steps for different levels
-            dt_0 = np.sqrt(2*eps / (m0*m1*Xi_0))
+            dt_0 = np.sqrt(2*eps / (m0*m1*Xi_0)) if Xi_0 > 0.0 else tf - t
             dt_1 = m0*dt_0
             dt_2 = m1*dt_1
+
+
             # calculate corresponding maximum eta for each level
             Xi_1 = 2*eps/(m1*dt_1**2)
             Xi_2 = 2*eps/(dt_2**2)
+
+
             # find corresponding indices
-            min_ind_1 = np.argmax(af[inds] <= Xi_1)
-            min_ind_2 = np.argmax(af[inds] <= Xi_2)
+            min_ind_1 = np.argmax(abs(af[inds]) <= Xi_1)
+            min_ind_2 = np.argmax(abs(af[inds]) <= Xi_2)
+            #min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
+            #min_ind_2 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_2, side='right')
+
+#            min_ind_2 = np.argmax(np.sqrt(2*eps/abs(af[inds])) >= dt_2)
+#            min_ind_1 = np.argmax(np.sqrt(2*eps/abs(af[inds])/m1) >= dt_1)
 
             if min_ind_2 > min_ind_1:
 
                 levels.append(3);
+                n_eq_per_level.append([min_ind_1, min_ind_2 - min_ind_1, len(y0)- min_ind_2])
                 # three levels
                 for i in range(m1):
 
                     for j in range(m0):
+                        F = fun(t, y)
                         y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
                         dts_local.append(dt_0)
 
+                    F = fun(t, y)
                     y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
 
+                F = fun(t, y)
                 y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
 
                 dt = dt_2
             elif min_ind_1 > 0:
+
                 levels.append(2);
+                n_eq_per_level.append([min_ind_1, len(y0) - min_ind_1, 0])
                 # two levels
                 for i in range(m0):
+                    F = fun(t, y)
                     y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
                     dts_local.append(dt_0)
 
+                F = fun(t, y)
                 y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
 
                 dt = dt_1
 
             else:
                 levels.append(1);
+                n_eq_per_level.append([len(y0), 0, 0])
                 # single level
                 y = y + dt_0*F
                 dt = dt_0
@@ -114,6 +147,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
     dts = np.hstack(dts)
     if local_adaptivity :
         dts_local = np.hstack(dts_local)
+        n_eq_per_level = np.vstack(n_eq_per_level).T
 
 
     # Note that these files need to be appended in case there are cell events happening in between different solves.
@@ -127,6 +161,8 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.001, eta=0.01, out=''
                 np.savetxt(f, dts_local)
             with open('levels'+out+'.txt', 'ab') as f:
                 np.savetxt(f, levels)
+            with open('n_eq_per_level'+out+'.txt', 'ab') as f:
+                np.savetxt(f, n_eq_per_level)
 
     return OdeResult(t=ts, y=ys)
 
@@ -145,23 +181,37 @@ if __name__ == "__main__":
 #    plt.figure()
 #    plt.plot(sol.t, sol.y)
 
-    t_eval = np.linspace(0,2.5,10)
+    t_eval = np.linspace(0,1,10)
     y0 = np.array([0.5, 0.7, 1.0, 3.0])
+    #y0 = np.array([0.5, 0.7, 3.0])
+
+    try:
+        os.remove('step_sizes.txt')
+        os.remove('step_sizes_local.txt')
+        os.remove('levels.txt')
+        os.remove('time_points.txt')
+        os.remove('n_eq_per_level.txt')
+        os.remove('AFs.txt')
+    except FileNotFoundError:
+        print('Nothing to delete.')
 
 #    sol = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, dt=0.01, eps=0.001 )
 #    plt.figure()
 #    plt.plot(sol.t, sol.y.T)
 #    plt.plot(sol.t, sol.y.T, '.', color='black')
 
-    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.001, eta = 0.0001, local_adaptivity=True, write_to_file=True)
+    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.01, eta = 0.00001, local_adaptivity=True, write_to_file=True)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
+    plt.xlabel('t')
+    plt.ylabel('y')
 
     plt.figure()
+    ts = np.loadtxt('time_points.txt')
     lev  = np.loadtxt('levels.txt')
-    plt.plot(sol2.t[:-1], lev)
+    plt.plot(ts, lev)
     plt.xlabel('time')
-    plt.ylabel('#level')
+    plt.ylabel('Number of levels')
 
     plt.figure()
     dt  = np.loadtxt('step_sizes.txt')
@@ -176,6 +226,31 @@ if __name__ == "__main__":
     plt.plot(np.cumsum(dt_locals), dt_locals)
     plt.xlabel('time')
     plt.ylabel('Local step size')
+
+    plt.figure()
+    n_eq_per_level = np.loadtxt('n_eq_per_level.txt')
+    plt.plot(ts, n_eq_per_level[0,:], label='level 0')
+    plt.plot(ts, n_eq_per_level[1,:], label='level 1')
+    plt.plot(ts, n_eq_per_level[2,:], label='level 2')
+    plt.legend()
+    plt.xlabel('time')
+    plt.ylabel('Number of equations per level')
+
+    plt.figure()
+    AFs = np.loadtxt('AFs.txt')
+    sorted_AFs = -np.sort(-abs(AFs))
+    plt.plot(sorted_AFs[0, :], label='$t=t_1$')
+    plt.plot(sorted_AFs[1,:], label='$t=t_2$')
+    plt.plot(sorted_AFs[2,:], label='$t=t_3$')
+
+    plt.plot(sorted_AFs[-2,:], label='$t=t_f$')
+    plt.plot(sorted_AFs[-1,:], label='$t=t_f$')
+    plt.xlabel('k')
+    plt.ylabel('$|\eta_k|$, sorted decreasingly')
+    plt.legend()
+
+
+
 
 
 
