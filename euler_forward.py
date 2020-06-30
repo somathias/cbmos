@@ -83,14 +83,13 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001, out=''
                 for i in range(m1):
 
                     for j in range(m0):
-                        F = fun(t, y)
                         y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+                        F = fun(t, y)
                         dts_local.append(dt_0)
 
-                    F = fun(t, y)
                     y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
+                    F = fun(t, y)
 
-                F = fun(t, y)
                 y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
 
                 dt = dt_2
@@ -100,12 +99,12 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001, out=''
                 n_eq_per_level.append([min_ind_1, len(y0) - min_ind_1, 0])
                 # two levels
                 for i in range(m0):
-                    F = fun(t, y)
                     y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+                    F = fun(t, y)
                     dts_local.append(dt_0)
 
-                F = fun(t, y)
                 y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
+                F = fun(t, y)
 
                 dt = dt_1
 
