@@ -60,25 +60,24 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001, out=''
             dt_1 = m0*dt_0
             dt_2 = m1*dt_1
 
-
             # calculate corresponding maximum eta for each level
-            Xi_1 = 2*eps/(m1*dt_1**2)
-            Xi_2 = 2*eps/(dt_2**2)
-
+            #Xi_1 = 2*eps/(m1*dt_1**2)
+            #Xi_2 = 2*eps/(dt_2**2)
+            Xi_1 = Xi_0/m0
+            Xi_2 = Xi_1/m1
 
             # find corresponding indices
-            min_ind_1 = np.argmax(abs(af[inds]) <= Xi_1)
-            min_ind_2 = np.argmax(abs(af[inds]) <= Xi_2)
-            #min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
-            #min_ind_2 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_2, side='right')
+            min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
+            min_ind_2 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_2, side='right')
+
+            n_eqs = np.array([min_ind_1, min_ind_2 - min_ind_1, len(y0)- min_ind_2])
+            n_eq_per_level.append(n_eqs)
+            levels.append(np.sum(n_eqs > 0))
 
 #            min_ind_2 = np.argmax(np.sqrt(2*eps/abs(af[inds])) >= dt_2)
 #            min_ind_1 = np.argmax(np.sqrt(2*eps/abs(af[inds])/m1) >= dt_1)
 
-            if min_ind_2 > min_ind_1:
-
-                levels.append(3);
-                n_eq_per_level.append([min_ind_1, min_ind_2 - min_ind_1, len(y0)- min_ind_2])
+            if (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
                 # three levels
                 for i in range(m1):
 
@@ -93,12 +92,9 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001, out=''
                 y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
 
                 dt = dt_2
-            elif min_ind_1 > 0:
-
-                levels.append(2);
-                n_eq_per_level.append([min_ind_1, len(y0) - min_ind_1, 0])
-                # two levels
-                for i in range(m0):
+            elif (min_ind_1 < min_ind_2 and min_ind_2 == len(y0)) or (min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
+                # two levels, always fall back on dt_1
+                for j in range(m0):
                     y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
                     F = fun(t, y)
                     dts_local.append(dt_0)
@@ -109,8 +105,6 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001, out=''
                 dt = dt_1
 
             else:
-                levels.append(1);
-                n_eq_per_level.append([len(y0), 0, 0])
                 # single level
                 y = y + dt_0*F
                 dt = dt_0
@@ -181,8 +175,8 @@ if __name__ == "__main__":
 #    plt.plot(sol.t, sol.y)
 
     t_eval = np.linspace(0,1,10)
-    y0 = np.array([0.5, 0.7, 1.0, 3.0])
-    #y0 = np.array([0.5, 0.7, 3.0])
+    #y0 = np.array([0.5, 0.7, 1.0, 3.0])
+    y0 = np.array([0.5, 0.7, 3.0])
 
     try:
         os.remove('step_sizes.txt')
@@ -199,7 +193,7 @@ if __name__ == "__main__":
 #    plt.plot(sol.t, sol.y.T)
 #    plt.plot(sol.t, sol.y.T, '.', color='black')
 
-    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.01, eta = 0.00001, local_adaptivity=True, write_to_file=True)
+    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.001, eta = 0.00001, local_adaptivity=True, write_to_file=True)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
