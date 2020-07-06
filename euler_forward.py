@@ -56,6 +56,9 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001, out=''
             dt_max = np.sqrt(2*eps/Xi_min) if Xi_min > 0.0 else tf - t
 
             # calculate time steps for different levels
+#            dt_0 = np.minimum(np.sqrt(2*eps / (m0*m1*Xi_0)), 0.04) if Xi_0 > 0.0 else tf - t
+#            dt_1 = np.minimum(m0*dt_0, 0.04)
+#            dt_2 = np.minimum(m1*dt_1, 0.04)
             dt_0 = np.sqrt(2*eps / (m0*m1*Xi_0)) if Xi_0 > 0.0 else tf - t
             dt_1 = m0*dt_0
             dt_2 = m1*dt_1
@@ -174,9 +177,9 @@ if __name__ == "__main__":
 #    plt.figure()
 #    plt.plot(sol.t, sol.y)
 
-    t_eval = np.linspace(0,1,10)
-    #y0 = np.array([0.5, 0.7, 1.0, 3.0])
-    y0 = np.array([0.5, 0.7, 3.0])
+    t_eval = np.linspace(0,6,10)
+    y0 = np.array([0.5, 2.7, 0.7, 1.3, 3.0, 5.0])
+    #y0 = np.array([0.5, 0.7, 3.0])
 
     try:
         os.remove('step_sizes.txt')
@@ -193,7 +196,7 @@ if __name__ == "__main__":
 #    plt.plot(sol.t, sol.y.T)
 #    plt.plot(sol.t, sol.y.T, '.', color='black')
 
-    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.001, eta = 0.00001, local_adaptivity=True, write_to_file=True)
+    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.0001, eta = 0.00001, local_adaptivity=True, write_to_file=True)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
