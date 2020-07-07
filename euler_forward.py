@@ -18,14 +18,19 @@ plt.style.use('seaborn')
 
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
               out='', write_to_file=False,
-              local_adaptivity=False, m0=2, m1=2):
+              local_adaptivity=False, m0=2, m1=2, jacobian=None):
 
     adaptive_dt = True if dt is None else False
 
     if len(y0) > 1 and local_adaptivity:
-        # choose time step adaptively locally (if we have a system of eqs)
-        return _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta, out,
-                                               write_to_file, m0, m1)
+        if jacobian is None:
+            # choose time step adaptively locally (if we have a system of eqs)
+            return _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
+                                                   out, write_to_file, m0, m1)
+        else:
+            return _do_local_adaptive_timestepping_ws(fun, t_span, y0, eps,
+                                                      eta, out, write_to_file,
+                                                      m0, m1, jacobian)
     elif adaptive_dt:
         # choose time step adaptively globally
         return _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta, out,
@@ -130,7 +135,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
     while t < tf:
 
         y = copy.deepcopy(y)
-    # choose time step adaptively locally (if we have a system of eqs)
+        # choose time step adaptively locally (if we have a system of eqs)
         F = fun(t, y)
         af = 1/eta*(fun(t, y + eta * F) - F)
 
@@ -233,13 +238,168 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
     return OdeResult(t=ts, y=ys)
 
+def _do_local_adaptive_timestepping_ws(fun, t_span, y0, eps, eta,
+                                       out, write_to_file,
+                                       m0, m1, jacobian):
+
+    t0, tf = float(t_span[0]), float(t_span[-1])
+
+    t = t0
+    y = y0
+
+    ts = [t]
+    ys = [y]
+    dts = []
+    dts_local = []
+    levels = []
+    n_eq_per_level = []
+
+    while t < tf:
+
+        y = copy.deepcopy(y)
+
+        # calculate stability bound
+        A = jacobian(y)
+        w, v = np.linalg.eigh(A)
+
+        # the eigenvalues are sorted in ascending order
+        dt_s = 2.0/abs(w[0])
+
+        # calculate the accuracy bound
+        F = fun(t, y)
+        af = 1/eta*(fun(t, y + eta * F) - F)
+
+        if write_to_file:
+            with open('AFs'+out+'.txt', 'ab') as f:
+                np.savetxt(f, np.abs(af).reshape((1, -1)))
+
+        # sort the indices such that abs(AF(inds)) is decreasing
+        inds = np.argsort(-abs(af))
+        # find largest and smallest eta_k
+        Xi_0 = abs(af[inds[0]])
+
+#        Xi_min = abs(af[inds[-1]])
+#        dt_max = np.sqrt(2*eps/Xi_min) if Xi_min > 0.0 else tf - t
+
+        dt_a = np.sqrt(2*eps / (m0*m1*Xi_0)) if Xi_0 > 0.0 else dt_s
+        dt_0 = np.minimum(dt_a, dt_s)
+        dt_1 = np.minimum(m0*dt_0, dt_s)
+        dt_2 = np.minimum(m1*dt_1, dt_s)
+
+        if dt_0 == dt_s:
+            # single level sufficient with dt_s
+            n_eqs = np.array([len(y0), 0, 0])
+            n_eq_per_level.append(n_eqs)
+            levels.append(np.sum(n_eqs > 0))
+
+            y = y + dt_0*F
+            dt = dt_0
+            dts_local.append(dt_0)
+
+        elif dt_1 == dt_s:
+            # two levels with dt_0 and dt_s
+            # calculate corresponding maximum eta for each level
+            Xi_1 = Xi_0/m0
+            # find corresponding indices
+            min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
+
+            n_eqs = np.array([min_ind_1, len(y0) -min_ind_1, 0])
+            n_eq_per_level.append(n_eqs)
+            levels.append(np.sum(n_eqs > 0))
+
+            for j in range(m0):
+                y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+                F = fun(t, y)
+                dts_local.append(dt_0)
+
+            y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
+            F = fun(t, y)
+            dt = dt_1
+        else:
+            # not restricted by stability in lower levels
+            # calculate corresponding maximum eta for each level
+            Xi_1 = Xi_0/m0
+            Xi_2 = Xi_1/m1
+
+            # find corresponding indices
+            min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
+            min_ind_2 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_2, side='right')
+
+            n_eqs = np.array([min_ind_1,
+                              min_ind_2 - min_ind_1,
+                              len(y0) - min_ind_2])
+            n_eq_per_level.append(n_eqs)
+            levels.append(np.sum(n_eqs > 0))
+
+            if (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
+                # three levels
+                for i in range(m1):
+
+                    for j in range(m0):
+                        y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+                        F = fun(t, y)
+                        dts_local.append(dt_0)
+
+                    y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
+                    F = fun(t, y)
+
+                y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
+
+                dt = dt_2
+            elif (min_ind_1 < min_ind_2 and min_ind_2 == len(y0)) or (min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
+                # two levels, always fall back on dt_1
+                for j in range(m0):
+                    y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+                    F = fun(t, y)
+                    dts_local.append(dt_0)
+
+                y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
+                F = fun(t, y)
+
+                dt = dt_1
+
+            else:
+                # single level
+                y = y + dt_0*F
+                dt = dt_0
+                dts_local.append(dt_0)
+
+        t = t + dt
+
+        ts.append(t)
+        ys.append(y)
+        dts.append(dt)
+
+    ts = np.hstack(ts)
+    ys = np.vstack(ys).T
+    dts = np.hstack(dts)
+    dts_local = np.hstack(dts_local)
+    n_eq_per_level = np.vstack(n_eq_per_level).T
+
+    if write_to_file:
+        with open('time_points'+out+'.txt', 'ab') as f:
+            np.savetxt(f, ts)
+        with open('step_sizes'+out+'.txt', 'ab') as f:
+            np.savetxt(f, dts)
+        with open('step_sizes_local'+out+'.txt', 'ab') as f:
+            np.savetxt(f, dts_local)
+        with open('levels'+out+'.txt', 'ab') as f:
+            np.savetxt(f, levels)
+        with open('n_eq_per_level'+out+'.txt', 'ab') as f:
+            np.savetxt(f, n_eq_per_level)
+
+    return OdeResult(t=ts, y=ys)
+
+
 
 if __name__ == "__main__":
 
     # stability region for Euler forward for this problem is h<2/50=0.04
-    @np.vectorize
+    #@np.vectorize
     def func(t, y):
-        return -50*y
+        return -50*np.eye(len(y))@y
+    def jacobian(y):
+        return -50*np.eye(len(y))
 
 #    t_span = (0,1)
 #    y0 = np.array([1,1])
@@ -251,8 +411,8 @@ if __name__ == "__main__":
 
     t_eval = np.linspace(0,6,10)
     #y0 = np.array([0.5, 2.7, 0.7, 1.3, 3.0, 5.0])
-    #y0 = np.array([0.5, 0.7, 3.0])
-    y0 = np.array([0.0, 0.0, 0.0])
+    y0 = np.array([0.5, 0.7, 1.0, 3.0])
+    #y0 = np.array([0.0, 0.0, 0.0])
 
     try:
         os.remove('step_sizes.txt')
@@ -280,18 +440,20 @@ if __name__ == "__main__":
         print('Nothing to delete.')
 
 
-    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, eps=0.0001, eta = 0.00001, local_adaptivity=True, write_to_file=True)
+    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
+                     eps=0.0001, eta = 0.00001, local_adaptivity=True,
+                     write_to_file=True, jacobian=jacobian)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
     plt.ylabel('y')
 
-#    plt.figure()
+    plt.figure()
     ts = np.loadtxt('time_points.txt')
-#    lev  = np.loadtxt('levels.txt')
-#    plt.plot(ts[1:], lev)
-#    plt.xlabel('time')
-#    plt.ylabel('Number of levels')
+    lev  = np.loadtxt('levels.txt')
+    plt.plot(ts[1:], lev)
+    plt.xlabel('time')
+    plt.ylabel('Number of levels')
 
     plt.figure()
     dt  = np.loadtxt('step_sizes.txt')
@@ -300,30 +462,30 @@ if __name__ == "__main__":
     plt.xlabel('time')
     plt.ylabel('Global step size')
 
-#    plt.figure()
-#    dt_locals  = np.loadtxt('step_sizes_local.txt')
-#    plt.plot(np.cumsum(dt_locals), dt_locals)
-#    plt.xlabel('time')
-#    plt.ylabel('Local step size')
+    plt.figure()
+    dt_locals  = np.loadtxt('step_sizes_local.txt')
+    plt.plot(np.cumsum(dt_locals), dt_locals)
+    plt.xlabel('time')
+    plt.ylabel('Local step size')
 
-#    plt.figure()
-#    n_eq_per_level = np.loadtxt('n_eq_per_level.txt')
-#    plt.plot(ts[1:], n_eq_per_level[0,:], label='level 0')
-#    plt.plot(ts[1:], n_eq_per_level[1,:], label='level 1')
-#    plt.plot(ts[1:], n_eq_per_level[2,:], label='level 2')
-#    plt.legend()
-#    plt.xlabel('time')
-#    plt.ylabel('Number of equations per level')
+    plt.figure()
+    n_eq_per_level = np.loadtxt('n_eq_per_level.txt')
+    plt.plot(ts[1:], n_eq_per_level[0,:], label='level 0')
+    plt.plot(ts[1:], n_eq_per_level[1,:], label='level 1')
+    plt.plot(ts[1:], n_eq_per_level[2,:], label='level 2')
+    plt.legend()
+    plt.xlabel('time')
+    plt.ylabel('Number of equations per level')
 
-#    plt.figure()
-#    AFs = np.loadtxt('AFs.txt')
-#    sorted_AFs = -np.sort(-abs(AFs))
-#    plt.plot(sorted_AFs[0, :], label='$t=t_1$')
-#    plt.plot(sorted_AFs[1,:], label='$t=t_2$')
-#    plt.plot(sorted_AFs[2,:], label='$t=t_3$')
-#
-#    plt.plot(sorted_AFs[-2,:], label='$t=t_f$')
-#    plt.plot(sorted_AFs[-1,:], label='$t=t_f$')
-#    plt.xlabel('k')
-#    plt.ylabel('$|\eta_k|$, sorted decreasingly')
-#    plt.legend()
+    plt.figure()
+    AFs = np.loadtxt('AFs.txt')
+    sorted_AFs = -np.sort(-abs(AFs))
+    plt.plot(sorted_AFs[0, :], label='$t=t_1$')
+    plt.plot(sorted_AFs[1,:], label='$t=t_2$')
+    plt.plot(sorted_AFs[2,:], label='$t=t_3$')
+
+    plt.plot(sorted_AFs[-2,:], label='$t=t_f$')
+    plt.plot(sorted_AFs[-1,:], label='$t=t_f$')
+    plt.xlabel('k')
+    plt.ylabel('$|\eta_k|$, sorted decreasingly')
+    plt.legend()
