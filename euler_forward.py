@@ -409,9 +409,9 @@ if __name__ == "__main__":
 #    plt.figure()
 #    plt.plot(sol.t, sol.y)
 
-    t_eval = np.linspace(0,6,10)
-    #y0 = np.array([0.5, 2.7, 0.7, 1.3, 3.0, 5.0])
-    y0 = np.array([0.5, 0.7, 1.0, 3.0])
+    t_eval = np.linspace(0,3,10)
+    y0 = np.array([0.5, 2.7, 0.7, 1.3, 3.0, 5.0])
+    #y0 = np.array([0.5, 0.7, 1.0, 3.0])
     #y0 = np.array([0.0, 0.0, 0.0])
 
     try:
