@@ -98,7 +98,6 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
         ys.append(y)
         dts.append(dt)
 
-
     ts = np.hstack(ts)
     ys = np.vstack(ys).T
     dts = np.hstack(dts)
@@ -148,8 +147,15 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
         dt_max = np.sqrt(2*eps/Xi_min) if Xi_min > 0.0 else tf - t
 
         dt_0 = np.sqrt(2*eps / (m0*m1*Xi_0)) if Xi_0 > 0.0 else tf - t
-        dt_1 = m0*dt_0
-        dt_2 = m1*dt_1
+
+        if dt_0 == tf - t:
+            # This is the case if AF == 0
+            # then all higher levels should use the same time step
+            dt_1 = dt_0
+            dt_2 = dt_1
+        else:
+            dt_1 = m0*dt_0
+            dt_2 = m1*dt_1
 
         # calculate corresponding maximum eta for each level
         Xi_1 = Xi_0/m0
@@ -244,8 +250,9 @@ if __name__ == "__main__":
 #    plt.plot(sol.t, sol.y)
 
     t_eval = np.linspace(0,6,10)
-    y0 = np.array([0.5, 2.7, 0.7, 1.3, 3.0, 5.0])
+    #y0 = np.array([0.5, 2.7, 0.7, 1.3, 3.0, 5.0])
     #y0 = np.array([0.5, 0.7, 3.0])
+    y0 = np.array([0.0, 0.0, 0.0])
 
     try:
         os.remove('step_sizes.txt')
