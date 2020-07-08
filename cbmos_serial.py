@@ -220,7 +220,7 @@ class CBMSolver:
             tmp = np.repeat(y_r[:, :, np.newaxis], y_r.shape[0], axis=2)
             norm = np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1))
             forces = self.force(norm, **force_args)\
-                / (norm + np.diag(np.ones(y_r.shape[0])))
+                / (norm + np.diag(np.ones(y_r.shape[0]))) # this could be improved by using np.eye
             total_force = (np.repeat(forces[:, np.newaxis, :],
                                      self.dim, axis=1)
                            * (tmp.transpose()-tmp)).sum(axis=2)
