@@ -1,10 +1,14 @@
 import numpy as np
+import force_functions as ff
 
 def g(r):
     return r
 
 def gprime(r):
-    return r
+    return 1
+
+#g = ff.linear
+#gprime = ff.linear_prime
 
 y = np.array([[0, 0, 0], [1, 2, 3], [8, -1, 5], [10, 11, 12]])
 n = y.shape[0]
