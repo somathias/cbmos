@@ -203,7 +203,7 @@ def test_simulate():
 
     N = 100
     t_data = np.linspace(0, 10, N) # stay away from 24 hours
-    history = cbm_solver.simulate(cell_list, t_data, {}, {})
+    history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
     assert len(history) == N
 
@@ -223,7 +223,7 @@ def test_two_events_at_once():
     cell_list[1].division_time = 1.05
 
     t_data = np.linspace(0, 10, 100)
-    history = cbm_solver.simulate(cell_list, t_data, {}, {})
+    history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
     assert len(history) == 100
 
@@ -235,7 +235,7 @@ def test_event_at_t_data():
     cell_list[1].division_time = 1.0
 
     t_data = np.linspace(0, 10, 101)
-    history = cbm_solver.simulate(cell_list, t_data, {}, {})
+    history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
     assert len(history) == len(t_data)
 
@@ -248,7 +248,7 @@ def test_no_division_skipped():
     cell_list[1].division_time = 1.0
 
     t_data = np.linspace(0, 30, 101)
-    history = cbm_solver.simulate(cell_list, t_data, {}, {})
+    history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
     eq = [hq.heappop(cbm_solver.event_queue) for i in range(len(cbm_solver.event_queue))]
     assert eq == sorted(eq)
@@ -287,7 +287,7 @@ def test_tdata():
     solver_ef = cbmos.CBMSolver(ff.cubic, ef.solve_ivp, 1)
     t_data = np.linspace(0,1, n)
     cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [0.3], proliferating=False)]
-    sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03})
+    sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=False)
     y = np.array([np.squeeze([clt[0].position, clt[1].position]) for clt in sols])
 
     assert y.shape == (n, 2)
