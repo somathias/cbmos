@@ -16,8 +16,24 @@ class CBMModel:
         self.separation = separation
         self.hpc = hpc
 
-    def simulate(self, cell_list, t_data, force_args, solver_args, seed=None):
+    def simulate(self, cell_list, t_data, force_args, solver_args, seed=None, raw_t=True):
         """
+        Parameters
+        ----------
+        cell_list: [Cell]
+            Initial cell layout
+        t_data: [float]
+            times at which the history should be recorded, if `raw_t` is set to `True`,
+            only the start and end time are taken into account and the rest is ignored.
+            The history is then recorded following the solver's output.
+        force_args: dict
+            arguments to pass to the force function
+        solver_args: dict
+            arguments to pass to the solver
+        seed: int
+            seed for the random number generator
+        raw_t: bool
+            whether or not to use the solver's raw output
 
         Note
         ----
@@ -61,7 +77,7 @@ class CBMModel:
                 y0 = _np.array([cell.position for cell in self.cell_list]).reshape(-1)
                 # only calculate positions if there is t_data before tau
                 if len(t_eval) > 1:
-                    sol = self._calculate_positions(t_eval, y0, force_args, solver_args)
+                    sol = self._calculate_positions(t_eval, y0, force_args, solver_args, raw_t=raw_t)
 
                     # save data for all t_data points passed
                     for y_t in sol.y[:, 1:].T:
@@ -70,11 +86,7 @@ class CBMModel:
                 # continue the simulation until tau if necessary
                 if tau > t_eval[-1] and tau <=t_end:
                     y0 = sol.y[:, -1] if len(t_eval) > 1 else y0
-                    sol = self._calculate_positions([t_eval[-1], tau], y0, force_args, solver_args)
-
-                    # save data for all t_data points passed
-                    for y_t in sol.y[:, 1:].T:
-                        self._save_data(y_t.reshape(-1, self.dim))
+                    sol = self._calculate_positions([t_eval[-1], tau], y0, force_args, solver_args, raw_t=raw_t)
 
                 # update the positions for the current time point
                 self._update_positions(sol.y[:, -1].reshape(-1, self.dim).tolist())
@@ -180,11 +192,11 @@ class CBMModel:
                 _np.cos(random_zenith_angle)])
         return division_direction
 
-    def _calculate_positions(self, t_eval, y0, force_args, solver_args):
+    def _calculate_positions(self, t_eval, y0, force_args, solver_args, raw_t=True):
         return self.solver(self._ode_system(force_args),
                            (t_eval[0], t_eval[-1]),
                            y0,
-                           t_eval=t_eval,
+                           t_eval=t_eval if not raw_t else None,
                            **solver_args)
 
     def _update_positions(self, y):
