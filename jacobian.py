@@ -29,6 +29,8 @@ def jacobian(y, dim, g, gprime):
     with np.errstate(divide='ignore', invalid='ignore'):
         # Ignore divide by 0 warnings
         # All NaNs are removed below
+
+        # add normalization
         B = B / ((norm*norm)[:, :, np.newaxis, np.newaxis]
             .repeat(B.shape[2], axis=2).repeat(B.shape[3], axis=3))
 
