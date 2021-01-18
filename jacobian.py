@@ -15,7 +15,7 @@ def jacobian(y, dim, g, gprime):
     n = y_r.shape[0]
     tmp = np.repeat(y_r[:, :, np.newaxis], n, axis=2)
     norm = np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1))
-    r_hat = np.rollaxis(tmp-tmp.transpose(), 2, 0)
+    r_hat = np.moveaxis(tmp - tmp.transpose(), 1, 2)
 
     # Step 1
     def rrT(r):
