@@ -11,35 +11,26 @@ import numpy as np
 
 def jacobian(y, dim, g, gprime):
 #    dim = 3
-    y_r = y.reshape((-1, dim))
+    y_r = np.expand_dims(y.reshape((-1, dim)), axis=-1)
     n = y_r.shape[0]
-    tmp = np.repeat(y_r[:, :, np.newaxis], n, axis=2)
-    norm = np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1))
-    r_hat = np.moveaxis(tmp - tmp.transpose(), 1, 2)
+    cross_diff = y_r - y_r.transpose([2, 1, 0]) # shape (n, d, n)
+    norm = np.sqrt((cross_diff**2).sum(axis=1))
+    r_hat = np.expand_dims(np.moveaxis(cross_diff, 1, 2), axis=-1) # shape (n, n, d, 1)
 
-    # Step 1
-    def rrT(r):
-        r = r[:, np.newaxis]
-        return r@r.transpose()
-
-    B = np.apply_along_axis(rrT, 2, r_hat)
+    B = r_hat @ r_hat.transpose([0, 1, 3, 2]) # shape (n, n, d, d)
 
     with np.errstate(divide='ignore', invalid='ignore'):
         # Ignore divide by 0 warnings
         # All NaNs are removed below
 
         # add normalization
-        B = B / ((norm*norm)[:, :, np.newaxis, np.newaxis]
-            .repeat(B.shape[2], axis=2).repeat(B.shape[3], axis=3))
+        B = B / np.expand_dims(norm*norm, axis=(2, 3))
 
         B = (
-                B*(
-                (gprime(norm)-g(norm)/norm)[:, :, np.newaxis, np.newaxis]
-                .repeat(B.shape[2], axis=2).repeat(B.shape[3], axis=3))
-            + (np.identity(dim)[np.newaxis, np.newaxis, :, :]
-                .repeat(B.shape[0], axis=0).repeat(B.shape[1], axis=1))*
-                (g(norm)/norm)[:, :, np.newaxis, np.newaxis]
-                .repeat(B.shape[2], axis=2).repeat(B.shape[3], axis=3))
+                B*np.expand_dims(gprime(norm)-g(norm)/norm, axis=(2, 3))
+                + np.expand_dims(np.identity(dim), axis=(0, 1))
+                    * np.expand_dims(g(norm)/norm, axis=(2, 3))
+                )
 
         B[np.isnan(B)] = 0
 
