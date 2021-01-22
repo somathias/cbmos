@@ -9,11 +9,12 @@ _NU = 1
 
 
 class CBMSolver:
-    def __init__(self, force, solver, dimension=3, separation=0.3):
+    def __init__(self, force, solver, dimension=3, separation=0.3, hpc=_np):
         self.force = force
         self.solver = solver
         self.dim = dimension
         self.separation = separation
+        self.hpc = hpc
 
     def simulate(self, cell_list, t_data, force_args, solver_args, seed=None):
         """
@@ -212,13 +213,19 @@ class CBMSolver:
 
         """
         def f(t, y):
-            y_r = y.reshape((-1, self.dim))[:, :, _np.newaxis] # shape (n, d, 1)
+            y_r = self.hpc.asarray(y).reshape((-1, self.dim))[:, :, self.hpc.newaxis] # shape (n, d, 1)
             cross_diff = y_r.transpose([2, 1, 0]) - y_r # shape (n, d, n)
-            norm = _np.sqrt((cross_diff**2).sum(axis=1))
+            norm = self.hpc.sqrt((cross_diff**2).sum(axis=1))
             forces = self.force(norm, **force_args)\
-                / (norm + _np.diag(_np.ones(y_r.shape[0])))
-            total_force = (forces[:, _np.newaxis, :] * cross_diff).sum(axis=2)
-            return (NU*total_force).reshape(-1)
+                / (norm + self.hpc.diag(self.hpc.ones(y_r.shape[0])))
+            total_force = (forces[:, self.hpc.newaxis, :] * cross_diff).sum(axis=2)
+
+            fty = (_NU*total_force).reshape(-1)
+
+            if self.hpc.__name__ == "cupy":
+                return self.hpc.asnumpy(fty)
+            else:
+                return _np.asarray(fty)
 
         return f
 
