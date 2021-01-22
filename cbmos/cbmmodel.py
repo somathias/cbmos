@@ -8,7 +8,7 @@ from . import cell as _cl
 _NU = 1
 
 
-class CBMSolver:
+class CBMModel:
     def __init__(self, force, solver, dimension=3, separation=0.3, hpc=_np):
         self.force = force
         self.solver = solver
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     from .solvers import euler_forward as ef
 
     dim = 1
-    cbm_solver = CBMSolver(ff.logarithmic, ef.solve_ivp, dim)
+    cbm_solver = CBMModel(ff.logarithmic, ef.solve_ivp, dim)
 
     cell_list = [_cl.Cell(0, [0], proliferating=True), _cl.Cell(1, [0.3], proliferating=True)]
     t_data = _np.linspace(0, 1, 101)
