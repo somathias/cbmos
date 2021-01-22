@@ -6,7 +6,8 @@ Created on Wed Jul  3 13:18:39 2019
 @author: kubuntu1804
 """
 import numpy as np
-import force_functions as ff
+
+import cbmos.force_functions as ff
 
 
 def test_hertz():

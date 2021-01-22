@@ -7,19 +7,19 @@ Unit tests of the CBM solver
 
 @author: Adrien Coulier
 """
-import pytest
-import numpy as np
-import numpy.random as npr
-import cbmos_serial as cbmos
-import scipy.integrate as scpi
-import logging
 import io
 import parse
-
-import force_functions as ff
-import euler_forward as ef
+import pytest
+import logging
 import heapq as hq
-import cell as cl
+import numpy as np
+import numpy.random as npr
+import scipy.integrate as scpi
+
+import cbmos
+import cbmos.force_functions as ff
+import cbmos.solvers.euler_forward as ef
+import cbmos.cell as cl
 
 logging.basicConfig(level=logging.DEBUG)
 
