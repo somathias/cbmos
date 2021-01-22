@@ -5,9 +5,7 @@ import heapq as hq
 import warnings as wg
 import logging
 
-import force_functions as ff
-import euler_forward as ef
-import cell as cl
+from . import cell as cl
 
 NU = 1
 
@@ -230,6 +228,8 @@ class CBMSolver:
 
 
 if __name__ == "__main__":
+    from . import force_functions as ff
+    from .solvers import euler_forward as ef
 
     dim = 1
     cbm_solver = CBMSolver(ff.logarithmic, ef.solve_ivp, dim)
