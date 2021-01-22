@@ -16,7 +16,7 @@ import numpy as np
 import numpy.random as npr
 import scipy.integrate as scpi
 
-import cbmos
+import cbmos.cbmsolver as cbmos
 import cbmos.force_functions as ff
 import cbmos.solvers.euler_forward as ef
 import cbmos.cell as cl

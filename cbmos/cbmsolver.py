@@ -1,13 +1,11 @@
-import numpy as np
-import numpy.random as npr
-import scipy.integrate as scpi
-import heapq as hq
-import warnings as wg
-import logging
+import numpy as _np
+import numpy.random as _npr
+import heapq as _hq
+import logging as _logging
 
-from . import cell as cl
+from . import cell as _cl
 
-NU = 1
+_NU = 1
 
 
 class CBMSolver:
@@ -27,17 +25,17 @@ class CBMSolver:
 
         """
 
-        npr.seed(seed)
+        _npr.seed(seed)
 
         for cell in cell_list:
                 assert len(cell.position) == self.dim
 
-        logging.debug("Starting new simulation")
+        _logging.debug("Starting new simulation")
 
         t = t_data[0]
         t_end = t_data[-1]
         self.cell_list = [
-                cl.Cell(
+                _cl.Cell(
                     cell.ID, cell.position, cell.birthtime,
                     cell.proliferating, cell.generate_division_time,
                     cell.division_time, cell.parent_ID)
@@ -59,7 +57,7 @@ class CBMSolver:
                 # calculate positions until the last t_data smaller or equal to min(tau, t_end)
                 t_eval = [t] \
                     + [time for time in t_data if t < time <= min(tau, t_end)]
-                y0 = np.array([cell.position for cell in self.cell_list]).reshape(-1)
+                y0 = _np.array([cell.position for cell in self.cell_list]).reshape(-1)
                 # only calculate positions if there is t_data before tau
                 if len(t_eval) > 1:
                     sol = self._calculate_positions(t_eval, y0, force_args, solver_args)
@@ -98,13 +96,13 @@ class CBMSolver:
         """
         # copy correct positions to cell list that is stored
         if positions is not None:
-            self.history.append([cl.Cell(
+            self.history.append([_cl.Cell(
                     cell.ID, pos, cell.birthtime, cell.proliferating,
                     cell.generate_division_time, cell.division_time,
                     cell.parent_ID)
                 for cell, pos in zip(self.cell_list, positions)])
         else:
-            self.history.append([cl.Cell(
+            self.history.append([_cl.Cell(
                     cell.ID, cell.position, cell.birthtime, cell.proliferating,
                     cell.generate_division_time, cell.division_time,
                     cell.parent_ID)
@@ -112,7 +110,7 @@ class CBMSolver:
 
     def _build_event_queue(self):
         events = [(cell.division_time, cell) for cell in self.cell_list]
-        hq.heapify(events)
+        _hq.heapify(events)
         self.event_queue = events
 
     def _update_event_queue(self, cell):
@@ -122,10 +120,10 @@ class CBMSolver:
         The code assumes that all cell events are division events.
         """
         event = (cell.division_time, cell)
-        hq.heappush(self.event_queue, event)
+        _hq.heappush(self.event_queue, event)
 
     def _get_next_event(self):
-        return hq.heappop(self.event_queue)
+        return _hq.heappop(self.event_queue)
 
     def _apply_division(self, cell, tau):
         """
@@ -143,7 +141,7 @@ class CBMSolver:
         position_daughter = cell.position +\
             0.5 * self.separation * division_direction
 
-        daughter_cell = cl.Cell(
+        daughter_cell = _cl.Cell(
                 self.next_cell_index, position_daughter, birthtime=tau,
                 proliferating=True,
                 division_time_generator=cell.generate_division_time,
@@ -156,29 +154,29 @@ class CBMSolver:
         cell.division_time = cell.generate_division_time(tau)
         self._update_event_queue(cell)
 
-        logging.debug("Division event: t={}, direction={}".format(
+        _logging.debug("Division event: t={}, direction={}".format(
             tau, division_direction))
 
     def _get_division_direction(self):
 
         if self.dim == 1:
-            division_direction = np.array([-1.0 + 2.0 * npr.randint(2)])
+            division_direction = _np.array([-1.0 + 2.0 * _npr.randint(2)])
 
         elif self.dim == 2:
-            random_angle = 2.0 * np.pi * npr.rand()
-            division_direction = np.array([
-                np.cos(random_angle),
-                np.sin(random_angle)])
+            random_angle = 2.0 * _np.pi * _npr.rand()
+            division_direction = _np.array([
+                _np.cos(random_angle),
+                _np.sin(random_angle)])
 
         elif self.dim == 3:
-            u = npr.rand()
-            v = npr.rand()
-            random_azimuth_angle = 2 * np.pi * u
-            random_zenith_angle = np.arccos(2 * v - 1)
-            division_direction = np.array([
-                np.cos(random_azimuth_angle) * np.sin(random_zenith_angle),
-                np.sin(random_azimuth_angle) * np.sin(random_zenith_angle),
-                np.cos(random_zenith_angle)])
+            u = _npr.rand()
+            v = _npr.rand()
+            random_azimuth_angle = 2 * _np.pi * u
+            random_zenith_angle = _np.arccos(2 * v - 1)
+            division_direction = _np.array([
+                _np.cos(random_azimuth_angle) * _np.sin(random_zenith_angle),
+                _np.sin(random_azimuth_angle) * _np.sin(random_zenith_angle),
+                _np.cos(random_zenith_angle)])
         return division_direction
 
     def _calculate_positions(self, t_eval, y0, force_args, solver_args):
@@ -196,7 +194,7 @@ class CBMSolver:
         """
 
         for cell, pos in zip(self.cell_list, y):
-            cell.position = np.array(pos)
+            cell.position = _np.array(pos)
 
     def _ode_force(self, force_args):
         """ Generate ODE force function from cell-cell force function
@@ -215,27 +213,29 @@ class CBMSolver:
         """
         def f(t, y):
             y_r = y.reshape((-1, self.dim))
-            tmp = np.repeat(y_r[:, :, np.newaxis], y_r.shape[0], axis=2)
-            norm = np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1))
+            tmp = _np.repeat(y_r[:, :, _np.newaxis], y_r.shape[0], axis=2)
+            norm = _np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1))
             forces = self.force(norm, **force_args)\
-                / (norm + np.diag(np.ones(y_r.shape[0])))
-            total_force = (np.repeat(forces[:, np.newaxis, :],
+                / (norm + _np.diag(_np.ones(y_r.shape[0])))
+            total_force = (_np.repeat(forces[:, _np.newaxis, :],
                                      self.dim, axis=1)
                            * (tmp.transpose()-tmp)).sum(axis=2)
-            return (NU*total_force).reshape(-1)
+            return (_NU*total_force).reshape(-1)
 
         return f
 
 
 if __name__ == "__main__":
+    import warnings as wg
+
     from . import force_functions as ff
     from .solvers import euler_forward as ef
 
     dim = 1
     cbm_solver = CBMSolver(ff.logarithmic, ef.solve_ivp, dim)
 
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
-    t_data = np.linspace(0, 1, 101)
+    cell_list = [_cl.Cell(0, [0], proliferating=True), _cl.Cell(1, [0.3], proliferating=True)]
+    t_data = _np.linspace(0, 1, 101)
 
 
     wg.simplefilter("error", RuntimeWarning)

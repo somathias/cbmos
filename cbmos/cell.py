@@ -12,8 +12,8 @@ We assume a normal distribution of cell cycle durations with mean=24h and
 sigma=1.0h.
 """
 
-import numpy as np
-import numpy.random as npr
+import numpy as _np
+import numpy.random as _npr
 
 
 class Cell:
@@ -37,16 +37,16 @@ class Cell:
             self, ID, position,
             birthtime=0.0,
             proliferating=False,
-            division_time_generator=lambda t: npr.normal(24 + t),
+            division_time_generator=lambda t: _npr.normal(24 + t),
             division_time=None,
             parent_ID=None
             ):
         self.ID = ID
-        self.position = np.array(position)
+        self.position = _np.array(position)
         self.birthtime = birthtime
         self.proliferating = proliferating
         self.division_time = (
-                division_time_generator(birthtime) if proliferating else np.inf
+                division_time_generator(birthtime) if proliferating else _np.inf
                 ) if division_time is None else division_time
         self.generate_division_time = division_time_generator
         self.parent_ID = parent_ID if parent_ID is not None else ID
@@ -57,6 +57,6 @@ class Cell:
 #    def generate_division_time(self, current_time=None):
 #        current_time = current_time if current_time is not None else self.birthtime
 #        if self.proliferating:
-#            return np.random.randn() + 24.0 + current_time
+#            return _np.random.randn() + 24.0 + current_time
 #        else:
-#            return np.inf
+#            return _np.inf

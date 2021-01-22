@@ -1,3 +1,3 @@
-from cbmos.cbmos import CBMSolver
+from .cbmsolver import CBMSolver
 
-__all__ = ["cell", "force_functions", "solvers"]
+__all__ = ["cbmsolver", "cell", "force_functions", "solvers"]

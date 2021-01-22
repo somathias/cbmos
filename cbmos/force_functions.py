@@ -6,10 +6,7 @@ Created on Tue Jan 22 12:57:42 2019
 @author: Sonja Mathias
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-
-plt.style.use('seaborn')
+import numpy as _np
 
 
 # Linear spring
@@ -24,7 +21,7 @@ def linear(r, mu=1.0, s=1.0, rA=1.5):
     """
     if r is None:
         return 0.
-    return np.where(r < rA, mu*(r-s), 0.)
+    return _np.where(r < rA, mu*(r-s), 0.)
 
 
 # Morse
@@ -40,7 +37,7 @@ def morse(r, m=1.0, a=5.0, s=1.0, rA=1.5):
     """
     if r is None:
         return 0.
-    return np.where(r < rA, - m*(np.exp(-2*a*(r-s-np.log(2)/a))-2*np.exp(-a*(r-s-np.log(2)/a))), 0.)
+    return _np.where(r < rA, - m*(_np.exp(-2*a*(r-s-_np.log(2)/a))-2*_np.exp(-a*(r-s-_np.log(2)/a))), 0.)
 
 
 # Lennard-Jones
@@ -55,7 +52,7 @@ def lennard_jones(r, m=1.0, s=1.0, rA=1.5):
     """
     if r is None:
         return 0.
-    return np.where(r < rA, -4*m*(np.power(s/r, 12)-np.power(s/r, 6)), 0.)
+    return _np.where(r < rA, -4*m*(_np.power(s/r, 12)-_np.power(s/r, 6)), 0.)
 
 
 # Linear-exponential
@@ -73,7 +70,7 @@ def linear_exponential(r, mu=15.0, s=1.0, a=5.0, rA=1.5):
     """
     if r is None:
         return 0.
-    return np.where(r < rA, mu*(r-s)*np.exp(-a*(r-s)), 0.)
+    return _np.where(r < rA, mu*(r-s)*_np.exp(-a*(r-s)), 0.)
 
 
 # cubic
@@ -90,7 +87,7 @@ def cubic(r, mu=50.0, s=1.0, rA=1.5):
     """
     if r is None:
         return 0.
-    return np.where(r < rA, mu*(r-rA)**2*(r-s), 0.)
+    return _np.where(r < rA, mu*(r-rA)**2*(r-s), 0.)
 
 
 # general polynomial
@@ -109,8 +106,8 @@ def piecewise_polynomial(r, muA=40.0, muR=160.0, rA=1.5, rR=1.2, n=1.0, p=1.0):
     """
     if r is None:
         return 0.
-    return np.where(r <= rR, muA*(1-r/rA)**(n+1)-muR*(1-r/rR)**(p+1),
-                    np.where(r < rA, muA*(1-r/rA)**(n+1), 0.))
+    return _np.where(r <= rR, muA*(1-r/rA)**(n+1)-muR*(1-r/rR)**(p+1),
+                    _np.where(r < rA, muA*(1-r/rA)**(n+1), 0.))
 
 
 # logarithmic
@@ -126,7 +123,7 @@ def logarithmic(r, mu=1.0, s=1.0):
     if r is None:
         return 0.
     r[r==0] = 0.0001  # get away from zero - this is an awful hack!
-    return np.where(r < s, mu*np.log(1+(r-s)), 0.)
+    return _np.where(r < s, mu*_np.log(1+(r-s)), 0.)
 
 # linear-logarithmic
 def linear_logarithmic(r, mu=1.0, s=1.0):
@@ -140,7 +137,7 @@ def linear_logarithmic(r, mu=1.0, s=1.0):
     """
     if r is None:
         return 0.
-    return np.where(r < s, -mu*(r-s)*np.log(1+(r-s)), 0.)
+    return _np.where(r < s, -mu*(r-s)*_np.log(1+(r-s)), 0.)
 
 
 # hard-core model
@@ -156,8 +153,8 @@ def hard_core(r, mu=1.0, s=1.0, rN=0.3):
     """
     if r is None:
         return 0.
-    return np.where(r <= s-2*rN, np.inf,
-                    np.where(r < s, mu*(r-s)/(r-(s-2*rN)), 0.))
+    return _np.where(r <= s-2*rN, _np.inf,
+                    _np.where(r < s, mu*(r-s)/(r-(s-2*rN)), 0.))
 
 
 def hertz(r, mu=1.0, s=1.0):
@@ -171,7 +168,7 @@ def hertz(r, mu=1.0, s=1.0):
     """
     if r is None:
         return 0.
-    return np.where(r < s, mu*np.sign(r-s)*(np.abs(r-s))**(3/2), 0.)
+    return _np.where(r < s, mu*_np.sign(r-s)*(_np.abs(r-s))**(3/2), 0.)
 
 def gls(r, mu=1.0, s=1.0, a=5.0, rA=1.5):
     """
@@ -188,14 +185,16 @@ def gls(r, mu=1.0, s=1.0, a=5.0, rA=1.5):
     if r is None:
         return 0.
     r[r==0] = 0.0001  # get away from zero - this is an awful hack! Plus it does not allow for single value evaluation
-    return np.where(r < s, mu*np.log(1+(r-s)), np.where(r < rA, mu*(r-s)*np.exp(-a*(r-s)), 0))
+    return _np.where(r < s, mu*_np.log(1+(r-s)), _np.where(r < rA, mu*(r-s)*_np.exp(-a*(r-s)), 0))
 
 
 if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    plt.style.use('seaborn')
 
 
-
-    x_vals = np.linspace(0.0, 1.8, 200)
+    x_vals = _np.linspace(0.0, 1.8, 200)
 
     print(hertz(x_vals))
 
