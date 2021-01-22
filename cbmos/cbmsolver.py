@@ -212,15 +212,13 @@ class CBMSolver:
 
         """
         def f(t, y):
-            y_r = y.reshape((-1, self.dim))
-            tmp = _np.repeat(y_r[:, :, _np.newaxis], y_r.shape[0], axis=2)
-            norm = _np.sqrt(((tmp - tmp.transpose())**2).sum(axis=1))
+            y_r = y.reshape((-1, self.dim))[:, :, _np.newaxis] # shape (n, d, 1)
+            cross_diff = y_r.transpose([2, 1, 0]) - y_r # shape (n, d, n)
+            norm = _np.sqrt((cross_diff**2).sum(axis=1))
             forces = self.force(norm, **force_args)\
                 / (norm + _np.diag(_np.ones(y_r.shape[0])))
-            total_force = (_np.repeat(forces[:, _np.newaxis, :],
-                                     self.dim, axis=1)
-                           * (tmp.transpose()-tmp)).sum(axis=2)
-            return (_NU*total_force).reshape(-1)
+            total_force = (forces[:, _np.newaxis, :] * cross_diff).sum(axis=2)
+            return (NU*total_force).reshape(-1)
 
         return f
 
