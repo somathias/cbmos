@@ -29,25 +29,25 @@ def two_cells():
     return np.array([[0., 0., 0.], [0.5, 0., 0.]]).reshape(-1)
 
 
-def test_ode_force(two_cells):
+def test_ode_system(two_cells):
     # Check that the force is made use of
     solver = cbmos.CBMModel(lambda r: 0., scpi.solve_ivp)
-    f = solver._ode_force({})
+    f = solver._ode_system({})
     assert not f(0., two_cells).any()
     solver = cbmos.CBMModel(lambda r: 1., scpi.solve_ivp)
-    f = solver._ode_force({})
+    f = solver._ode_system({})
     assert f(0., two_cells).any()
 
     # Check parameters are made use of
     solver = cbmos.CBMModel(lambda r, p=1.: p, scpi.solve_ivp)
-    f = solver._ode_force({})
+    f = solver._ode_system({})
     assert f(0., two_cells).any()
-    f = solver._ode_force({'p': 0.})
+    f = solver._ode_system({'p': 0.})
     assert not f(0., two_cells).any()
 
     # Check force computation is correct
     solver = cbmos.CBMModel(lambda r: 1., scpi.solve_ivp)
-    f = solver._ode_force({})
+    f = solver._ode_system({})
     total_force = f(0., two_cells).reshape(2, 3)
     assert np.array_equal(total_force[0], np.array([1., 0., 0.]))
     assert np.array_equal(total_force[0], -total_force[1])

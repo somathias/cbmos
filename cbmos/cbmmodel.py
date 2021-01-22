@@ -181,7 +181,7 @@ class CBMModel:
         return division_direction
 
     def _calculate_positions(self, t_eval, y0, force_args, solver_args):
-        return self.solver(self._ode_force(force_args),
+        return self.solver(self._ode_system(force_args),
                            (t_eval[0], t_eval[-1]),
                            y0,
                            t_eval=t_eval,
@@ -197,7 +197,7 @@ class CBMModel:
         for cell, pos in zip(self.cell_list, y):
             cell.position = _np.array(pos)
 
-    def _ode_force(self, force_args):
+    def _ode_system(self, force_args):
         """ Generate ODE force function from cell-cell force function
 
         Parameters
