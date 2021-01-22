@@ -229,6 +229,39 @@ class CBMModel:
 
         return f
 
+    def _jacobian(self, y, g, gprime):
+        #TODO add documentation once we have settled on arguments
+        #TODO use hpc_backend
+        #    dim = 3
+        y_r = _np.expand_dims(y.reshape((-1, self.dim)), axis=-1)
+        n = y_r.shape[0]
+        cross_diff = y_r - y_r.transpose([2, 1, 0]) # shape (n, d, n)
+        norm = _np.sqrt((cross_diff**2).sum(axis=1))
+        r_hat = _np.expand_dims(_np.moveaxis(cross_diff, 1, 2), axis=-1) # shape (n, n, d, 1)
+
+        B = r_hat @ r_hat.transpose([0, 1, 3, 2]) # shape (n, n, d, d)
+
+        with _np.errstate(divide='ignore', invalid='ignore'):
+            # Ignore divide by 0 warnings
+            # All NaNs are removed below
+
+            # add normalization
+            B = B / _np.expand_dims(norm*norm, axis=(2, 3))
+
+            B = (
+                    B*_np.expand_dims(gprime(norm)-g(norm)/norm, axis=(2, 3))
+                    + _np.expand_dims(_np.identity(self.dim), axis=(0, 1))
+                        * _np.expand_dims(g(norm)/norm, axis=(2, 3))
+                    )
+
+            B[_np.isnan(B)] = 0
+
+        # Step 2: compute the diagonal
+        B[range(n), range(n), :, :] = - B.sum(axis=0)
+
+        # Step 3: Build block matrix
+        return B.reshape(n, n, self.dim, self.dim).swapaxes(1, 2).reshape(self.dim*n, -1)
+
 
 if __name__ == "__main__":
     import warnings as wg
