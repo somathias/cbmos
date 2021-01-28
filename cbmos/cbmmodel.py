@@ -257,10 +257,10 @@ class CBMModel:
 
         return f
 
-    def _jacobian(self, y, g, gprime):
+    def jacobian(self, y, force_args):
         #TODO add documentation once we have settled on arguments
         #TODO use hpc_backend
-        #    dim = 3
+
         y_r = _np.expand_dims(y.reshape((-1, self.dim)), axis=-1)
         n = y_r.shape[0]
         cross_diff = y_r - y_r.transpose([2, 1, 0]) # shape (n, d, n)
@@ -277,9 +277,9 @@ class CBMModel:
             B = B / _np.expand_dims(norm*norm, axis=(2, 3))
 
             B = (
-                    B*_np.expand_dims(gprime(norm)-g(norm)/norm, axis=(2, 3))
+                    B*_np.expand_dims(self.force.derive()(norm, **force_args)-self.force(norm, **force_args)/norm, axis=(2, 3))
                     + _np.expand_dims(_np.identity(self.dim), axis=(0, 1))
-                        * _np.expand_dims(g(norm)/norm, axis=(2, 3))
+                        * _np.expand_dims(self.force(norm, **force_args)/norm, axis=(2, 3))
                     )
 
             B[_np.isnan(B)] = 0
