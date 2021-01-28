@@ -9,6 +9,22 @@ _NU = 1
 
 
 class CBMModel:
+    """
+    Parameters
+    -----------
+        force: f(ndarray(dtype=float), **kwargs) -> float
+            forces to be applied between cells
+        solver: f(fun, t_span, y0) -> scipy.intergrade._ivp.ivp.OdeResult
+            ODE solver, e.g. solve_ivp from scipy.integrate
+        dimension: int
+            dimension of the system, usually 2D or 3D
+        separation: float
+            distance between parent cell and child cell after separation
+        hpc_backend: module
+            module implementing Numpy's API (e.g. Cupy, Dask). Default is
+            Numpy itself.
+
+    """
     def __init__(self, force, solver, dimension=3, separation=0.3, hpc_backend=_np):
         self.force = force
         self.solver = solver
