@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import os
 plt.style.use('seaborn')
 
-def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, jacobian=None,
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, jacobian=None, force_args={},
               out='', write_to_file=False):
     # do regular fixed time stepping
     t0, tf = float(t_span[0]), float(t_span[-1])
@@ -37,7 +37,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, jacobian=None,
         y_next = copy.deepcopy(y) # initialize with current y
         for j in np.arange(n_newton):
             if jacobian is not None:
-                A = jacobian(y_next)
+                A = jacobian(y_next, force_args)
             else:
                 print('Error: No jacobian provided!')
             J = np.eye(A.shape[0]) - dt*A

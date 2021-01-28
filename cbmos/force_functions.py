@@ -205,8 +205,9 @@ class Logarithmic:
         def fp(r, mu=1.0, s=1.0):
             if r is None:
                 return 0.
-        r[r==0] = 0.0001  # get away from zero - this is an awful hack!
-        return _np.where(r < s, mu/(1+(r-s)), 0.)
+            r[r==0] = 0.0001  # get away from zero - this is an awful hack!
+            return _np.where(r < s, mu/(1+(r-s)), 0.)
+        return fp
 
 # linear-logarithmic
 class LinearLogarithmic:
@@ -231,8 +232,9 @@ class LinearLogarithmic:
         def fp(r, mu=1.0, s=1.0):
             if r is None:
                 return 0.
-        r[r==0] = 0.0001  # get away from zero - this is an awful hack!
-        return _np.where(r < s, -mu*np.log(1+(r-s))-mu*(r-s)/(1+(r-s)), 0.)
+            r[r==0] = 0.0001  # get away from zero - this is an awful hack!
+            return _np.where(r < s, -mu*_np.log(1+(r-s))-mu*(r-s)/(1+(r-s)), 0.)
+        return fp
 
 
 # hard-core model
@@ -299,11 +301,12 @@ class Gls:
         return _np.where(r < s, mu*_np.log(1+(r-s)), _np.where(r < rA, mu*(r-s)*_np.exp(-a*(r-s)), 0))
 
     def derive(self):
-        def fp(r, mu=1.0, s=1.0):
+        def fp(r, mu=1.0, s=1.0, a=5.0, rA=1.5):
             if r is None:
                 return 0.
-        r[r==0] = 0.0001  # get away from zero - this is an awful hack! Plus it does not allow for single value evaluation
-        return _np.where(r < s, mu/(1+(r-s)), _np.where(r < rA, mu*(1-a*(r-s))*np.exp(-a*(r-s)), 0))
+            r[r==0] = 0.0001  # get away from zero - this is an awful hack! Plus it does not allow for single value evaluation
+            return _np.where(r < s, mu/(1+(r-s)), _np.where(r < rA, mu*(1-a*(r-s))*_np.exp(-a*(r-s)), 0))
+        return fp
 
 
 
