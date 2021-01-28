@@ -10,182 +10,301 @@ import numpy as _np
 
 
 # Linear spring
-def linear(r, mu=1.0, s=1.0, rA=1.5):
-    """
-    Linear spring force function.
+class Linear:
+    def __init__(self):
+        pass
 
-    Parameters:
-      mu: spring stiffness coefficient, default 1.0
-      s: rest length, default 1.0
+    def __call__(self, r, mu=1.0, s=1.0, rA=1.5):
+        """
+        Linear spring force function.
 
-    """
-    if r is None:
-        return 0.
-    return _np.where(r < rA, mu*(r-s), 0.)
+        Parameters:
+          mu: spring stiffness coefficient, default 1.0
+          s: rest length, default 1.0
+
+        """
+        if r is None:
+            return 0.
+        return _np.where(r < rA, mu*(r-s), 0.)
+
+    def derive(self):
+        def fp(r, mu=1.0, s=1.0, rA=1.5):
+            if r is None:
+                return 0.
+            return _np.where(r < rA, mu, 0.)
+
+        return fp
 
 
 # Morse
-def morse(r, m=1.0, a=5.0, s=1.0, rA=1.5):
-    """
-    Morse potential. (slope at r = s  is 4*a*m)
+class Morse:
+    def __init__(self):
+        pass
+    def __call__(self, r, m=1.0, a=5.0, s=1.0, rA=1.5):
+        """
+        Morse potential. (slope at r = s  is 4*a*m)
 
-    Parameters:
-      m: maximum value, default 1.0
-      a: controls the bredth of the potential, default 1.0
-      s: rest length, default 1.0
+        Parameters:
+          m: maximum value, default 1.0
+          a: controls the bredth of the potential, default 1.0
+          s: rest length, default 1.0
 
-    """
-    if r is None:
-        return 0.
-    return _np.where(r < rA, - m*(_np.exp(-2*a*(r-s-_np.log(2)/a))-2*_np.exp(-a*(r-s-_np.log(2)/a))), 0.)
+        """
+        if r is None:
+            return 0.
+        return _np.where(r < rA, - m*(_np.exp(-2*a*(r-s-_np.log(2)/a))-2*_np.exp(-a*(r-s-_np.log(2)/a))), 0.)
+
+    def derive(self):
+        def fp(r, m=1.0, a=5.0, s=1.0, rA=1.5):
+            if r is None:
+                return 0.
+            return _np.where(r < rA, - 2*a*m*(np.exp(-2*a*(r-s-np.log(2)/a))-np.exp(-a*(r-s-np.log(2)/a))), 0.)
+
+        return fp
 
 
 # Lennard-Jones
-def lennard_jones(r, m=1.0, s=1.0, rA=1.5):
-    """
-    Lennard-Jones potential
+class LennardJones:
+    def __init__(self):
+        pass
 
-    Parameters:
-      m: maximum value, default 1.0
-      s: rest length, default 1.0
+    def __call__(self, r, m=1.0, s=1.0, rA=1.5):
+        """
+        Lennard-Jones potential
 
-    """
-    if r is None:
-        return 0.
-    return _np.where(r < rA, -4*m*(_np.power(s/r, 12)-_np.power(s/r, 6)), 0.)
+        Parameters:
+          m: maximum value, default 1.0
+          s: rest length, default 1.0
+
+        """
+        if r is None:
+            return 0.
+        return _np.where(r < rA, -4*m*(_np.power(s/r, 12)-_np.power(s/r, 6)), 0.)
+
+    def derive(self):
+        def fp(r, m=1.0, s=1.0, rA=1.5):
+            if r is None:
+                return 0.
+            return _np.where(r < rA, -4*m*(-12/r*np.power(s/r, 12)+6/r*np.power(s/r, 6)), 0.)
+
+        return fp
 
 
 # Linear-exponential
-def linear_exponential(r, mu=15.0, s=1.0, a=5.0, rA=1.5):
-    """
-    Linear exponential force function
+class LinearExponential:
+    def __init__(self):
+        pass
 
-    Parameters:
-      mu: spring stiffness coefficient, default 1.0
-      s: rest length, default 1.0
-      a: controls the bredth of the potential, default 1.0
-      rA: maximum interaction distance (cutoff value), default 1.5
+    def __call__(self, r, mu=15.0, s=1.0, a=5.0, rA=1.5):
+        """
+        Linear exponential force function
+
+        Parameters:
+          mu: spring stiffness coefficient, default 1.0
+          s: rest length, default 1.0
+          a: controls the bredth of the potential, default 1.0
+          rA: maximum interaction distance (cutoff value), default 1.5
 
 
-    """
-    if r is None:
-        return 0.
-    return _np.where(r < rA, mu*(r-s)*_np.exp(-a*(r-s)), 0.)
+        """
+        if r is None:
+            return 0.
+        return _np.where(r < rA, mu*(r-s)*_np.exp(-a*(r-s)), 0.)
+
+    def derive(self):
+        def fp(r, mu=1.0, s=1.0, a=5.0, rA=1.5):
+            if r is None:
+                return 0.
+            return _np.where(r < rA, mu*(1-a*(r-s))*np.exp(-a*(r-s)), 0.)
+
+        return fp
 
 
 # cubic
-def cubic(r, mu=50.0, s=1.0, rA=1.5):
-    """
-    Cubic force function
+class Cubic:
+    def __init__(self):
+        pass
 
-    Parameters:
-      mu: spring stiffness coefficient, default 1.0
-      s: rest length, default 1.0
-      rA: maximum interaction distance (cutoff value), default 1.5
+    def __call__(self, r, mu=50.0, s=1.0, rA=1.5):
+        """
+        Cubic force function
+
+        Parameters:
+          mu: spring stiffness coefficient, default 1.0
+          s: rest length, default 1.0
+          rA: maximum interaction distance (cutoff value), default 1.5
 
 
-    """
-    if r is None:
-        return 0.
-    return _np.where(r < rA, mu*(r-rA)**2*(r-s), 0.)
+        """
+        if r is None:
+            return 0.
+        return _np.where(r < rA, mu*(r-rA)**2*(r-s), 0.)
+
+    def derive(self):
+        def fp(r, mu=50.0, s=1.0, rA=1.5):
+            if r is None:
+                return 0.
+            return _np.where(r < rA, mu*(r-rA)*(2*(r-s)+r-rA), 0.)
+
+        return fp
 
 
 # general polynomial
-def piecewise_polynomial(r, muA=40.0, muR=160.0, rA=1.5, rR=1.2, n=1.0, p=1.0):
-    """
-    Piecewise polynomial force function
+class PiecewisePolynomial:
+    def __init__(self):
+        pass
 
-    Parameters:
-      muA: spring stiffness coefficient for adhesion, default 1.0
-      muR: spring stiffness coefficient for repulsion, default 1.0
-      rA: maximum adhesive interaction distance (cutoff value), default 1.5
-      rR: maximum repulsive interaction distance (cutoff value), default 1.5
-      n: exponent adhesive part
-      m: exponent repulsive part
+    def __call__(self, r, muA=40.0, muR=160.0, rA=1.5, rR=1.2, n=1.0, p=1.0):
+        """
+        Piecewise polynomial force function
 
-    """
-    if r is None:
-        return 0.
-    return _np.where(r <= rR, muA*(1-r/rA)**(n+1)-muR*(1-r/rR)**(p+1),
-                    _np.where(r < rA, muA*(1-r/rA)**(n+1), 0.))
+        Parameters:
+          muA: spring stiffness coefficient for adhesion, default 1.0
+          muR: spring stiffness coefficient for repulsion, default 1.0
+          rA: maximum adhesive interaction distance (cutoff value), default 1.5
+          rR: maximum repulsive interaction distance (cutoff value), default 1.5
+          n: exponent adhesive part
+          m: exponent repulsive part
+
+        """
+        if r is None:
+            return 0.
+        return _np.where(r <= rR, muA*(1-r/rA)**(n+1)-muR*(1-r/rR)**(p+1),
+                        _np.where(r < rA, muA*(1-r/rA)**(n+1), 0.))
+
+    def derive(self):
+        def fp(r, muA=40.0, muR=160.0, rA=1.5, rR=1.2, n=1.0, p=1.0):
+            if r is None:
+                return 0.
+            return _np.where(r <= rR, -muA/rA*(n+1)*(1-r/rA)**n+muR/rR*(p+1)*(1-r/rR)**p,
+                    _np.where(r < rA, -muA/rA*(n+1)*(1-r/rA)**n, 0.))
+
+        return fp
 
 
 # logarithmic
-def logarithmic(r, mu=1.0, s=1.0):
-    """
-    Logarithmic force function
+class Logarithmic:
+    def __init__(self):
+        pass
 
-    Parameters:
-      mu: spring stiffness coefficient, default 1.0
-      s: rest length, default 1.0
+    def __call__(self, r, mu=1.0, s=1.0):
+        """
+        Logarithmic force function
 
-    """
-    if r is None:
-        return 0.
-    r[r==0] = 0.0001  # get away from zero - this is an awful hack!
-    return _np.where(r < s, mu*_np.log(1+(r-s)), 0.)
+        Parameters:
+          mu: spring stiffness coefficient, default 1.0
+          s: rest length, default 1.0
+
+        """
+        if r is None:
+            return 0.
+        r[r==0] = 0.0001  # get away from zero - this is an awful hack!
+        return _np.where(r < s, mu*_np.log(1+(r-s)), 0.)
+
+    def derive(self):
+        def fp(r, mu=1.0, s=1.0):
+            if r is None:
+                return 0.
+        r[r==0] = 0.0001  # get away from zero - this is an awful hack!
+        return _np.where(r < s, mu/(1+(r-s)), 0.)
 
 # linear-logarithmic
-def linear_logarithmic(r, mu=1.0, s=1.0):
-    """
-    Linear logarithmic force function
+class LinearLogarithmic:
+    def __init__(self):
+        pass
 
-    Parameters:
-      mu: spring stiffness coefficient, default 1.0
-      s: rest length, default 1.0
+    def __call__(self, r, mu=1.0, s=1.0):
+        """
+        Linear logarithmic force function
 
-    """
-    if r is None:
-        return 0.
-    return _np.where(r < s, -mu*(r-s)*_np.log(1+(r-s)), 0.)
+        Parameters:
+          mu: spring stiffness coefficient, default 1.0
+          s: rest length, default 1.0
+
+        """
+        if r is None:
+            return 0.
+        r[r==0] = 0.0001  # get away from zero - this is an awful hack!
+        return _np.where(r < s, -mu*(r-s)*_np.log(1+(r-s)), 0.)
+
+    def derive(self):
+        def fp(r, mu=1.0, s=1.0):
+            if r is None:
+                return 0.
+        r[r==0] = 0.0001  # get away from zero - this is an awful hack!
+        return _np.where(r < s, -mu*np.log(1+(r-s))-mu*(r-s)/(1+(r-s)), 0.)
 
 
 # hard-core model
-def hard_core(r, mu=1.0, s=1.0, rN=0.3):
-    """
-    Hard-core model force function
+class HardCore:
+    def __init__(self):
+        pass
+    def __call__(self, r, mu=1.0, s=1.0, rN=0.3):
+        """
+        Hard-core model force function
 
-    Parameters:
-      mu: spring stiffness coefficient, default 1.0
-      s: rest length, default 1.0
-      rN: radius of nucleus, default 0.3
+        Parameters:
+          mu: spring stiffness coefficient, default 1.0
+          s: rest length, default 1.0
+          rN: radius of nucleus, default 0.3
 
-    """
-    if r is None:
-        return 0.
-    return _np.where(r <= s-2*rN, _np.inf,
-                    _np.where(r < s, mu*(r-s)/(r-(s-2*rN)), 0.))
+        """
+        if r is None:
+            return 0.
+        return _np.where(r <= s-2*rN, _np.inf,
+                        _np.where(r < s, mu*(r-s)/(r-(s-2*rN)), 0.))
+
+    def derive(self):
+        raise NotImplementedError
 
 
-def hertz(r, mu=1.0, s=1.0):
-    """
-    (Simplified) Hertz force law for elastic contact.
+class Hertz:
+    def __init__(self):
+        pass
+    def __call__(self, r, mu=1.0, s=1.0):
+        """
+        (Simplified) Hertz force law for elastic contact.
 
-    Parameters:
-      mu: coefficient, default 1.0
-      s: rest length, default 1.0
+        Parameters:
+          mu: coefficient, default 1.0
+          s: rest length, default 1.0
 
-    """
-    if r is None:
-        return 0.
-    return _np.where(r < s, mu*_np.sign(r-s)*(_np.abs(r-s))**(3/2), 0.)
+        """
+        if r is None:
+            return 0.
+        return _np.where(r < s, mu*_np.sign(r-s)*(_np.abs(r-s))**(3/2), 0.)
 
-def gls(r, mu=1.0, s=1.0, a=5.0, rA=1.5):
-    """
-    Generalized linear spring using logarithmic for repulsion and linear-
-    exponential for adhesion.
+    def derive(self):
+        raise NotImplementedError
 
-    Parameters:
-      mu: coefficient, default 1.0
-      s: rest length, default 1.0
-      a: controls the bredth of the potential, default 1.0
-      rA: maximum interaction distance (cutoff value), default 1.5
+class Gls:
+    def __init__(self):
+        pass
 
-    """
-    if r is None:
-        return 0.
-    r[r==0] = 0.0001  # get away from zero - this is an awful hack! Plus it does not allow for single value evaluation
-    return _np.where(r < s, mu*_np.log(1+(r-s)), _np.where(r < rA, mu*(r-s)*_np.exp(-a*(r-s)), 0))
+    def __call__(self, r, mu=1.0, s=1.0, a=5.0, rA=1.5):
+        """
+        Generalized linear spring using logarithmic for repulsion and linear-
+        exponential for adhesion.
+
+        Parameters:
+          mu: coefficient, default 1.0
+          s: rest length, default 1.0
+          a: controls the bredth of the potential, default 1.0
+          rA: maximum interaction distance (cutoff value), default 1.5
+
+        """
+        if r is None:
+            return 0.
+        r[r==0] = 0.0001  # get away from zero - this is an awful hack! Plus it does not allow for single value evaluation
+        return _np.where(r < s, mu*_np.log(1+(r-s)), _np.where(r < rA, mu*(r-s)*_np.exp(-a*(r-s)), 0))
+
+    def derive(self):
+        def fp(r, mu=1.0, s=1.0):
+            if r is None:
+                return 0.
+        r[r==0] = 0.0001  # get away from zero - this is an awful hack! Plus it does not allow for single value evaluation
+        return _np.where(r < s, mu/(1+(r-s)), _np.where(r < rA, mu*(1-a*(r-s))*np.exp(-a*(r-s)), 0))
+
 
 
 if __name__ == "__main__":
