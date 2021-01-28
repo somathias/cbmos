@@ -58,7 +58,7 @@ class Morse:
         def fp(r, m=1.0, a=5.0, s=1.0, rA=1.5):
             if r is None:
                 return 0.
-            return _np.where(r < rA, - 2*a*m*(np.exp(-2*a*(r-s-np.log(2)/a))-np.exp(-a*(r-s-np.log(2)/a))), 0.)
+            return _np.where(r < rA, - 2*a*m*(_np.exp(-2*a*(r-s-_np.log(2)/a))-_np.exp(-a*(r-s-_np.log(2)/a))), 0.)
 
         return fp
 
@@ -85,7 +85,7 @@ class LennardJones:
         def fp(r, m=1.0, s=1.0, rA=1.5):
             if r is None:
                 return 0.
-            return _np.where(r < rA, -4*m*(-12/r*np.power(s/r, 12)+6/r*np.power(s/r, 6)), 0.)
+            return _np.where(r < rA, -4*m*(-12/r*_np.power(s/r, 12)+6/r*_np.power(s/r, 6)), 0.)
 
         return fp
 
@@ -318,10 +318,10 @@ if __name__ == "__main__":
 
     x_vals = _np.linspace(0.0, 1.8, 200)
 
-    print(hertz(x_vals))
+    print(Hertz(x_vals))
 
     plt.figure()
-    plt.plot(x_vals, hertz(x_vals), label='hertz')
+    plt.plot(x_vals, Hertz(x_vals), label='hertz')
 #
 #    plt.figure()
 #    plt.plot(x_vals, linear(x_vals),
