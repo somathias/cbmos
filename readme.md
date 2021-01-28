@@ -1,5 +1,17 @@
 # CBMOS
 
+## Installation
+### Install from source
+From the root directory:
+```
+pip install .
+```
+
+Or, in developer mode:
+```
+pip install -e .
+```
+
 ## Code structure
 
 The *master* branch has the currently stable version of the code - with EF handling t_eval.
