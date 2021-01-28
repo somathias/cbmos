@@ -9,12 +9,12 @@ _NU = 1
 
 
 class CBMModel:
-    def __init__(self, force, solver, dimension=3, separation=0.3, hpc=_np):
+    def __init__(self, force, solver, dimension=3, separation=0.3, hpc_backend=_np):
         self.force = force
         self.solver = solver
         self.dim = dimension
         self.separation = separation
-        self.hpc = hpc
+        self.hpc_backend = hpc_backend
 
     def simulate(self, cell_list, t_data, force_args, solver_args, seed=None, raw_t=True):
         """
@@ -225,17 +225,17 @@ class CBMModel:
 
         """
         def f(t, y):
-            y_r = self.hpc.asarray(y).reshape((-1, self.dim))[:, :, self.hpc.newaxis] # shape (n, d, 1)
+            y_r = self.hpc_backend.asarray(y).reshape((-1, self.dim))[:, :, self.hpc_backend.newaxis] # shape (n, d, 1)
             cross_diff = y_r.transpose([2, 1, 0]) - y_r # shape (n, d, n)
-            norm = self.hpc.sqrt((cross_diff**2).sum(axis=1))
+            norm = self.hpc_backend.sqrt((cross_diff**2).sum(axis=1))
             forces = self.force(norm, **force_args)\
-                / (norm + self.hpc.diag(self.hpc.ones(y_r.shape[0])))
-            total_force = (forces[:, self.hpc.newaxis, :] * cross_diff).sum(axis=2)
+                / (norm + self.hpc_backend.diag(self.hpc_backend.ones(y_r.shape[0])))
+            total_force = (forces[:, self.hpc_backend.newaxis, :] * cross_diff).sum(axis=2)
 
             fty = (_NU*total_force).reshape(-1)
 
-            if self.hpc.__name__ == "cupy":
-                return self.hpc.asnumpy(fty)
+            if self.hpc_backend.__name__ == "cupy":
+                return self.hpc_backend.asnumpy(fty)
             else:
                 return _np.asarray(fty)
 
