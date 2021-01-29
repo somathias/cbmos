@@ -9,15 +9,17 @@ Created on Fri Jan 22 11:16:04 2021
 import numpy as np
 from scipy.integrate._ivp.ivp import OdeResult
 from scipy.sparse.linalg import gmres
+from scipy.sparse.linalg import cg
 import scipy as scpi
 import copy
+from scipy.sparse.linalg import LinearOperator
 
 
 import matplotlib.pyplot as plt
 import os
 plt.style.use('seaborn')
 
-def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, jacobian=None, force_args={},
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, eta=0.001, jacobian=None, force_args={},
               out='', write_to_file=False):
     # do regular fixed time stepping
     t0, tf = float(t_span[0]), float(t_span[-1])
@@ -34,19 +36,27 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, jacobian=None, 
         y = copy.deepcopy(y)
 
         # do Newton iterations
-        y_next = copy.deepcopy(y) # initialize with current y
+        y_next = copy.deepcopy(y)  # initialize with current y
         for j in np.arange(n_newton):
+
+            F_curly = y_next - y - dt*fun(t, y_next)
+
             if jacobian is not None:
                 A = jacobian(y_next, force_args)
+                J = np.eye(A.shape[0]) - dt*A
             else:
-                print('Error: No jacobian provided!')
-            J = np.eye(A.shape[0]) - dt*A
-            F_curly = y_next - y - dt* fun(t, y_next)
+                # approximate matrix vector product Jv where J = I-dt*A
+                def Jv(v):
+                    return 1/eta*(y_next + eta*v
+                                  - y - dt*fun(t, y_next + eta*v)
+                                  - F_curly)
+                J = LinearOperator((len(y_next), len(y_next)), matvec=Jv)
 
-            #solve linear system J*dy = F_curly for dy
-            #dy, exitCode = gmres(J, -F_curly)
-            dy = scpi.linalg.solve(J, -F_curly)
-            #print(exitCode)
+            # solve linear system J*dy = F_curly for dy
+            dy, exitCode = gmres(J, -F_curly)
+            #dy, exitCode = cg(J, -F_curly)
+            # dy = scpi.linalg.solve(J, -F_curly)
+            # print(exitCode)
             y_next = y_next + dy
 
         y = copy.deepcopy(y_next)
@@ -76,7 +86,7 @@ if __name__ == "__main__":
     #@np.vectorize
     def func(t, y):
         return -50*np.eye(len(y))@y
-    def jac(y):
+    def jac(y, r=1):
         return -50*np.eye(len(y))
 
 #    t_span = (0,1)
@@ -101,8 +111,10 @@ if __name__ == "__main__":
     except FileNotFoundError:
         print('Nothing to delete.')
 
+    #sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, dt=0.1, n_newton = 2,
+    #                 write_to_file=True, jacobian=jac)
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, dt=0.1, n_newton = 2,
-                     write_to_file=True, jacobian=jac)
+                     write_to_file=True)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
