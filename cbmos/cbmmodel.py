@@ -256,7 +256,19 @@ class CBMModel:
         return f
 
     def jacobian(self, y, force_args):
-        #TODO add documentation once we have settled on arguments
+        """ Compute the jacobian of the given ode system.
+
+        Parameters
+        ----------
+        y: np.ndarray(size=(n_cell*dim,))
+            cell vector
+        force_args: {str: float}
+            extra arguments for the force function
+
+        Returns
+        -------
+        np.ndarray(size=(n_cell*dim, n_cell*dim))
+        """
 
         y_r = self.hpc_backend.asarray(_np.expand_dims(y.reshape((-1, self.dim)), axis=-1))
         n = y_r.shape[0]
