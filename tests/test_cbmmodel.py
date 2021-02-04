@@ -318,10 +318,12 @@ def test_seed():
         assert cells[3].position.tolist() != cells[4].position.tolist()
 
 
-def test_seed_division_time():
+def test_seed_division_time(caplog):
     logger = logging.getLogger()
     logs = io.StringIO()
     logger.addHandler(logging.StreamHandler(logs))
+
+    caplog.set_level(logging.DEBUG)
 
     dim = 3
     cbm_solver = cbmos.CBMModel(ff.Logarithmic(), ef.solve_ivp, dim)
@@ -349,10 +351,12 @@ def test_cell_dimension_exception():
         cbm_solver.simulate(cell_list, t_data, {}, {})
 
 
-def test_cell_birth():
+def test_cell_birth(caplog):
     logger = logging.getLogger()
     logs = io.StringIO()
     logger.addHandler(logging.StreamHandler(logs))
+
+    caplog.set_level(logging.DEBUG)
 
     dim = 2
     cbm_solver = cbmos.CBMModel(ff.Cubic(), ef.solve_ivp, dim)
