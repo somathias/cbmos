@@ -239,12 +239,18 @@ class CBMModel:
 
         """
         def f(t, y):
-            y_r = self.hpc_backend.asarray(y).reshape((-1, self.dim))[:, :, _np.newaxis] # shape (n, d, 1)
+            y_r = _np.expand_dims(
+                    self.hpc_backend.asarray(y).reshape((-1, self.dim)),
+                    axis=-1,
+                    ) # shape (n, d, 1)
             cross_diff = y_r.transpose([2, 1, 0]) - y_r # shape (n, d, n)
-            norm = _np.sqrt((cross_diff**2).sum(axis=1))
-            forces = self.force(norm, **force_args)\
-                / (norm + _np.diag(self.hpc_backend.ones(y_r.shape[0])))
-            total_force = (forces[:, _np.newaxis, :] * cross_diff).sum(axis=2)
+            norm = _np.sqrt((cross_diff**2).sum(axis=1)) # shape (n, n)
+            forces = _np.expand_dims(
+                self.force(norm, **force_args)\
+                    / (norm + _np.diag(self.hpc_backend.ones(y_r.shape[0]))),
+                axis=1,
+                ) # shape (n, 1, n)
+            total_force = (forces * cross_diff).sum(axis=2) # shape (n, d)
 
             fty = (_NU*total_force).reshape(-1)
 
