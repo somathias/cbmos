@@ -230,9 +230,7 @@ class CBMModel:
 
         Parameters
         ----------
-        force: (r, **kwargs) -> float
-            describes the force applying between two cells at distance r
-        force_args:
+        force_args: {str: float}
             extra arguments for the force function
 
         Returns
