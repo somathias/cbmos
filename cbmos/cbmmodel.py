@@ -230,9 +230,7 @@ class CBMModel:
 
         Parameters
         ----------
-        force: (r, **kwargs) -> float
-            describes the force applying between two cells at distance r
-        force_args:
+        force_args: {str: float}
             extra arguments for the force function
 
         Returns
@@ -241,12 +239,18 @@ class CBMModel:
 
         """
         def f(t, y):
-            y_r = self.hpc_backend.asarray(y).reshape((-1, self.dim))[:, :, self.hpc_backend.newaxis] # shape (n, d, 1)
+            y_r = _np.expand_dims(
+                    self.hpc_backend.asarray(y).reshape((-1, self.dim)),
+                    axis=-1,
+                    ) # shape (n, d, 1)
             cross_diff = y_r.transpose([2, 1, 0]) - y_r # shape (n, d, n)
-            norm = self.hpc_backend.sqrt((cross_diff**2).sum(axis=1))
-            forces = self.force(norm, **force_args)\
-                / (norm + self.hpc_backend.diag(self.hpc_backend.ones(y_r.shape[0])))
-            total_force = (forces[:, self.hpc_backend.newaxis, :] * cross_diff).sum(axis=2)
+            norm = _np.sqrt((cross_diff**2).sum(axis=1)) # shape (n, n)
+            forces = _np.expand_dims(
+                self.force(norm, **force_args)\
+                    / (norm + _np.diag(self.hpc_backend.ones(y_r.shape[0]))),
+                axis=1,
+                ) # shape (n, 1, n)
+            total_force = (forces * cross_diff).sum(axis=2) # shape (n, d)
 
             fty = (_NU*total_force).reshape(-1)
 
@@ -258,10 +262,21 @@ class CBMModel:
         return f
 
     def jacobian(self, y, force_args):
-        #TODO add documentation once we have settled on arguments
-        #TODO use hpc_backend
+        """ Compute the jacobian of the given ode system.
 
-        y_r = _np.expand_dims(y.reshape((-1, self.dim)), axis=-1)
+        Parameters
+        ----------
+        y: np.ndarray(size=(n_cell*dim,))
+            cell vector
+        force_args: {str: float}
+            extra arguments for the force function
+
+        Returns
+        -------
+        np.ndarray(size=(n_cell*dim, n_cell*dim))
+        """
+
+        y_r = self.hpc_backend.asarray(_np.expand_dims(y.reshape((-1, self.dim)), axis=-1))
         n = y_r.shape[0]
         cross_diff = y_r - y_r.transpose([2, 1, 0]) # shape (n, d, n)
         norm = _np.sqrt((cross_diff**2).sum(axis=1))
@@ -278,7 +293,7 @@ class CBMModel:
 
             B = (
                     B*_np.expand_dims(self.force.derive()(norm, **force_args)-self.force(norm, **force_args)/norm, axis=(2, 3))
-                    + _np.expand_dims(_np.identity(self.dim), axis=(0, 1))
+                    + _np.expand_dims(self.hpc_backend.identity(self.dim), axis=(0, 1))
                         * _np.expand_dims(self.force(norm, **force_args)/norm, axis=(2, 3))
                     )
 
@@ -288,7 +303,12 @@ class CBMModel:
         B[range(n), range(n), :, :] = - B.sum(axis=0)
 
         # Step 3: Build block matrix
-        return B.reshape(n, n, self.dim, self.dim).swapaxes(1, 2).reshape(self.dim*n, -1)
+        B_block =  B.reshape(n, n, self.dim, self.dim).swapaxes(1, 2).reshape(self.dim*n, -1)
+
+        if self.hpc_backend.__name__ == "cupy":
+            return self.hpc_backend.asnumpy(B_block)
+        else:
+            return _np.asarray(B_block)
 
 
 if __name__ == "__main__":

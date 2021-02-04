@@ -9,6 +9,7 @@ Created on Fri Jan 22 11:16:04 2021
 import numpy as np
 from scipy.integrate._ivp.ivp import OdeResult
 from scipy.sparse.linalg import gmres
+from scipy.sparse.linalg import lgmres
 from scipy.sparse.linalg import cg
 import scipy as scpi
 import copy
@@ -19,8 +20,21 @@ import matplotlib.pyplot as plt
 import os
 plt.style.use('seaborn')
 
-def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, eta=0.001, jacobian=None, force_args={},
-              out='', write_to_file=False):
+
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
+              eps=0.001, eta=0.001, jacobian=None, force_args={},
+              tol=1e-5, atol=1e-5,
+              out='', write_to_file=False, disp=False):
+
+    class gmres_counter(object):
+        def __init__(self, disp=disp):
+            self._disp = disp
+            self.niter = 0
+        def __call__(self, rk=None):
+            self.niter += 1
+            if self._disp:
+                print('iter %3i\trk = %s' % (self.niter, str(rk)))
+
     # do regular fixed time stepping
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -32,6 +46,10 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, eta=0.001, jaco
     dts = []
 
     while t < tf:
+        if disp:
+            print('--------')
+            print('t = '+str(t))
+            print('--------')
 
         y = copy.deepcopy(y)
 
@@ -53,11 +71,22 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, eta=0.001, jaco
                 J = LinearOperator((len(y_next), len(y_next)), matvec=Jv)
 
             # solve linear system J*dy = F_curly for dy
-            dy, exitCode = gmres(J, -F_curly)
+            counter = gmres_counter()
+            dy, exitCode = gmres(J, -F_curly, callback=counter, tol=tol,
+                                 atol=atol, restart=5, maxiter=1,
+                                 callback_type='x') # maxiter= number of outer iterations/restarts, restart= number of inner iterations (between restarts)
+            if disp:
+                print('Number of GMRes iterations = '+str(counter.niter))
+            #dy, exitCode = lgmres(J, -F_curly, callback=counter)
             #dy, exitCode = cg(J, -F_curly)
             # dy = scpi.linalg.solve(J, -F_curly)
-            # print(exitCode)
+            #print('ExitCode='+str(exitCode))
             y_next = y_next + dy
+
+            if np.linalg.norm(dy)/np.linalg.norm(y_next) < eps:
+                if disp:
+                    print('Relative error tolerance of '+str(eps)+' achieved.')
+                break
 
         y = copy.deepcopy(y_next)
         t = t + dt
@@ -65,6 +94,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, eta=0.001, jaco
         ts.append(t)
         ys.append(y)
         dts.append(dt)
+
 
 
     ts = np.hstack(ts)
@@ -97,7 +127,7 @@ if __name__ == "__main__":
 #    plt.figure()
 #    plt.plot(sol.t, sol.y)
 
-    t_eval = np.linspace(0,3,10)
+    t_eval = np.linspace(0,1,10)
     y0 = np.array([1.0, 2.0])
     #y0 = np.array([0.5, 0.7, 1.0, 3.0])
     #y0 = np.array([0.0, 0.0, 0.0])
