@@ -21,11 +21,13 @@ import os
 plt.style.use('seaborn')
 
 
-def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, eta=0.001, jacobian=None, force_args={},
-              out='', write_to_file=False):
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
+              eps=0.001, eta=0.001, jacobian=None, force_args={},
+              tol=1e-5, atol=1e-5,
+              out='', write_to_file=False, disp=False):
 
     class gmres_counter(object):
-        def __init__(self, disp=True):
+        def __init__(self, disp=disp):
             self._disp = disp
             self.niter = 0
         def __call__(self, rk=None):
@@ -44,6 +46,10 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, eta=0.001, jaco
     dts = []
 
     while t < tf:
+        if disp:
+            print('--------')
+            print('t = '+str(t))
+            print('--------')
 
         y = copy.deepcopy(y)
 
@@ -66,13 +72,21 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, n_newton=2, eta=0.001, jaco
 
             # solve linear system J*dy = F_curly for dy
             counter = gmres_counter()
-            dy, exitCode = gmres(J, -F_curly, callback=counter, restart=5, maxiter=1, callback_type='x') # maxiter= number of outer iterations/restarts, restart= number of inner iterations (between restarts)
-            #print('niter='+str(counter.niter))
+            dy, exitCode = gmres(J, -F_curly, callback=counter, tol=tol,
+                                 atol=atol, restart=5, maxiter=1,
+                                 callback_type='x') # maxiter= number of outer iterations/restarts, restart= number of inner iterations (between restarts)
+            if disp:
+                print('Number of GMRes iterations = '+str(counter.niter))
             #dy, exitCode = lgmres(J, -F_curly, callback=counter)
             #dy, exitCode = cg(J, -F_curly)
             # dy = scpi.linalg.solve(J, -F_curly)
             #print('ExitCode='+str(exitCode))
             y_next = y_next + dy
+
+            if np.linalg.norm(dy)/np.linalg.norm(y_next) < eps:
+                if disp:
+                    print('Relative error tolerance of '+str(eps)+' achieved.')
+                break
 
         y = copy.deepcopy(y_next)
         t = t + dt
