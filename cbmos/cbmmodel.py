@@ -225,6 +225,9 @@ class CBMModel:
         for cell, pos in zip(self.cell_list, y):
             cell.position = _np.array(pos)
 
+    def _get_box_id(self, coord, rA):
+        return tuple([int(x//rA) for x in coord])
+
     def _ode_system(self, force_args):
         """ Generate ODE force function from cell-cell force function
 
@@ -241,19 +244,38 @@ class CBMModel:
 
         """
         def f(t, y):
-            y_r = self.hpc_backend.asarray(y).reshape((-1, self.dim))[:, :, self.hpc_backend.newaxis] # shape (n, d, 1)
-            cross_diff = y_r.transpose([2, 1, 0]) - y_r # shape (n, d, n)
-            norm = self.hpc_backend.sqrt((cross_diff**2).sum(axis=1))
-            forces = self.force(norm, **force_args)\
-                / (norm + self.hpc_backend.diag(self.hpc_backend.ones(y_r.shape[0])))
-            total_force = (forces[:, self.hpc_backend.newaxis, :] * cross_diff).sum(axis=2)
+            rA = force_args.get('rA', 1.5)
+            y_r = self.hpc_backend.asarray(y).reshape((-1, self.dim))# shape (n, d)
+            boxes = {}
+            neighbors = [(-1,), (0,), (1,)]
+            for d in range(self.dim - 1):
+                neighbors = [(dx, *dn)
+                        for dx in [-1, 0, 1]
+                        for dn in neighbors]
 
+            # Put cells into boxes
+            for i_cell in range(y_r.shape[0]):
+                boxes.setdefault(self._get_box_id(y_r[i_cell], rA), []).append(i_cell)
+
+            #Compute cross_diff, norm and forces with cells from neighboring boxes
+            total_force = _np.zeros(y_r.shape) # shape (n, d)
+            for i_cell in range(y_r.shape[0]):
+                i_box = self._get_box_id(y_r[i_cell], rA)
+
+                for dcoord in neighbors:
+                    j_box = tuple(i_box[i] + dcoord[i] for i in range(self.dim))
+                    for j_cell in boxes.get(j_box, []):
+                        if i_cell == j_cell:
+                            continue
+                        diff = y_r[j_cell] - y_r[i_cell]
+                        norm = _np.array(_np.sqrt((diff**2).sum()))
+                        force = self.force(norm, **force_args) / norm
+                        total_force[i_cell] += force * diff
+
+            # Reshape and return
             fty = (_NU*total_force).reshape(-1)
 
-            if self.hpc_backend.__name__ == "cupy":
-                return self.hpc_backend.asnumpy(fty)
-            else:
-                return _np.asarray(fty)
+            return _np.asarray(fty)
 
         return f
 
