@@ -259,9 +259,8 @@ class CBMModel:
 
     def jacobian(self, y, force_args):
         #TODO add documentation once we have settled on arguments
-        #TODO use hpc_backend
 
-        y_r = _np.expand_dims(y.reshape((-1, self.dim)), axis=-1)
+        y_r = self.hpc_backend.asarray(_np.expand_dims(y.reshape((-1, self.dim)), axis=-1))
         n = y_r.shape[0]
         cross_diff = y_r - y_r.transpose([2, 1, 0]) # shape (n, d, n)
         norm = _np.sqrt((cross_diff**2).sum(axis=1))
@@ -278,7 +277,7 @@ class CBMModel:
 
             B = (
                     B*_np.expand_dims(self.force.derive()(norm, **force_args)-self.force(norm, **force_args)/norm, axis=(2, 3))
-                    + _np.expand_dims(_np.identity(self.dim), axis=(0, 1))
+                    + _np.expand_dims(self.hpc_backend.identity(self.dim), axis=(0, 1))
                         * _np.expand_dims(self.force(norm, **force_args)/norm, axis=(2, 3))
                     )
 
@@ -288,7 +287,12 @@ class CBMModel:
         B[range(n), range(n), :, :] = - B.sum(axis=0)
 
         # Step 3: Build block matrix
-        return B.reshape(n, n, self.dim, self.dim).swapaxes(1, 2).reshape(self.dim*n, -1)
+        B_block =  B.reshape(n, n, self.dim, self.dim).swapaxes(1, 2).reshape(self.dim*n, -1)
+
+        if self.hpc_backend.__name__ == "cupy":
+            return self.hpc_backend.asnumpy(B_block)
+        else:
+            return _np.asarray(B_block)
 
 
 if __name__ == "__main__":
