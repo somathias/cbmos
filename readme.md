@@ -37,3 +37,8 @@ Branches implementing new features should start with *dev-*. Currently we have
 
 All experiments should be done in branches (off *master*, *EF_for_benchmarks* or *dev*) with names starting with *exp-*. We recommend running the experiments in jupyter notebooks for a nicer workflow :)
 
+## Publications
+
+- Mathias, S., Coulier, A., Bouchnita, A. et al. Impact of Force Function
+  Formulations on the Numerical Simulation of Centre-Based Models. Bull Math
+  Biol 82, 132 (2020). [DOI](https://doi.org/10.1007/s11538-020-00810-2) (tag `exp-Mathias2020`)
