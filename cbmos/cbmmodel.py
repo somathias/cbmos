@@ -127,6 +127,9 @@ class CBMModel:
 
     def _save_data(self, positions=None):
         """
+        Save the current positions of the cells to `self.history`. If
+        `positions` is provided, uses theses positions instead of the cells'
+        own positions.
         Note
         ----
         self.history has to be instantiated before the first call to _save_data
