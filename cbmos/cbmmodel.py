@@ -51,10 +51,16 @@ class CBMModel:
         raw_t: bool
             whether or not to use the solver's raw output
 
+        Returns
+        -------
+        (t_data, history)
+
         Note
         ----
-        Cell ordering in the output can vary between timepoints.
-        Cell indices need to be unique for the whole duration of the simulation.
+        - Cell ordering in the output can vary between timepoints.
+        - Cell indices need to be unique for the whole duration of the simulation.
+        - If `raw_t` is false, t_data is returned as is, with the history. if
+        `raw_t` is true, aggregated t_data from the solver is returned.
 
         """
 
@@ -76,6 +82,7 @@ class CBMModel:
 
         self.next_cell_index = max(self.cell_list, key=lambda cell: cell.ID).ID + 1
         self.history = []
+        self.t_data = [t] if raw_t else t_data[:]
         self._save_data()
 
         # build event queue once, since independent of environment (for now)
@@ -98,6 +105,8 @@ class CBMModel:
                     # save data for all t_data points passed
                     for y_t in sol.y[:, 1:].T:
                         self._save_data(y_t.reshape(-1, self.dim))
+                    if raw_t:
+                        self.t_data.extend(sol.t[1:])
 
                 # continue the simulation until tau if necessary
                 if tau > t_eval[-1] and tau <=t_end:
@@ -114,7 +123,7 @@ class CBMModel:
             # update current time t to min(tau, t_end)
             t = min(tau, t_end)
 
-        return self.history
+        return (self.t_data, self.history)
 
     def _save_data(self, positions=None):
         """
