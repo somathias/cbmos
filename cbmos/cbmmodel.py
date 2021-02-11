@@ -273,7 +273,10 @@ class CBMModel:
 
             fty = (_NU*total_force).reshape(-1)
 
-            return _np.asarray(fty)
+            if self.hpc_backend.__name__ == "cupy":
+                return self.hpc_backend.asnumpy(fty)
+            else:
+                return _np.asarray(fty)
 
         return f
     def _ode_system_box(self, force_args):
