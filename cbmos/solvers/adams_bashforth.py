@@ -17,17 +17,20 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01, hpc_backend=_np):
     t0, tf = float(t_span[0]), float(t_span[-1])
 
     t = t0
-    y = y0
+    y = hpc_backend.asarray(y0)
 
     ts = [t]
-    ys = [y]
+    ys = [y0]
 
     # start with 1 Euler forward step
     y = y + dt*fun(t,y)
     t = t + dt
 
     ts.append(t)
-    ys.append(y)
+    if hpc_backend.__name__ == "cupy":
+        ys.append(hpc_backend.asnumpy(y))
+    else:
+        ys.append(hpc_backend.asarray(y))
 
     while t < tf:
         y = y + dt/2.0*(3*fun(t,y)-fun(ts[-2], ys[-2]))

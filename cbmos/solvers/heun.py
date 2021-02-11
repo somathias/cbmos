@@ -17,10 +17,10 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01, hpc_backend=_np):
     t0, tf = float(t_span[0]), float(t_span[-1])
 
     t = t0
-    y = y0
+    y = hpc_backend.asarray(y0)
 
     ts = [t]
-    ys = [y]
+    ys = [y0]
 
     while t < tf:
         y = y + dt/2.0*(fun(t, y) + fun(t + dt, y + dt*fun(t,y)))
