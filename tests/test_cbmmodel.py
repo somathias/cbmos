@@ -203,9 +203,10 @@ def test_simulate():
 
     N = 100
     t_data = np.linspace(0, 10, N) # stay away from 24 hours
-    history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
+    t_data_sol, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
     assert len(history) == N
+    assert t_data_sol.tolist() == t_data.tolist()
 
     assert len(history[10]) == 2
     assert np.isclose(abs(history[10][0].position - history[10][1].position), 1)
@@ -223,7 +224,7 @@ def test_two_events_at_once():
     cell_list[1].division_time = 1.05
 
     t_data = np.linspace(0, 10, 100)
-    history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
+    _, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
     assert len(history) == 100
 
@@ -235,12 +236,11 @@ def test_event_at_t_data():
     cell_list[1].division_time = 1.0
 
     t_data = np.linspace(0, 10, 101)
-    history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
+    _, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
     assert len(history) == len(t_data)
 
 def test_no_division_skipped():
-
     dim = 1
     cbm_solver = cbmos.CBMModel(ff.Linear(), scpi.solve_ivp, dim)
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
@@ -248,7 +248,7 @@ def test_no_division_skipped():
     cell_list[1].division_time = 1.0
 
     t_data = np.linspace(0, 30, 101)
-    history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
+    _, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
     eq = [hq.heappop(cbm_solver.event_queue) for i in range(len(cbm_solver.event_queue))]
     assert eq == sorted(eq)
@@ -269,8 +269,8 @@ def test_cell_list_copied():
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
     t_data = np.linspace(0, 1, 101)
 
-    history_one = cbm_solver_one.simulate(cell_list, t_data, {}, {})
-    history_two = cbm_solver_two.simulate(cell_list, t_data, {}, {})
+    _, history_one = cbm_solver_one.simulate(cell_list, t_data, {}, {})
+    _, history_two = cbm_solver_two.simulate(cell_list, t_data, {}, {})
 
     assert history_two[0][0].position == np.array([0])
     assert history_two[0][1].position == np.array([0.3])
@@ -287,10 +287,45 @@ def test_tdata():
     solver_ef = cbmos.CBMModel(ff.Cubic(), ef.solve_ivp, 1)
     t_data = np.linspace(0,1, n)
     cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [0.3], proliferating=False)]
-    sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=False)
+    _, sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=False)
     y = np.array([np.squeeze([clt[0].position, clt[1].position]) for clt in sols])
 
     assert y.shape == (n, 2)
+
+def test_tdata_raw():
+    n = 100
+
+    s = 1.0    # rest length
+    tf = 1.0  # final time
+    rA = 1.5   # maximum interaction distance
+
+    params_cubic = {"mu": 6.91, "s": s, "rA": rA}
+
+    solver_ef = cbmos.CBMModel(ff.Cubic(), ef.solve_ivp, 1)
+    t_data = np.linspace(0,1, n)
+    cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [0.3], proliferating=False)]
+    t_data_sol, sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=True)
+
+    assert len(t_data_sol) == len(sols)
+
+def test_tdata_raw_division():
+    n = 100
+
+    s = 1.0    # rest length
+    tf = 1.0  # final time
+    rA = 1.5   # maximum interaction distance
+
+    params_cubic = {"mu": 6.91, "s": s, "rA": rA}
+
+    solver_ef = cbmos.CBMModel(ff.Cubic(), ef.solve_ivp, 1)
+    t_data = np.linspace(0,50, n)
+    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
+    t_data_sol, sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=True)
+
+    assert len(sols[-1]) > len(cell_list) # Make sure some cells multiplied
+    assert len(t_data_sol) == len(sols)
+    assert all([t[0] < t[1] for t in zip(t_data_sol, t_data_sol[1:])])
+
 
 def test_sparse_tdata():
     dim = 3
@@ -299,7 +334,7 @@ def test_sparse_tdata():
     dt = 0.1
     t_f = 50
     t_data = np.linspace(0, t_f, 2)
-    tumor_cubic = solver_cubic.simulate(ancestor, t_data, {"mu":6.91}, {"dt":dt})
+    _, tumor_cubic = solver_cubic.simulate(ancestor, t_data, {"mu":6.91}, {"dt":dt})
 
 
 def test_seed():
@@ -309,7 +344,7 @@ def test_seed():
     cell_list = [cl.Cell(0, [0, 0, 0], proliferating=True)]
     t_data = np.linspace(0, 100, 10)
     histories = [
-            cbm_solver.simulate(cell_list, t_data, {}, {}, seed=seed)
+            cbm_solver.simulate(cell_list, t_data, {}, {}, seed=seed)[1]
             for seed in [0, 0, 1, None, None]]
 
     for cells in zip(*[history[-1] for history in histories]):
@@ -318,10 +353,12 @@ def test_seed():
         assert cells[3].position.tolist() != cells[4].position.tolist()
 
 
-def test_seed_division_time():
+def test_seed_division_time(caplog):
     logger = logging.getLogger()
     logs = io.StringIO()
     logger.addHandler(logging.StreamHandler(logs))
+
+    caplog.set_level(logging.DEBUG)
 
     dim = 3
     cbm_solver = cbmos.CBMModel(ff.Logarithmic(), ef.solve_ivp, dim)
@@ -330,7 +367,7 @@ def test_seed_division_time():
     t_data = np.linspace(0, 100, 10)
 
     history = [
-            cbm_solver.simulate(cell_list, t_data, {}, {}, seed=seed)
+            cbm_solver.simulate(cell_list, t_data, {}, {}, seed=seed)[1]
             for seed in [0, 0, 1]]
 
     division_times = logs.getvalue().split("Starting new simulation\n")[1:]
@@ -349,10 +386,12 @@ def test_cell_dimension_exception():
         cbm_solver.simulate(cell_list, t_data, {}, {})
 
 
-def test_cell_birth():
+def test_cell_birth(caplog):
     logger = logging.getLogger()
     logs = io.StringIO()
     logger.addHandler(logging.StreamHandler(logs))
+
+    caplog.set_level(logging.DEBUG)
 
     dim = 2
     cbm_solver = cbmos.CBMModel(ff.Cubic(), ef.solve_ivp, dim)
@@ -391,7 +430,7 @@ def test_cell_list_order():
     dt = 0.01
     t_data = np.arange(0, 3, dt)
 
-    history = solver.simulate(sheet, t_data, {"mu": 6.91}, {'dt': dt}, seed=17)
+    _, history = solver.simulate(sheet, t_data, {"mu": 6.91}, {'dt': dt}, seed=17)
     history = history[1:]  # delete initial data because that's less cells
 
     ids = [cell.ID for cell in history[0]]
