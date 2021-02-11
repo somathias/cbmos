@@ -97,7 +97,7 @@ class CBMModel:
                 # calculate positions until the last t_data smaller or equal to min(tau, t_end)
                 t_eval = [t] \
                     + [time for time in t_data if t < time <= min(tau, t_end)]
-                y0 = _np.array([cell.position for cell in self.cell_list]).reshape(-1)
+                y0 = self.hpc_backend.asarray([cell.position for cell in self.cell_list]).reshape(-1)
                 # only calculate positions if there is t_data before tau
                 if len(t_eval) > 1:
                     sol = self._calculate_positions(t_eval, y0, force_args, solver_args, raw_t=raw_t)
@@ -110,7 +110,7 @@ class CBMModel:
 
                 # continue the simulation until tau if necessary
                 if tau > t_eval[-1] and tau <=t_end:
-                    y0 = sol.y[:, -1] if len(t_eval) > 1 else y0
+                    y0 = self.hpc_backend.asarray(sol.y[:, -1]) if len(t_eval) > 1 else y0
                     sol = self._calculate_positions([t_eval[-1], tau], y0, force_args, solver_args, raw_t=raw_t)
 
                 # update the positions for the current time point
@@ -264,12 +264,13 @@ class CBMModel:
                 ) # shape (n, 1, n)
             total_force = (forces * cross_diff).sum(axis=2) # shape (n, d)
 
-            fty = (_NU*total_force).reshape(-1)
+            return (_NU*total_force).reshape(-1)
 
-            if self.hpc_backend.__name__ == "cupy":
-                return self.hpc_backend.asnumpy(fty)
-            else:
-                return _np.asarray(fty)
+#            if self.hpc_backend.__name__ == "cupy":
+#                return self.hpc_backend.asnumpy(fty)
+#            else:
+#                return _np.asarray(fty)
+
 
         return f
 

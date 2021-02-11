@@ -5,14 +5,14 @@ Created on Fri Jan 25 16:13:35 2019
 
 @author: Sonja Mathias
 """
-import numpy as np
+import numpy as _np
 from scipy.integrate._ivp.ivp import OdeResult
 import matplotlib.pyplot as plt
 
 plt.style.use('seaborn')
 
 
-def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01):
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01, hpc_backend=_np):
 
 
     t0, tf = float(t_span[0]), float(t_span[-1])
@@ -40,28 +40,37 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01):
             while i < len(t_eval) and t >= t_eval[i]:
                 if t == t_eval[i]:
                     ts.append(t)
-                    ys.append(y)
+                    if hpc_backend.__name__ == "cupy":
+                        ys.append(hpc_backend.asnumpy(y))
+                    else:
+                        ys.append(hpc_backend.asarray(y))
                     i += 1
                 elif t > t_eval[i]:
                     yint = yp + (t_eval[i]-tp)*(y-yp)/(t-tp)
                     ts.append(t_eval[i])
-                    ys.append(yint)
+                    if hpc_backend.__name__ == "cupy":
+                        ys.append(hpc_backend.asnumpy(yint))
+                    else:
+                        ys.append(hpc_backend.asarray(yint))
                     i += 1
             tp = t
             yp = y
         else:
             ts.append(t)
-            ys.append(y)
+            if hpc_backend.__name__ == "cupy":
+                ys.append(hpc_backend.asnumpy(y))
+            else:
+                ys.append(hpc_backend.asarray(y))
 
-    ts = np.hstack(ts)
-    ys = np.vstack(ys).T
+    ts = _np.hstack(ts)
+    ys = _np.vstack(ys).T
 
     return OdeResult(t=ts, y=ys)
 
 if __name__ == "__main__":
 
     # stability region for Euler forward for this problem is h<2/50=0.04
-    @np.vectorize
+    @_np.vectorize
     def func(t,y):
         return -50*y
 
@@ -73,8 +82,8 @@ if __name__ == "__main__":
 #    plt.figure()
 #    plt.plot(sol.t, sol.y)
 
-    t_eval = np.linspace(0,1,10)
-    y0 = np.array([1])
+    t_eval = _np.linspace(0,1,10)
+    y0 = _np.array([1])
 
     sol = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=t_eval)
 
