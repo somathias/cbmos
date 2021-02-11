@@ -221,6 +221,7 @@ class CBMModel:
         return division_direction
 
     def _calculate_positions(self, t_eval, y0, force_args, solver_args, raw_t=True):
+        solver_args['hpc_backend'] = self.hpc_backend # add hpc_backend to solver_args
         return self.solver(self._ode_system(force_args),
                            (t_eval[0], t_eval[-1]),
                            y0,
