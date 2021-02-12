@@ -14,17 +14,13 @@ pip install -e .
 
 ## Code structure
 
-The *master* branch has the currently stable version of the code - with EF handling t_eval.
+The *master* branch has the currently stable version of the code.
 
-The *EF_for_benchmarks* branch has the currently stable version of the code - without EF handling t_eval, but with global adaptivity.
-
-The main solver is found in cbmos_serial.py. Check it's __main__ function for an example on how to use it. All other file names aim to be self-explanatory. 
-
-Files starting with *test_* are for testing the code in the correspoding python file using pytest (see below).
+Basic examples illustrating how a basic model can be simulated and how to conduct a convergence study with CBMOS are available in the `example` folder. A user guide will be available in the near future.
 
 ## Unit Testing
 Test are run through `pytest` or `python -m pytest`. Test functions are
-automatically found by pytest (https://docs.pytest.org/en/latest/goodpractices.html#test-discovery). All the tests are run automatically on bitbucket upon pushing.
+automatically found by pytest (https://docs.pytest.org/en/latest/goodpractices.html#test-discovery). All the tests are run automatically on github upon pushing.
 
 ## Development 
 
@@ -35,7 +31,7 @@ Branches implementing new features should start with *dev-*. Currently we have
 
 ## Experiments
 
-All experiments should be done in branches (off *master*, *EF_for_benchmarks* or *dev*) with names starting with *exp-*. We recommend running the experiments in jupyter notebooks for a nicer workflow :)
+All experiments should be done in branches (off *master*, or *dev*) with names starting with *exp-*. We recommend running the experiments in jupyter notebooks for a nicer workflow :)
 
 ## Publications
 
