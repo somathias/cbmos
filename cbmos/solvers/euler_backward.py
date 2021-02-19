@@ -56,8 +56,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
         y_next = copy.deepcopy(y)  # initialize with current y
         for j in _np.arange(n_newton):
 
-            F_curly = hpc_backend.asarray(y_next - y - dt*fun(t, y_next))
-            print(type(F_curly))
+            F_curly = y_next - y - dt*fun(t, y_next)
 
             if jacobian is not None:
                 A = jacobian(y_next, force_args)
@@ -66,10 +65,16 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
                 # approximate matrix vector product Jv where J = I-dt*A
                 def Jv(v):
                     v = hpc_backend.asarray(v)
-                    return hpc_backend.asarray(1/eta*(y_next + eta*v
+                    matvec = 1/eta*(y_next + eta*v
                                   - y - dt*fun(t, y_next + eta*v)
-                                  - F_curly))
+                                  - F_curly)
+                    if hpc_backend.__name__ == "cupy":
+                        return hpc_backend.asnumpy(matvec) #get data back from GPU
+                    else:
+                        return matvec
                 J = LinearOperator((len(y_next), len(y_next)), matvec=Jv)
+                if hpc_backend.__name__ == "cupy":
+                    F_curly = hpc_backend.asnumpy(F_curly) #get data back from GPU
 
             # solve linear system J*dy = F_curly for dy
             counter = gmres_counter()
