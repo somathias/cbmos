@@ -3,6 +3,8 @@ import numpy.random as _npr
 import heapq as _hq
 import logging as _logging
 
+import time
+
 from . import cell as _cl
 
 _NU = 1
@@ -32,7 +34,7 @@ class CBMModel:
         self.separation = separation
         self.hpc_backend = hpc_backend
 
-    def simulate(self, cell_list, t_data, force_args, solver_args, seed=None, raw_t=True):
+    def simulate(self, cell_list, t_data, force_args, solver_args, seed=None, raw_t=True, max_execution_time=None):
         """
         Parameters
         ----------
@@ -50,6 +52,11 @@ class CBMModel:
             seed for the random number generator
         raw_t: bool
             whether or not to use the solver's raw output
+        max_execution_time: float
+            Maximum execution time in seconds that the simulation should use.
+            Since the elapsed time is only checked in between cell events, this
+            only represents an approximate target. The exact duration is saved
+            in self.last_exec_time
 
         Returns
         -------
@@ -63,6 +70,8 @@ class CBMModel:
         `raw_t` is true, aggregated t_data from the solver is returned.
 
         """
+
+        exec_time_start = time.time()
 
         _npr.seed(seed)
 
@@ -90,6 +99,12 @@ class CBMModel:
 
         while t < t_end:
 
+            # check if max_execution_time has elapsed
+            exec_time = time.time() - exec_time_start
+            if max_execution_time is not None and exec_time >= max_execution_time:
+                self.last_exec_time = exec_time
+                return (self.t_data, self.history)
+
             # generate next event
             tau, cell = self._get_next_event()
 
@@ -108,6 +123,12 @@ class CBMModel:
                     if raw_t:
                         self.t_data.extend(sol.t[1:])
 
+                # check if max_execution_time has elapsed
+                exec_time = time.time() - exec_time_start
+                if max_execution_time is not None and exec_time >= max_execution_time:
+                    self.last_exec_time = exec_time
+                    return (self.t_data, self.history)
+
                 # continue the simulation until tau if necessary
                 if tau > t_eval[-1] and tau <=t_end:
                     y0 = sol.y[:, -1] if len(t_eval) > 1 else y0
@@ -116,6 +137,12 @@ class CBMModel:
                 # update the positions for the current time point
                 self._update_positions(sol.y[:, -1].reshape(-1, self.dim).tolist())
 
+            # check if max_execution_time has elapsed
+            exec_time = time.time() - exec_time_start
+            if max_execution_time is not None and exec_time >= max_execution_time:
+                self.last_exec_time = exec_time
+                return (self.t_data, self.history)
+
             # apply event if tau <= t_end
             if tau <= t_end:
                 self._apply_division(cell, tau)
@@ -123,6 +150,8 @@ class CBMModel:
             # update current time t to min(tau, t_end)
             t = min(tau, t_end)
 
+        exec_time = time.time() - exec_time_start
+        self.last_exec_time = exec_time
         return (self.t_data, self.history)
 
     def _save_data(self, positions=None):
@@ -303,18 +332,18 @@ class CBMModel:
             # All NaNs are removed below
 
             # add normalization
-            B = B / _np.expand_dims(norm*norm, axis=(2, 3))
+            B = B / (norm*norm)[:, :, _np.newaxis, _np.newaxis]
 
             B = (
-                    B*_np.expand_dims(self.force.derive()(norm, **force_args)-self.force(norm, **force_args)/norm, axis=(2, 3))
-                    + _np.expand_dims(self.hpc_backend.identity(self.dim), axis=(0, 1))
-                        * _np.expand_dims(self.force(norm, **force_args)/norm, axis=(2, 3))
+                    B*(self.force.derive()(norm, **force_args)-self.force(norm, **force_args)/norm)[:, :, _np.newaxis, _np.newaxis]
+                    + (self.hpc_backend.identity(self.dim))[_np.newaxis, _np.newaxis, :, :]
+                    * (self.force(norm, **force_args)/norm)[:, :, _np.newaxis, _np.newaxis]
                     )
 
             B[_np.isnan(B)] = 0
 
         # Step 2: compute the diagonal
-        B[range(n), range(n), :, :] = - B.sum(axis=0)
+        B[_np.array(range(n)), _np.array(range(n)), :, :] = - B.sum(axis=0)
 
         # Step 3: Build block matrix
         B_block =  B.reshape(n, n, self.dim, self.dim).swapaxes(1, 2).reshape(self.dim*n, -1)
