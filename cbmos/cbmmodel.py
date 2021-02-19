@@ -348,10 +348,11 @@ class CBMModel:
         # Step 3: Build block matrix
         B_block =  B.reshape(n, n, self.dim, self.dim).swapaxes(1, 2).reshape(self.dim*n, -1)
 
-        if self.hpc_backend.__name__ == "cupy":
-            return self.hpc_backend.asnumpy(B_block)
-        else:
-            return _np.asarray(B_block)
+        return B_block
+#        if self.hpc_backend.__name__ == "cupy":
+#            return self.hpc_backend.asnumpy(B_block)
+#        else:
+#            return _np.asarray(B_block)
 
 
 if __name__ == "__main__":

@@ -50,10 +50,10 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
             print('t = '+str(t))
             print('--------')
 
-        y = hpc_backend.asarray(copy.deepcopy(y))
+        y = copy.deepcopy(y)
 
         # do Newton iterations
-        y_next = hpc_backend.asarray(copy.deepcopy(y))  # initialize with current y
+        y_next = copy.deepcopy(y)  # initialize with current y
         for j in _np.arange(n_newton):
 
             F_curly = y_next - y - dt*fun(t, y_next)
@@ -94,7 +94,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
                     print('Relative error tolerance of '+str(eps)+' achieved.')
                 break
 
-        y = hpc_backend.asarray(copy.deepcopy(y_next))
+        y = copy.deepcopy(y_next)
         t = t + dt
 
         ts.append(t)
