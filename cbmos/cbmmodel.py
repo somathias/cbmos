@@ -473,7 +473,7 @@ if __name__ == "__main__":
             B[_np.isnan(B)] = 0
 
         # Step 2: compute the diagonal
-        B[range(n), range(n), :, :] = - B.sum(axis=0)
+        B[_np.array(range(n)), _np.array(range(n)), :, :] = - B.sum(axis=0)
 
         # Step 3: Build block matrix
         B_block =  B.reshape(n, n, self.dim, self.dim).swapaxes(1, 2).reshape(self.dim*n, -1)
