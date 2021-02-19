@@ -386,12 +386,12 @@ class CBMModel:
             # All NaNs are removed below
 
             # add normalization
-            B = B / _np.expand_dims(norm*norm, axis=(2, 3))
+            B = B / (norm*norm)[:, :, _np.newaxis, _np.newaxis]
 
             B = (
-                    B*_np.expand_dims(self.force.derive()(norm, **force_args)-self.force(norm, **force_args)/norm, axis=(2, 3))
-                    + _np.expand_dims(self.hpc_backend.identity(self.dim), axis=(0, 1))
-                        * _np.expand_dims(self.force(norm, **force_args)/norm, axis=(2, 3))
+                    B*(self.force.derive()(norm, **force_args)-self.force(norm, **force_args)/norm)[:, :, _np.newaxis, _np.newaxis]
+                    + (self.hpc_backend.identity(self.dim))[_np.newaxis, _np.newaxis, :, :]
+                    * (self.force(norm, **force_args)/norm)[:, :, _np.newaxis, _np.newaxis]
                     )
 
             B[_np.isnan(B)] = 0
