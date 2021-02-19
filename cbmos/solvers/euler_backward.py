@@ -56,17 +56,17 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
         y_next = copy.deepcopy(y)  # initialize with current y
         for j in _np.arange(n_newton):
 
-            F_curly = y_next - y - dt*fun(t, y_next)
+            F_curly = hpc_backend.asarray(y_next - y - dt*fun(t, y_next))
 
             if jacobian is not None:
                 A = jacobian(y_next, force_args)
-                J = _np.eye(A.shape[0]) - dt*A
+                J = hpc_backend.eye(A.shape[0]) - dt*A
             else:
                 # approximate matrix vector product Jv where J = I-dt*A
                 def Jv(v):
-                    return 1/eta*(y_next + eta*v
+                    return hpc_backend.asarray(1/eta*(y_next + eta*v
                                   - y - dt*fun(t, y_next + eta*v)
-                                  - F_curly)
+                                  - F_curly))
                 J = LinearOperator((len(y_next), len(y_next)), matvec=Jv)
 
             # solve linear system J*dy = F_curly for dy
