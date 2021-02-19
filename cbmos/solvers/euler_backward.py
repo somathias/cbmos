@@ -57,6 +57,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
         for j in _np.arange(n_newton):
 
             F_curly = hpc_backend.asarray(y_next - y - dt*fun(t, y_next))
+            print(type(F_curly))
 
             if jacobian is not None:
                 A = jacobian(y_next, force_args)
@@ -64,6 +65,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
             else:
                 # approximate matrix vector product Jv where J = I-dt*A
                 def Jv(v):
+                    v = hpc_backend.asarray(v)
                     return hpc_backend.asarray(1/eta*(y_next + eta*v
                                   - y - dt*fun(t, y_next + eta*v)
                                   - F_curly))
