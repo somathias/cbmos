@@ -22,9 +22,17 @@ plt.style.use('seaborn')
 
 
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
-              eps=0.001, eta=0.001, jacobian=None, force_args={},
-              tol=1e-5, atol=1e-5,
+              eps=None, eps_max =1e-2, eta=0.001, jacobian=None, force_args={},
+              tol=None, atol=None,
               out='', write_to_file=False, disp=False):
+
+    if eps is None:
+        eps = min(eps_max, dt)
+    if tol is None:
+        tol = min(eps_max, dt)
+    if atol is None:
+        atol = min(eps_max, dt)
+
 
     class gmres_counter(object):
         def __init__(self, disp=disp):
