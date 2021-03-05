@@ -3,11 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to CBMOS's documentation!
+Welcome to CBMOS' documentation!
 =================================
-
-.. contents:: Table of Contents
-   :depth: 2
 
 
 CBMOS is a Python framework for the numerical analysis of center-based models.
@@ -15,7 +12,7 @@ It focuses on flexibility and ease of use and is capable of simulating up
 to a few thousand cells within a few seconds, or even up to 10,000 cells if GPU support
 is available. CBMOS shines best for exploratory tasks and prototyping, for
 instance when one wants to compare different sets of parameters or solvers. At
-the moment, it implements all popular force functions, a few first and second-order
+the moment, it implements most popular force functions, a few first and second-order
 explicit solvers, and even one implicit solver. The following sections describe
 how to run a simple simulation and illustrate what kind of convergence studies
 can be performed with this package.
@@ -23,6 +20,8 @@ can be performed with this package.
 .. include:: basic_example.rst
 
 .. include:: convergence_example.rst
+
+.. include:: modules.rst
 
 Indices and tables
 ==================
