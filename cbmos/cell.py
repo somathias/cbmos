@@ -38,7 +38,9 @@ class Cell:
     parent_ID: int
         ID of the parent cell, can be use to reconstruct cell lineages.
         
-    NOTE: One should always use the constructor to access member variables, 
+    Note
+    ----
+    One should always use the constructor to access member variables, 
     in order to ensure correct behavior. Eg. it is not possible to set the 
     proliferating flag outside of the constructor because the division time 
     would not be updated in that case.
