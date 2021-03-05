@@ -10,9 +10,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+#import os
+#import sys
+#sys.path.insert(0, os.path.abspath('../../cbmos'))
 
 
 # -- Project information -----------------------------------------------------
@@ -33,6 +33,7 @@ release = '0.0.1'
 extensions = [
         'sphinx.ext.autodoc',
         'sphinx.ext.napoleon',
+        'sphinx.ext.githubpages',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

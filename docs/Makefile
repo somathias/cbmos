@@ -18,5 +18,14 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-rst:
+
+api:
 	sphinx-apidoc -o source/ ../cbmos/
+
+notebooks:
+	rm -rf source/basic_example.rst source/basic_example_files/
+	jupyter nbconvert --to rst ../examples/basic_example.ipynb
+	mv -f ../examples/basic_example.rst ../examples/basic_example_files/ source/
+	rm -rf source/convergence_example.rst source/convergence_example_files/
+	jupyter nbconvert --to rst ../examples/convergence_example.ipynb
+	mv -f ../examples/convergence_example.rst ../examples/convergence_example_files/ source/
