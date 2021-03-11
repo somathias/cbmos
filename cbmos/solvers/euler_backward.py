@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Jan 22 11:16:04 2021
-
-@author: Sonja Mathias
-"""
 
 import numpy as np
 from scipy.integrate._ivp.ivp import OdeResult

@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jan 30 2019
 
 Unit tests of the CBM solver
 
-@author: Adrien Coulier
 """
 import io
 import parse

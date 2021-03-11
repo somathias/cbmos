@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 17 16:00:48 2019
-
-@author: Sonja Mathias
-
 The average cell cycle duration for a typical rapidly proliferating human cell
 is 24 hours (https://bionumbers.hms.harvard.edu/bionumber.aspx?id=112260).
 
-We assume a normal distribution of cell cycle durations with mean=24h and
-sigma=1.0h.
+As a default, we assume a normal distribution of cell cycle durations with
+mean=24h and sigma=1.0h.
 """
 
 import numpy as _np
@@ -25,10 +21,10 @@ class Cell:
     division_time : float -> float
         function that takes the current time to generate the absolute next
         division time.
-        
-    NOTE: One should always use the constructor to access member variables, 
-    in order to ensure correct behavior. Eg. it is not possible to set the 
-    proliferating flag outside of the constructor because the division time 
+
+    NOTE: One should always use the constructor to access member variables,
+    in order to ensure correct behavior. Eg. it is not possible to set the
+    proliferating flag outside of the constructor because the division time
     would not be updated in that case.
 
 
