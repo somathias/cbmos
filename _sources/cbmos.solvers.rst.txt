@@ -1,0 +1,53 @@
+cbmos.solvers package
+=====================
+
+Submodules
+----------
+
+cbmos.solvers.adams\_bashforth module
+-------------------------------------
+
+.. automodule:: cbmos.solvers.adams_bashforth
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cbmos.solvers.euler\_backward module
+------------------------------------
+
+.. automodule:: cbmos.solvers.euler_backward
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cbmos.solvers.euler\_forward module
+-----------------------------------
+
+.. automodule:: cbmos.solvers.euler_forward
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cbmos.solvers.heun module
+-------------------------
+
+.. automodule:: cbmos.solvers.heun
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cbmos.solvers.midpoint module
+-----------------------------
+
+.. automodule:: cbmos.solvers.midpoint
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: cbmos.solvers
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Getting Started &#8212; CBMOS 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="initial-condition">
+<h2>Initial condition<a class="headerlink" href="#initial-condition" title="Permalink to this headline">¶</a></h2>
+<p>Setting up the initial condition of a simulation is very simple, all you
+need is create a list of cell objects. In this example we set up a
+cartesian grid of 25 cells. Each cell will immediately divides after the
+simulation starts. We then define a simple plotting function to show the
+current cell configuration.</p>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">import</span> <span class="nn">cbmos</span>
+<span class="kn">import</span> <span class="nn">cbmos.force_functions</span> <span class="k">as</span> <span class="nn">ff</span>
+<span class="kn">import</span> <span class="nn">cbmos.solvers.euler_forward</span> <span class="k">as</span> <span class="nn">ef</span>
+<span class="kn">import</span> <span class="nn">cbmos.cell</span> <span class="k">as</span> <span class="nn">cl</span>
+
+<span class="n">n_x</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">n_y</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">cell_size</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="n">coordinates</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">cell_size</span><span class="o">*</span><span class="n">i_x</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">cell_size</span><span class="o">*</span><span class="n">i_y</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_x</span><span class="p">)</span> <span class="k">for</span> <span class="n">i_y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_y</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="n">sheet</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">cl</span><span class="o">.</span><span class="n">Cell</span><span class="p">(</span>
+        <span class="n">i</span><span class="p">,</span> <span class="c1"># Cell ID, must be unique to each cell</span>
+        <span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">],</span> <span class="c1"># Initial coordinates</span>
+        <span class="o">-</span><span class="mf">6.0</span><span class="p">,</span> <span class="c1"># Birthtime, in this case 6 hours before the simulation starts</span>
+        <span class="kc">True</span><span class="p">,</span> <span class="c1"># Whether or not the cell is proliferating</span>
+        <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="mi">6</span> <span class="o">+</span> <span class="n">t</span> <span class="c1"># Function generating the next division time</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coordinates</span><span class="p">)</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot_population</span><span class="p">(</span><span class="n">cell_list</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">):</span>
+    <span class="n">fig</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">=</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">cell_list</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">Circle</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">position</span> <span class="p">,</span><span class="mf">0.5</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">position</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cell</span><span class="o">.</span><span class="n">position</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="n">plot_population</span><span class="p">(</span><span class="n">sheet</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="_images/basic_example_3_0.png" src="_images/basic_example_3_0.png" />
+</div>
+<div class="section" id="simulation">
+<h2>Simulation<a class="headerlink" href="#simulation" title="Permalink to this headline">¶</a></h2>
+<p>In this simulation, we use the Gls force and the Euler forward solver.
+The force function’s paramters are given to the simulate function as a
+dictionnary. Parameters can also be passed to the solver in the same
+way. This function returns a tuple containing the time points and a list
+of cells for each of these time points.</p>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initialize solver</span>
+<span class="n">solver</span> <span class="o">=</span> <span class="n">cbmos</span><span class="o">.</span><span class="n">CBMModel</span><span class="p">(</span><span class="n">ff</span><span class="o">.</span><span class="n">Gls</span><span class="p">(),</span> <span class="n">ef</span><span class="o">.</span><span class="n">solve_ivp</span><span class="p">,</span> <span class="n">dimension</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dt</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="n">t_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+
+<span class="n">t_data</span><span class="p">,</span> <span class="n">history</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
+    <span class="n">sheet</span><span class="p">,</span> <span class="c1"># Initial cell configuration</span>
+    <span class="n">t_data</span><span class="p">,</span> <span class="c1"># Times at which the history is saved</span>
+    <span class="p">{</span><span class="s2">&quot;mu&quot;</span><span class="p">:</span> <span class="mf">5.70</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;rA&quot;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span> <span class="c1"># Force parameters</span>
+    <span class="p">{</span><span class="s1">&#39;dt&#39;</span><span class="p">:</span> <span class="n">dt</span><span class="p">},</span> <span class="c1"># Solver parameters</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_population</span><span class="p">(</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+<img alt="_images/basic_example_7_0.png" src="_images/basic_example_7_0.png" />
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Getting Started</a><ul>
+<li><a class="reference internal" href="#initial-condition">Initial condition</a></li>
+<li><a class="reference internal" href="#simulation">Simulation</a></li>
+</ul>
+</li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Sonja Mathias, Adrien Coulier, Andreas Hellander.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/basic_example.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

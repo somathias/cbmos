@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cbmos package &#8212; CBMOS 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="cbmos.solvers package" href="cbmos.solvers.html" />
+    <link rel="prev" title="Welcome to CBMOS’ documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="cbmos-package">
+<h1>cbmos package<a class="headerlink" href="#cbmos-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cbmos.solvers.html">cbmos.solvers package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cbmos.solvers.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cbmos.solvers.html#module-cbmos.solvers.adams_bashforth">cbmos.solvers.adams_bashforth module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cbmos.solvers.html#module-cbmos.solvers.euler_backward">cbmos.solvers.euler_backward module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cbmos.solvers.html#module-cbmos.solvers.euler_forward">cbmos.solvers.euler_forward module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cbmos.solvers.html#module-cbmos.solvers.heun">cbmos.solvers.heun module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cbmos.solvers.html#module-cbmos.solvers.midpoint">cbmos.solvers.midpoint module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cbmos.solvers.html#module-cbmos.solvers">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-cbmos.cbmmodel">
+<span id="cbmos-cbmmodel-module"></span><h2>cbmos.cbmmodel module<a class="headerlink" href="#module-cbmos.cbmmodel" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="cbmos.cbmmodel.CBMModel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.cbmmodel.</span></code><code class="sig-name descname"><span class="pre">CBMModel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">force</span></em>, <em class="sig-param"><span class="pre">solver</span></em>, <em class="sig-param"><span class="pre">dimension=3</span></em>, <em class="sig-param"><span class="pre">separation=0.3</span></em>, <em class="sig-param"><span class="pre">hpc_backend=&lt;module</span> <span class="pre">'numpy'</span> <span class="pre">from</span> <span class="pre">'/opt/hostedtoolcache/Python/3.8.8/x64/lib/python3.8/site-packages/numpy/__init__.py'&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cbmmodel.CBMModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>force</strong> (<cite>f(ndarray(dtype=float), **kwargs)</cite> -&gt; float) – forces to be applied between cells</p></li>
+<li><p><strong>solver</strong> (<cite>f(fun, t_span, y0)</cite> -&gt; scipy.intergrade._ivp.ivp.OdeResult) – ODE solver, e.g. solve_ivp from scipy.integrate</p></li>
+<li><p><strong>dimension</strong> (<em>int</em>) – dimension of the system, usually 2D or 3D</p></li>
+<li><p><strong>separation</strong> (<em>float</em>) – distance between parent cell and child cell after separation</p></li>
+<li><p><strong>hpc_backend</strong> (<em>module</em>) – module implementing Numpy’s API (e.g. Cupy, Dask). Default is
+Numpy itself.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="cbmos.cbmmodel.CBMModel.jacobian">
+<code class="sig-name descname"><span class="pre">jacobian</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cbmmodel.CBMModel.jacobian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the jacobian of the given ode system.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> (<em>np.ndarray</em><em>(</em><em>size=</em><em>(</em><em>n_cell*dim</em><em>,</em><em>)</em><em>)</em>) – cell vector</p></li>
+<li><p><strong>force_args</strong> (<em>{str: float}</em>) – extra arguments for the force function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray(size=(n_cell*dim, n_cell*dim))</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="cbmos.cbmmodel.CBMModel.simulate">
+<code class="sig-name descname"><span class="pre">simulate</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cell_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_execution_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cbmmodel.CBMModel.simulate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cell_list</strong> (<em>[</em><a class="reference internal" href="#cbmos.cell.Cell" title="cbmos.cell.Cell"><em>Cell</em></a><em>]</em>) – Initial cell layout</p></li>
+<li><p><strong>t_data</strong> (<em>[</em><em>float</em><em>]</em>) – times at which the history should be recorded, if <cite>raw_t</cite> is set to <cite>True</cite>,
+only the start and end time are taken into account and the rest is ignored.
+The history is then recorded following the solver’s output.</p></li>
+<li><p><strong>force_args</strong> (<em>dict</em>) – arguments to pass to the force function</p></li>
+<li><p><strong>solver_args</strong> (<em>dict</em>) – arguments to pass to the solver</p></li>
+<li><p><strong>seed</strong> (<em>int</em>) – seed for the random number generator</p></li>
+<li><p><strong>raw_t</strong> (<em>bool</em>) – whether or not to use the solver’s raw output</p></li>
+<li><p><strong>max_execution_time</strong> (<em>float</em>) – Maximum execution time in seconds that the simulation should use.
+Since the elapsed time is only checked in between cell events, this
+only represents an approximate target. The exact duration is saved
+in self.last_exec_time</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(t_data, history)</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Cell ordering in the output can vary between timepoints.</p></li>
+<li><p>Cell indices need to be unique for the whole duration of the simulation.</p></li>
+<li><p>If <cite>raw_t</cite> is false, t_data is returned as is, with the history. If
+<cite>raw_t</cite> is true, aggregated t_data from the solver is returned.</p></li>
+</ul>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-cbmos.cell">
+<span id="cbmos-cell-module"></span><h2>cbmos.cell module<a class="headerlink" href="#module-cbmos.cell" title="Permalink to this headline">¶</a></h2>
+<p>Created on Wed Apr 17 16:00:48 2019</p>
+<p>&#64;author: Sonja Mathias</p>
+<p>The average cell cycle duration for a typical rapidly proliferating human cell
+is 24 hours (<a class="reference external" href="https://bionumbers.hms.harvard.edu/bionumber.aspx?id=112260">https://bionumbers.hms.harvard.edu/bionumber.aspx?id=112260</a>).</p>
+<p>We assume a normal distribution of cell cycle durations with mean=24h and
+sigma=1.0h.</p>
+<dl class="py class">
+<dt id="cbmos.cell.Cell">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.cell.</span></code><code class="sig-name descname"><span class="pre">Cell</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">ID</span></em>, <em class="sig-param"><span class="pre">position</span></em>, <em class="sig-param"><span class="pre">birthtime=0.0</span></em>, <em class="sig-param"><span class="pre">proliferating=False</span></em>, <em class="sig-param"><span class="pre">division_time_generator=&lt;function</span> <span class="pre">Cell.&lt;lambda&gt;&gt;</span></em>, <em class="sig-param"><span class="pre">division_time=None</span></em>, <em class="sig-param"><span class="pre">parent_ID=None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cell.Cell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ID</strong> (<em>int</em>) – Unique number used to identify the cell</p></li>
+<li><p><strong>position</strong> (<em>numpy array</em>) – The position of this cell (1, 2, or 3d)</p></li>
+<li><p><strong>birthtime</strong> (<em>float</em>) – Cell’s birthtime (0 by default). The first division time will be
+computed from that value.</p></li>
+<li><p><strong>proliferating</strong> (<em>bool</em>) – Whether or not the cell will proliferate</p></li>
+<li><p><strong>division_time_generator</strong> (<em>float -&gt; float</em>) – function that takes the current time to generate the absolute next
+division time.</p></li>
+<li><p><strong>division_time</strong> (<em>float</em>) – first time at which the cell will divide next. If None, the division
+time generator will be use to set that time</p></li>
+<li><p><strong>parent_ID</strong> (<em>int</em>) – ID of the parent cell, can be use to reconstruct cell lineages.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>One should always use the constructor to access member variables,
+in order to ensure correct behavior. Eg. it is not possible to set the
+proliferating flag outside of the constructor because the division time
+would not be updated in that case.</p>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-cbmos.force_functions">
+<span id="cbmos-force-functions-module"></span><h2>cbmos.force_functions module<a class="headerlink" href="#module-cbmos.force_functions" title="Permalink to this headline">¶</a></h2>
+<p>Created on Tue Jan 22 12:57:42 2019</p>
+<p>&#64;author: Sonja Mathias</p>
+<dl class="py class">
+<dt id="cbmos.force_functions.Cubic">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></code><code class="sig-name descname"><span class="pre">Cubic</span></code><a class="headerlink" href="#cbmos.force_functions.Cubic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="cbmos.force_functions.Cubic.derive">
+<code class="sig-name descname"><span class="pre">derive</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.force_functions.Cubic.derive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cbmos.force_functions.Gls">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></code><code class="sig-name descname"><span class="pre">Gls</span></code><a class="headerlink" href="#cbmos.force_functions.Gls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="cbmos.force_functions.Gls.derive">
+<code class="sig-name descname"><span class="pre">derive</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.force_functions.Gls.derive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cbmos.force_functions.HardCore">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></code><code class="sig-name descname"><span class="pre">HardCore</span></code><a class="headerlink" href="#cbmos.force_functions.HardCore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="cbmos.force_functions.HardCore.derive">
+<code class="sig-name descname"><span class="pre">derive</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.force_functions.HardCore.derive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cbmos.force_functions.Hertz">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></code><code class="sig-name descname"><span class="pre">Hertz</span></code><a class="headerlink" href="#cbmos.force_functions.Hertz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="cbmos.force_functions.Hertz.derive">
+<code class="sig-name descname"><span class="pre">derive</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.force_functions.Hertz.derive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cbmos.force_functions.LennardJones">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></code><code class="sig-name descname"><span class="pre">LennardJones</span></code><a class="headerlink" href="#cbmos.force_functions.LennardJones" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="cbmos.force_functions.LennardJones.derive">
+<code class="sig-name descname"><span class="pre">derive</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.force_functions.LennardJones.derive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cbmos.force_functions.Linear">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></code><code class="sig-name descname"><span class="pre">Linear</span></code><a class="headerlink" href="#cbmos.force_functions.Linear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="cbmos.force_functions.Linear.derive">
+<code class="sig-name descname"><span class="pre">derive</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.force_functions.Linear.derive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cbmos.force_functions.LinearExponential">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></code><code class="sig-name descname"><span class="pre">LinearExponential</span></code><a class="headerlink" href="#cbmos.force_functions.LinearExponential" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="cbmos.force_functions.LinearExponential.derive">
+<code class="sig-name descname"><span class="pre">derive</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.force_functions.LinearExponential.derive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cbmos.force_functions.LinearLogarithmic">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></code><code class="sig-name descname"><span class="pre">LinearLogarithmic</span></code><a class="headerlink" href="#cbmos.force_functions.LinearLogarithmic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="cbmos.force_functions.LinearLogarithmic.derive">
+<code class="sig-name descname"><span class="pre">derive</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.force_functions.LinearLogarithmic.derive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cbmos.force_functions.Logarithmic">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></code><code class="sig-name descname"><span class="pre">Logarithmic</span></code><a class="headerlink" href="#cbmos.force_functions.Logarithmic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="cbmos.force_functions.Logarithmic.derive">
+<code class="sig-name descname"><span class="pre">derive</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.force_functions.Logarithmic.derive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cbmos.force_functions.Morse">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></code><code class="sig-name descname"><span class="pre">Morse</span></code><a class="headerlink" href="#cbmos.force_functions.Morse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="cbmos.force_functions.Morse.derive">
+<code class="sig-name descname"><span class="pre">derive</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.force_functions.Morse.derive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="cbmos.force_functions.PiecewisePolynomial">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></code><code class="sig-name descname"><span class="pre">PiecewisePolynomial</span></code><a class="headerlink" href="#cbmos.force_functions.PiecewisePolynomial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt id="cbmos.force_functions.PiecewisePolynomial.derive">
+<code class="sig-name descname"><span class="pre">derive</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.force_functions.PiecewisePolynomial.derive" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-cbmos">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-cbmos" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">cbmos package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-cbmos.cbmmodel">cbmos.cbmmodel module</a></li>
+<li><a class="reference internal" href="#module-cbmos.cell">cbmos.cell module</a></li>
+<li><a class="reference internal" href="#module-cbmos.force_functions">cbmos.force_functions module</a></li>
+<li><a class="reference internal" href="#module-cbmos">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Sonja Mathias, Adrien Coulier, Andreas Hellander.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/cbmos.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

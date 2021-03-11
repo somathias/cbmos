@@ -1,0 +1,45 @@
+cbmos package
+=============
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   cbmos.solvers
+
+Submodules
+----------
+
+cbmos.cbmmodel module
+---------------------
+
+.. automodule:: cbmos.cbmmodel
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cbmos.cell module
+-----------------
+
+.. automodule:: cbmos.cell
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+cbmos.force\_functions module
+-----------------------------
+
+.. automodule:: cbmos.force_functions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: cbmos
+   :members:
+   :undoc-members:
+   :show-inheritance:
