@@ -135,12 +135,10 @@ in self.last_exec_time</p></li>
 </div>
 <div class="section" id="module-cbmos.cell">
 <span id="cbmos-cell-module"></span><h2>cbmos.cell module<a class="headerlink" href="#module-cbmos.cell" title="Permalink to this headline">¶</a></h2>
-<p>Created on Wed Apr 17 16:00:48 2019</p>
-<p>&#64;author: Sonja Mathias</p>
 <p>The average cell cycle duration for a typical rapidly proliferating human cell
 is 24 hours (<a class="reference external" href="https://bionumbers.hms.harvard.edu/bionumber.aspx?id=112260">https://bionumbers.hms.harvard.edu/bionumber.aspx?id=112260</a>).</p>
-<p>We assume a normal distribution of cell cycle durations with mean=24h and
-sigma=1.0h.</p>
+<p>As a default, we assume a normal distribution of cell cycle durations with
+mean=24h and sigma=1.0h.</p>
 <dl class="py class">
 <dt id="cbmos.cell.Cell">
 <em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.cell.</span></code><code class="sig-name descname"><span class="pre">Cell</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">ID</span></em>, <em class="sig-param"><span class="pre">position</span></em>, <em class="sig-param"><span class="pre">birthtime=0.0</span></em>, <em class="sig-param"><span class="pre">proliferating=False</span></em>, <em class="sig-param"><span class="pre">division_time_generator=&lt;function</span> <span class="pre">Cell.&lt;lambda&gt;&gt;</span></em>, <em class="sig-param"><span class="pre">division_time=None</span></em>, <em class="sig-param"><span class="pre">parent_ID=None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cell.Cell" title="Permalink to this definition">¶</a></dt>
@@ -156,8 +154,8 @@ computed from that value.</p></li>
 <li><p><strong>division_time_generator</strong> (<em>float -&gt; float</em>) – function that takes the current time to generate the absolute next
 division time.</p></li>
 <li><p><strong>division_time</strong> (<em>float</em>) – first time at which the cell will divide next. If None, the division
-time generator will be use to set that time</p></li>
-<li><p><strong>parent_ID</strong> (<em>int</em>) – ID of the parent cell, can be use to reconstruct cell lineages.</p></li>
+time generator will be use to set that time.</p></li>
+<li><p><strong>parent_ID</strong> (<em>int</em>) – ID of the parent cell, can be used to reconstruct cell lineages.</p></li>
 </ul>
 </dd>
 </dl>
@@ -173,8 +171,6 @@ would not be updated in that case.</p>
 </div>
 <div class="section" id="module-cbmos.force_functions">
 <span id="cbmos-force-functions-module"></span><h2>cbmos.force_functions module<a class="headerlink" href="#module-cbmos.force_functions" title="Permalink to this headline">¶</a></h2>
-<p>Created on Tue Jan 22 12:57:42 2019</p>
-<p>&#64;author: Sonja Mathias</p>
 <dl class="py class">
 <dt id="cbmos.force_functions.Cubic">
 <em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></code><code class="sig-name descname"><span class="pre">Cubic</span></code><a class="headerlink" href="#cbmos.force_functions.Cubic" title="Permalink to this definition">¶</a></dt>
