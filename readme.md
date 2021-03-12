@@ -1,5 +1,18 @@
 # CBMOS
 
+CBMOS is a Python framework for the numerical analysis of center-based models.
+It focuses on flexibility and ease of use and is capable of simulating up to a
+few thousand cells within a few seconds, or even up to 10,000 cells if GPU
+support is available. CBMOS shines best for exploratory tasks and prototyping,
+for instance when one wants to compare different sets of parameters or solvers.
+At the moment, it implements most popular force functions, a few first and
+second-order explicit solvers, and even one implicit solver. The following
+sections describe how to run a simple simulation and illustrate what kind of
+convergence studies can be performed with this package.
+
+The package's documentation, as well as a few examples are available at
+[somathias.github.io/cbmos/](https://somathias.github.io/cbmos/)
+
 ## Installation
 ### Install from source
 From the root directory:
@@ -16,7 +29,7 @@ pip install -e .
 
 The *master* branch has the currently stable version of the code.
 
-Basic examples illustrating how a basic model can be simulated and how to conduct a convergence study with CBMOS are available in the `example` folder. A user guide will be available in the near future.
+Basic examples illustrating how a basic model can be simulated and how to conduct a convergence study with CBMOS are available in the `example` folder.
 
 ## Unit Testing
 Test are run through `pytest` or `python -m pytest`. Test functions are
