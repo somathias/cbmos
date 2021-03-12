@@ -86,6 +86,7 @@ def test_get_division_direction():
 
 
 def test_apply_division():
+    from cbmos.cbmmodel._eventqueue import EventQueue
     dim = 3
     cbm_solver = cbmos.CBMModel(ff.Linear(), ef.solve_ivp, dim)
 
@@ -95,7 +96,7 @@ def test_apply_division():
 
     cbm_solver.cell_list = cell_list
     cbm_solver.next_cell_index = 5
-    cbm_solver._build_event_queue()
+    cbm_solver._queue = EventQueue([])
 
     cbm_solver._apply_division(cell_list[0], 1)
 
@@ -181,7 +182,7 @@ def test_no_division_skipped():
     t_data = np.linspace(0, 30, 101)
     _, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
-    eq = [hq.heappop(cbm_solver.event_queue) for i in range(len(cbm_solver.event_queue))]
+    eq = [hq.heappop(cbm_solver._queue._events) for i in range(len(cbm_solver._queue._events))]
     assert eq == sorted(eq)
 
     assert len(eq) == len(history[-1]) - 1
