@@ -1,5 +1,11 @@
 build/
 dist/
+docs/_build
+docs/source/basic_example.rst
+docs/source/cbmos.rst
+docs/source/cbmos.solvers.rst
+docs/source/convergence_example.rst
+docs/source/modules.rst
 cbmos.egg-info/
 *.egg/
 __pycache__
