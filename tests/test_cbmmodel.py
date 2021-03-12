@@ -196,8 +196,8 @@ def test_min_event_resolution():
     dim = 1
     cbm_solver = cbmos.CBMModel(ff.Linear(), scpi.solve_ivp, dim)
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
-    cell_list[0].division_time = 0.75
-    cell_list[1].division_time = 0.75
+    cell_list[0].division_time = 0.25
+    cell_list[1].division_time = 0.25
 
     t_data = [0, 0.4, 0.6, 1]
     _, history = cbm_solver.simulate(

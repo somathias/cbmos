@@ -50,6 +50,6 @@ class EventQueue:
 
     def _round_time(self, t):
         if self._min_resolution > 0.0:
-            return (t//self._min_resolution) * self._min_resolution
+            return (t//self._min_resolution + 1) * (self._min_resolution)
         else:
             return t

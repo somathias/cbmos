@@ -39,6 +39,6 @@ def test_aggregate():
 
     queue = eventqueue.EventQueue(event_list, min_resolution=0.3)
 
-    assert queue.pop() == (0, [0, 1])
-    assert queue.pop() == (0.3, [2])
-    assert queue.pop() == (0.6, [3, 4])
+    assert queue.pop() == (0.3, [0, 1])
+    assert queue.pop() == (0.6, [2])
+    assert queue.pop() == (0.8999999999999999, [3, 4])
