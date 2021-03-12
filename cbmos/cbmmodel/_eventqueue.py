@@ -11,7 +11,8 @@ class EventQueue:
     """
 
     def __init__(self, events, min_resolution=0.):
-        # Should that be a cell_list or a list of events already?
+        assert min_resolution >= 0.
+
         self._min_resolution = min_resolution
         events = [
                 (self._round_time(t), event)
