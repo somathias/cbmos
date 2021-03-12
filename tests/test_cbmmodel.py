@@ -192,6 +192,24 @@ def test_no_division_skipped():
             assert c.birthtime <= t
             assert c.division_time > t
 
+def test_min_event_resolution():
+    dim = 1
+    cbm_solver = cbmos.CBMModel(ff.Linear(), scpi.solve_ivp, dim)
+    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list[0].division_time = 0.75
+    cell_list[1].division_time = 0.75
+
+    t_data = [0, 0.4, 0.6, 1]
+    _, history = cbm_solver.simulate(
+            cell_list, t_data, {}, {},
+            raw_t=False, min_event_resolution=0.5,
+            )
+
+    assert len(history[0]) == 2
+    assert len(history[1]) == 2
+    assert len(history[2]) == 4
+    assert len(history[3]) == 4
+
 def test_cell_list_copied():
 
     dim = 1

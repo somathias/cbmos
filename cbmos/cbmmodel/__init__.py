@@ -36,7 +36,17 @@ class CBMModel:
         self.separation = separation
         self.hpc_backend = hpc_backend
 
-    def simulate(self, cell_list, t_data, force_args, solver_args, seed=None, raw_t=True, max_execution_time=None):
+    def simulate(
+            self,
+            cell_list,
+            t_data,
+            force_args,
+            solver_args,
+            seed=None,
+            raw_t=True,
+            max_execution_time=None,
+            min_event_resolution=0.,
+            ):
         """
         Parameters
         ----------
@@ -59,6 +69,10 @@ class CBMModel:
             Since the elapsed time is only checked in between cell events, this
             only represents an approximate target. The exact duration is saved
             in self.last_exec_time
+        min_event_resolution: float
+            Minimum event resolution interval: events occurring within
+            `min_event_resolution` of the current time will be resolved
+            immediately.
 
         Returns
         -------
@@ -97,10 +111,10 @@ class CBMModel:
         self._save_data()
 
         # build event queue once, since independent of environment (for now)
-        self._queue = EventQueue([
-            (cell.division_time, cell)
-            for cell in self.cell_list
-            ])
+        self._queue = EventQueue(
+                [(cell.division_time, cell) for cell in self.cell_list],
+                min_resolution=min_event_resolution,
+                )
 
         while t < t_end:
 
