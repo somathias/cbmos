@@ -17,7 +17,7 @@ CBMOS is available on PyPI and can be installed through:
 pip install cbmos
 ```
 
-## Basic Usage
+## Getting started
 ### Initial condition
 
 Setting up the initial condition of a simulation is very simple, all you need is create a list of cell objects. In this example we set up a Cartesian grid of 25 cells. Each cell will immediately divides after the simulation starts. We then define a simple plotting function to show the current cell configuration.
