@@ -68,75 +68,6 @@ def test_calculate_positions(two_cells):
             assert np.abs(sol[-1][:dim] - sol[-1][dim:]).sum() - s < 0.01
 
 
-def test_build_event_queue():
-    """
-    Note
-    ----
-    Assumes the event list is using heapq. This test will break if we change
-    data structure
-    """
-    dim = 3
-    cbm_solver = cbmos.CBMModel(ff.Linear(), ef.solve_ivp, dim)
-
-    cells = [cl.Cell(i, [0, 0, i]) for i in range(5)]
-    for i, cell in enumerate(cells):
-        cell.division_time = cell.ID
-
-    cbm_solver.cell_list = cells
-    cbm_solver._build_event_queue()
-
-    for i in range(5):
-        assert hq.heappop(cbm_solver.event_queue)[1].ID == i
-
-
-def test_update_event_queue():
-    solver = cbmos.CBMModel(lambda r: 0., scpi.solve_ivp)
-    cell = cl.Cell(0, np.zeros((1, 3)))
-
-    solver.event_queue = []
-    solver._update_event_queue(cell)
-    # check that event gets added
-    assert len(solver.event_queue) == 1
-    # check that it's the correct event
-    event = solver.event_queue[0]
-    assert event[0] == cell.division_time
-    assert event[1] == cell
-    # add more cells
-    cell2 = cl.Cell(1, np.zeros((1, 3))+0.25)
-    cell3 = cl.Cell(2, np.zeros((1, 3))+0.5)
-    solver._update_event_queue(cell2)
-    solver._update_event_queue(cell3)
-    assert len(solver.event_queue) == 3
-    # check that sorting is correct
-    assert solver.event_queue[0][0] <= solver.event_queue[1][0]
-    assert solver.event_queue[1][0] <= solver.event_queue[2][0]
-
-
-def test_get_next_event():
-    solver = cbmos.CBMModel(lambda r: 0., scpi.solve_ivp)
-
-    cell_list = [
-            cl.Cell(
-                ID=i,
-                position=np.array([0, 0, i]),
-                birthtime=0.0,
-                proliferating=True,
-                division_time_generator=lambda t: npr.normal(24 + t)
-                )
-            for i in [0, 1, 2]]
-    solver.cell_list = cell_list
-    solver._build_event_queue()
-    assert len(solver.event_queue) == 3
-
-    solver._get_next_event()
-    assert len(solver.event_queue) == 2
-
-    solver._get_next_event()
-    assert len(solver.event_queue) == 1
-
-    solver._get_next_event()
-    assert len(solver.event_queue) == 0
-
 
 def test_get_division_direction():
     for dim in [1, 2, 3]:
@@ -153,6 +84,7 @@ def test_get_division_direction():
 
 
 def test_apply_division():
+    from cbmos.cbmmodel._eventqueue import EventQueue
     dim = 3
     cbm_solver = cbmos.CBMModel(ff.Linear(), ef.solve_ivp, dim)
 
@@ -162,7 +94,7 @@ def test_apply_division():
 
     cbm_solver.cell_list = cell_list
     cbm_solver.next_cell_index = 5
-    cbm_solver._build_event_queue()
+    cbm_solver._queue = EventQueue([])
 
     cbm_solver._apply_division(cell_list[0], 1)
 
@@ -248,7 +180,7 @@ def test_no_division_skipped():
     t_data = np.linspace(0, 30, 101)
     _, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
-    eq = [hq.heappop(cbm_solver.event_queue) for i in range(len(cbm_solver.event_queue))]
+    eq = [hq.heappop(cbm_solver._queue._events) for i in range(len(cbm_solver._queue._events))]
     assert eq == sorted(eq)
 
     assert len(eq) == len(history[-1]) - 1
@@ -257,6 +189,24 @@ def test_no_division_skipped():
         for c in cells:
             assert c.birthtime <= t
             assert c.division_time > t
+
+def test_min_event_resolution():
+    dim = 1
+    cbm_solver = cbmos.CBMModel(ff.Linear(), scpi.solve_ivp, dim)
+    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list[0].division_time = 0.25
+    cell_list[1].division_time = 0.25
+
+    t_data = [0, 0.4, 0.6, 1]
+    _, history = cbm_solver.simulate(
+            cell_list, t_data, {}, {},
+            raw_t=False, min_event_resolution=0.5,
+            )
+
+    assert len(history[0]) == 2
+    assert len(history[1]) == 2
+    assert len(history[2]) == 4
+    assert len(history[3]) == 4
 
 def test_cell_list_copied():
 

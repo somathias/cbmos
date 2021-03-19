@@ -5,7 +5,9 @@ import logging as _logging
 
 import time
 
-from . import cell as _cl
+from .. import cell as _cl
+
+from ._eventqueue import EventQueue
 
 _NU = 1
 
@@ -34,8 +36,21 @@ class CBMModel:
         self.separation = separation
         self.hpc_backend = hpc_backend
 
-    def simulate(self, cell_list, t_data, force_args, solver_args, seed=None, raw_t=True, max_execution_time=None):
+    def simulate(
+            self,
+            cell_list,
+            t_data,
+            force_args,
+            solver_args,
+            seed=None,
+            raw_t=True,
+            max_execution_time=None,
+            min_event_resolution=0.,
+            ):
         """
+        Run the simulation with the given arguments and return the position
+        of the cells at each time steps in `t_data`
+
         Parameters
         ----------
         cell_list: [Cell]
@@ -51,12 +66,17 @@ class CBMModel:
         seed: int
             seed for the random number generator
         raw_t: bool
-            whether or not to use the solver's raw output
+            whether or not to use the solver's raw output. In that case, `t_data`
+            is ignored and the raw times are returned along the history
         max_execution_time: float
             Maximum execution time in seconds that the simulation should use.
             Since the elapsed time is only checked in between cell events, this
             only represents an approximate target. The exact duration is saved
             in self.last_exec_time
+        min_event_resolution: float
+            Minimum event resolution interval: events occurring within
+            `min_event_resolution` of the current time will be resolved
+            immediately.
 
         Returns
         -------
@@ -95,7 +115,10 @@ class CBMModel:
         self._save_data()
 
         # build event queue once, since independent of environment (for now)
-        self._build_event_queue()
+        self._queue = EventQueue(
+                [(cell.division_time, cell) for cell in self.cell_list],
+                min_resolution=min_event_resolution,
+                )
 
         while t < t_end:
 
@@ -106,7 +129,7 @@ class CBMModel:
                 return (self.t_data, self.history)
 
             # generate next event
-            tau, cell = self._get_next_event()
+            tau, cells = self._queue.pop()
 
             if tau > t:
                 # calculate positions until the last t_data smaller or equal to min(tau, t_end)
@@ -145,7 +168,8 @@ class CBMModel:
 
             # apply event if tau <= t_end
             if tau <= t_end:
-                self._apply_division(cell, tau)
+                for cell in cells:
+                    self._apply_division(cell, tau)
 
             # update current time t to min(tau, t_end)
             t = min(tau, t_end)
@@ -178,22 +202,27 @@ class CBMModel:
                     cell.parent_ID)
                 for cell in self.cell_list])
 
-    def _build_event_queue(self):
-        events = [(cell.division_time, cell) for cell in self.cell_list]
-        _hq.heapify(events)
-        self.event_queue = events
+    def _get_division_direction(self):
 
-    def _update_event_queue(self, cell):
-        """
-        Note
-        ----
-        The code assumes that all cell events are division events.
-        """
-        event = (cell.division_time, cell)
-        _hq.heappush(self.event_queue, event)
+        if self.dim == 1:
+            division_direction = _np.array([-1.0 + 2.0 * _npr.randint(2)])
 
-    def _get_next_event(self):
-        return _hq.heappop(self.event_queue)
+        elif self.dim == 2:
+            random_angle = 2.0 * _np.pi * _npr.rand()
+            division_direction = _np.array([
+                _np.cos(random_angle),
+                _np.sin(random_angle)])
+
+        elif self.dim == 3:
+            u = _npr.rand()
+            v = _npr.rand()
+            random_azimuth_angle = 2 * _np.pi * u
+            random_zenith_angle = _np.arccos(2 * v - 1)
+            division_direction = _np.array([
+                _np.cos(random_azimuth_angle) * _np.sin(random_zenith_angle),
+                _np.sin(random_azimuth_angle) * _np.sin(random_zenith_angle),
+                _np.cos(random_zenith_angle)])
+        return division_direction
 
     def _apply_division(self, cell, tau):
         """
@@ -218,36 +247,14 @@ class CBMModel:
                 parent_ID=cell.ID)
         self.next_cell_index = self.next_cell_index + 1
         self.cell_list.append(daughter_cell)
-        self._update_event_queue(daughter_cell)
+        self._queue.push(daughter_cell.division_time, daughter_cell)
 
         cell.position = updated_position_parent
         cell.division_time = cell.generate_division_time(tau)
-        self._update_event_queue(cell)
+        self._queue.push(cell.division_time, cell)
 
         _logging.debug("Division event: t={}, direction={}".format(
             tau, division_direction))
-
-    def _get_division_direction(self):
-
-        if self.dim == 1:
-            division_direction = _np.array([-1.0 + 2.0 * _npr.randint(2)])
-
-        elif self.dim == 2:
-            random_angle = 2.0 * _np.pi * _npr.rand()
-            division_direction = _np.array([
-                _np.cos(random_angle),
-                _np.sin(random_angle)])
-
-        elif self.dim == 3:
-            u = _npr.rand()
-            v = _npr.rand()
-            random_azimuth_angle = 2 * _np.pi * u
-            random_zenith_angle = _np.arccos(2 * v - 1)
-            division_direction = _np.array([
-                _np.cos(random_azimuth_angle) * _np.sin(random_zenith_angle),
-                _np.sin(random_azimuth_angle) * _np.sin(random_zenith_angle),
-                _np.cos(random_zenith_angle)])
-        return division_direction
 
     def _calculate_positions(self, t_eval, y0, force_args, solver_args, raw_t=True):
         return self.solver(self._ode_system(force_args),
@@ -350,30 +357,3 @@ class CBMModel:
             return self.hpc_backend.asnumpy(B_block)
         else:
             return _np.asarray(B_block)
-
-
-if __name__ == "__main__":
-    import warnings as wg
-
-    from . import force_functions as ff
-    from .solvers import euler_forward as ef
-
-    dim = 1
-    cbm_solver = CBMModel(ff.logarithmic, ef.solve_ivp, dim)
-
-    cell_list = [_cl.Cell(0, [0], proliferating=True), _cl.Cell(1, [0.3], proliferating=True)]
-    t_data = _np.linspace(0, 1, 101)
-
-
-    wg.simplefilter("error", RuntimeWarning)
-
-    try:
-        history = cbm_solver.simulate(cell_list, t_data, {}, {})
-    except RuntimeWarning:
-        print('Caught RuntimeWarning.')
-    print('Simulation done.')
-
-
-
-
-
