@@ -2,7 +2,7 @@ name: Release on PyPI
 
 on:
     push:
-        branches: [ dev ]
+        branches: [ master ]
 jobs:
   build-n-publish:
     name: Build and publish on TestPyPI and PyPI
