@@ -48,6 +48,9 @@ class CBMModel:
             min_event_resolution=0.,
             ):
         """
+        Run the simulation with the given arguments and return the position
+        of the cells at each time steps in `t_data`
+
         Parameters
         ----------
         cell_list: [Cell]
@@ -63,7 +66,8 @@ class CBMModel:
         seed: int
             seed for the random number generator
         raw_t: bool
-            whether or not to use the solver's raw output
+            whether or not to use the solver's raw output. In that case, `t_data`
+            is ignored and the raw times are returned along the history
         max_execution_time: float
             Maximum execution time in seconds that the simulation should use.
             Since the elapsed time is only checked in between cell events, this
