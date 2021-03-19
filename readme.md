@@ -71,8 +71,8 @@ In this simulation, we use the Gls force and the Euler forward solver. The force
 
 
 ```python
-# Initialize solver
-solver = cbmos.CBMModel(ff.Gls(), ef.solve_ivp, dimension=2)
+# Initialize model
+model = cbmos.CBModel(ff.Gls(), ef.solve_ivp, dimension=2)
 ```
 
 ```python

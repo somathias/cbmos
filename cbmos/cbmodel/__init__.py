@@ -12,7 +12,7 @@ from ._eventqueue import EventQueue
 _NU = 1
 
 
-class CBMModel:
+class CBModel:
     """
     Parameters
     -----------
