@@ -6,10 +6,7 @@ few thousand cells within a few seconds, or even up to 10,000 cells if GPU
 support is available. CBMOS shines best for exploratory tasks and prototyping,
 for instance when one wants to compare different sets of parameters or solvers.
 At the moment, it implements most popular force functions, a few first and
-second-order explicit solvers, and even one implicit solver. The following
-sections describe how to run a simple simulation and illustrate what kind of
-convergence studies can be performed with this package.
-
+second-order explicit solvers, and even one implicit solver.
 
 ## Installation
 CBMOS is available on PyPI and can be installed through:
