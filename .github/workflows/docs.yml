@@ -1,4 +1,4 @@
-name: Docs
+name: Publish documentation to GitHub pages
 on:
     push:
         branches: [ dev-docs ]
