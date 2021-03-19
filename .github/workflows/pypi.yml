@@ -1,4 +1,4 @@
-name: Publish CBMOS to TestPyPI and PyPI
+name: Release on PyPI
 
 on:
     push:
