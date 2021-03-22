@@ -1,4 +1,4 @@
-import cbmos.cbmmodel._eventqueue as eventqueue
+import cbmos.cbmodel._eventqueue as eventqueue
 import cbmos.cell as cl
 
 def test_constructor():
