@@ -3,6 +3,8 @@ name: Release on PyPI
 on:
     push:
         branches: [ master ]
+    release:
+        types: [ published ]
 jobs:
   build-n-publish:
     name: Build and publish on TestPyPI and PyPI
