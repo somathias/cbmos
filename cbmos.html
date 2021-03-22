@@ -14,7 +14,7 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="cbmos.solvers package" href="cbmos.solvers.html" />
+    <link rel="next" title="cbmos.cbmodel package" href="cbmos.cbmodel.html" />
     <link rel="prev" title="Welcome to CBMOS’ documentation!" href="index.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -38,6 +38,10 @@
 <h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="cbmos.cbmodel.html">cbmos.cbmodel package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cbmos.cbmodel.html#module-cbmos.cbmodel">Module contents</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="cbmos.solvers.html">cbmos.solvers package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="cbmos.solvers.html#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cbmos.solvers.html#module-cbmos.solvers.adams_bashforth">cbmos.solvers.adams_bashforth module</a></li>
@@ -53,85 +57,6 @@
 </div>
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-cbmos.cbmmodel">
-<span id="cbmos-cbmmodel-module"></span><h2>cbmos.cbmmodel module<a class="headerlink" href="#module-cbmos.cbmmodel" title="Permalink to this headline">¶</a></h2>
-<dl class="py class">
-<dt id="cbmos.cbmmodel.CBMModel">
-<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">cbmos.cbmmodel.</span></code><code class="sig-name descname"><span class="pre">CBMModel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">force</span></em>, <em class="sig-param"><span class="pre">solver</span></em>, <em class="sig-param"><span class="pre">dimension=3</span></em>, <em class="sig-param"><span class="pre">separation=0.3</span></em>, <em class="sig-param"><span class="pre">hpc_backend=&lt;module</span> <span class="pre">'numpy'</span> <span class="pre">from</span> <span class="pre">'/opt/hostedtoolcache/Python/3.8.8/x64/lib/python3.8/site-packages/numpy/__init__.py'&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cbmmodel.CBMModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>force</strong> (<cite>f(ndarray(dtype=float), **kwargs)</cite> -&gt; float) – forces to be applied between cells</p></li>
-<li><p><strong>solver</strong> (<cite>f(fun, t_span, y0)</cite> -&gt; scipy.intergrade._ivp.ivp.OdeResult) – ODE solver, e.g. solve_ivp from scipy.integrate</p></li>
-<li><p><strong>dimension</strong> (<em>int</em>) – dimension of the system, usually 2D or 3D</p></li>
-<li><p><strong>separation</strong> (<em>float</em>) – distance between parent cell and child cell after separation</p></li>
-<li><p><strong>hpc_backend</strong> (<em>module</em>) – module implementing Numpy’s API (e.g. Cupy, Dask). Default is
-Numpy itself.</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt id="cbmos.cbmmodel.CBMModel.jacobian">
-<code class="sig-name descname"><span class="pre">jacobian</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cbmmodel.CBMModel.jacobian" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the jacobian of the given ode system.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>y</strong> (<em>np.ndarray</em><em>(</em><em>size=</em><em>(</em><em>n_cell*dim</em><em>,</em><em>)</em><em>)</em>) – cell vector</p></li>
-<li><p><strong>force_args</strong> (<em>{str: float}</em>) – extra arguments for the force function</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>np.ndarray(size=(n_cell*dim, n_cell*dim))</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="cbmos.cbmmodel.CBMModel.simulate">
-<code class="sig-name descname"><span class="pre">simulate</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cell_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_execution_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cbmmodel.CBMModel.simulate" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>cell_list</strong> (<em>[</em><a class="reference internal" href="#cbmos.cell.Cell" title="cbmos.cell.Cell"><em>Cell</em></a><em>]</em>) – Initial cell layout</p></li>
-<li><p><strong>t_data</strong> (<em>[</em><em>float</em><em>]</em>) – times at which the history should be recorded, if <cite>raw_t</cite> is set to <cite>True</cite>,
-only the start and end time are taken into account and the rest is ignored.
-The history is then recorded following the solver’s output.</p></li>
-<li><p><strong>force_args</strong> (<em>dict</em>) – arguments to pass to the force function</p></li>
-<li><p><strong>solver_args</strong> (<em>dict</em>) – arguments to pass to the solver</p></li>
-<li><p><strong>seed</strong> (<em>int</em>) – seed for the random number generator</p></li>
-<li><p><strong>raw_t</strong> (<em>bool</em>) – whether or not to use the solver’s raw output</p></li>
-<li><p><strong>max_execution_time</strong> (<em>float</em>) – Maximum execution time in seconds that the simulation should use.
-Since the elapsed time is only checked in between cell events, this
-only represents an approximate target. The exact duration is saved
-in self.last_exec_time</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>(t_data, history)</p>
-</dd>
-</dl>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<ul class="simple">
-<li><p>Cell ordering in the output can vary between timepoints.</p></li>
-<li><p>Cell indices need to be unique for the whole duration of the simulation.</p></li>
-<li><p>If <cite>raw_t</cite> is false, t_data is returned as is, with the history. If
-<cite>raw_t</cite> is true, aggregated t_data from the solver is returned.</p></li>
-</ul>
-</div>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 <div class="section" id="module-cbmos.cell">
 <span id="cbmos-cell-module"></span><h2>cbmos.cell module<a class="headerlink" href="#module-cbmos.cell" title="Permalink to this headline">¶</a></h2>
@@ -310,7 +235,6 @@ would not be updated in that case.</p>
 <li><a class="reference internal" href="#">cbmos package</a><ul>
 <li><a class="reference internal" href="#subpackages">Subpackages</a></li>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-cbmos.cbmmodel">cbmos.cbmmodel module</a></li>
 <li><a class="reference internal" href="#module-cbmos.cell">cbmos.cell module</a></li>
 <li><a class="reference internal" href="#module-cbmos.force_functions">cbmos.force_functions module</a></li>
 <li><a class="reference internal" href="#module-cbmos">Module contents</a></li>
@@ -336,7 +260,7 @@ would not be updated in that case.</p>
       &copy;2021, Sonja Mathias, Adrien Coulier, Andreas Hellander.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

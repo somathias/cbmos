@@ -36,7 +36,7 @@
 <h2>Initial condition<a class="headerlink" href="#initial-condition" title="Permalink to this headline">¶</a></h2>
 <p>Setting up the initial condition of a simulation is very simple, all you
 need is create a list of cell objects. In this example we set up a
-cartesian grid of 25 cells. Each cell will immediately divides after the
+Cartesian grid of 25 cells. Each cell will immediately divides after the
 simulation starts. We then define a simple plotting function to show the
 current cell configuration.</p>
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -84,18 +84,18 @@ current cell configuration.</p>
 <div class="section" id="simulation">
 <h2>Simulation<a class="headerlink" href="#simulation" title="Permalink to this headline">¶</a></h2>
 <p>In this simulation, we use the Gls force and the Euler forward solver.
-The force function’s paramters are given to the simulate function as a
-dictionnary. Parameters can also be passed to the solver in the same
-way. This function returns a tuple containing the time points and a list
-of cells for each of these time points.</p>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initialize solver</span>
-<span class="n">solver</span> <span class="o">=</span> <span class="n">cbmos</span><span class="o">.</span><span class="n">CBMModel</span><span class="p">(</span><span class="n">ff</span><span class="o">.</span><span class="n">Gls</span><span class="p">(),</span> <span class="n">ef</span><span class="o">.</span><span class="n">solve_ivp</span><span class="p">,</span> <span class="n">dimension</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+The force function’s parameters are given to the simulate function as a
+dictionary. Parameters can also be passed to the solver in the same way.
+This function returns a tuple containing the time points and a list of
+cells for each of these time points.</p>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initialize model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">cbmos</span><span class="o">.</span><span class="n">CBModel</span><span class="p">(</span><span class="n">ff</span><span class="o">.</span><span class="n">Gls</span><span class="p">(),</span> <span class="n">ef</span><span class="o">.</span><span class="n">solve_ivp</span><span class="p">,</span> <span class="n">dimension</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dt</span> <span class="o">=</span> <span class="mf">0.01</span>
 <span class="n">t_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
 
-<span class="n">t_data</span><span class="p">,</span> <span class="n">history</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
+<span class="n">t_data</span><span class="p">,</span> <span class="n">history</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
     <span class="n">sheet</span><span class="p">,</span> <span class="c1"># Initial cell configuration</span>
     <span class="n">t_data</span><span class="p">,</span> <span class="c1"># Times at which the history is saved</span>
     <span class="p">{</span><span class="s2">&quot;mu&quot;</span><span class="p">:</span> <span class="mf">5.70</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;rA&quot;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span> <span class="c1"># Force parameters</span>
@@ -144,7 +144,7 @@ of cells for each of these time points.</p>
       &copy;2021, Sonja Mathias, Adrien Coulier, Andreas Hellander.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

@@ -7,18 +7,11 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   cbmos.cbmodel
    cbmos.solvers
 
 Submodules
 ----------
-
-cbmos.cbmmodel module
----------------------
-
-.. automodule:: cbmos.cbmmodel
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 cbmos.cell module
 -----------------

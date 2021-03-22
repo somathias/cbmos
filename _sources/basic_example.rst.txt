@@ -6,7 +6,7 @@ Initial condition
 
 Setting up the initial condition of a simulation is very simple, all you
 need is create a list of cell objects. In this example we set up a
-cartesian grid of 25 cells. Each cell will immediately divides after the
+Cartesian grid of 25 cells. Each cell will immediately divides after the
 simulation starts. We then define a simple plotting function to show the
 current cell configuration.
 
@@ -61,22 +61,22 @@ Simulation
 ----------
 
 In this simulation, we use the Gls force and the Euler forward solver.
-The force function’s paramters are given to the simulate function as a
-dictionnary. Parameters can also be passed to the solver in the same
-way. This function returns a tuple containing the time points and a list
-of cells for each of these time points.
+The force function’s parameters are given to the simulate function as a
+dictionary. Parameters can also be passed to the solver in the same way.
+This function returns a tuple containing the time points and a list of
+cells for each of these time points.
 
 .. code:: ipython3
 
-    # Initialize solver
-    solver = cbmos.CBMModel(ff.Gls(), ef.solve_ivp, dimension=2)
+    # Initialize model
+    model = cbmos.CBModel(ff.Gls(), ef.solve_ivp, dimension=2)
 
 .. code:: ipython3
 
     dt = 0.01
     t_data = np.arange(0, 4, dt)
     
-    t_data, history = solver.simulate(
+    t_data, history = model.simulate(
         sheet, # Initial cell configuration
         t_data, # Times at which the history is saved
         {"mu": 5.70, "s": 1.0, "rA": 1.5}, # Force parameters

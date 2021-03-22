@@ -1,0 +1,10 @@
+cbmos.cbmodel package
+=====================
+
+Module contents
+---------------
+
+.. automodule:: cbmos.cbmodel
+   :members:
+   :undoc-members:
+   :show-inheritance:

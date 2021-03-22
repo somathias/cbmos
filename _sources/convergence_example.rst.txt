@@ -47,7 +47,7 @@ will use Euler Forward for all models.
     
     models = {
             solver_name: {
-                force_name: cbmos.CBMModel(
+                force_name: cbmos.CBModel(
                                  force,
                                  solver,
                                  dim,
