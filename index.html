@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Welcome to CBMOS’ documentation! &#8212; CBMOS 0.0.1 documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
@@ -31,7 +32,7 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="welcome-to-cbmos-documentation">
+  <section id="welcome-to-cbmos-documentation">
 <h1>Welcome to CBMOS’ documentation!<a class="headerlink" href="#welcome-to-cbmos-documentation" title="Permalink to this headline">¶</a></h1>
 <p>CBMOS is a Python framework for the numerical analysis of center-based models.
 It focuses on flexibility and ease of use and is capable of simulating up
@@ -42,10 +43,10 @@ the moment, it implements most popular force functions, a few first and second-o
 explicit solvers, and even one implicit solver. The following sections describe
 how to run a simple simulation and illustrate what kind of convergence studies
 can be performed with this package.</p>
-</div>
-<div class="section" id="getting-started">
+</section>
+<section id="getting-started">
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="initial-condition">
+<section id="initial-condition">
 <h2>Initial condition<a class="headerlink" href="#initial-condition" title="Permalink to this headline">¶</a></h2>
 <p>Setting up the initial condition of a simulation is very simple, all you
 need is create a list of cell objects. In this example we set up a
@@ -93,8 +94,8 @@ current cell configuration.</p>
 </pre></div>
 </div>
 <img alt="_images/basic_example_3_0.png" src="_images/basic_example_3_0.png" />
-</div>
-<div class="section" id="simulation">
+</section>
+<section id="simulation">
 <h2>Simulation<a class="headerlink" href="#simulation" title="Permalink to this headline">¶</a></h2>
 <p>In this simulation, we use the Gls force and the Euler forward solver.
 The force function’s parameters are given to the simulate function as a
@@ -120,9 +121,9 @@ cells for each of these time points.</p>
 </pre></div>
 </div>
 <img alt="_images/basic_example_7_0.png" src="_images/basic_example_7_0.png" />
-</div>
-</div>
-<div class="section" id="exploring-convergence">
+</section>
+</section>
+<section id="exploring-convergence">
 <h1>Exploring Convergence<a class="headerlink" href="#exploring-convergence" title="Permalink to this headline">¶</a></h1>
 <p>CBMOS is aimed at performing numerical studies of Center-Based
 overlapping Spheres Models. In this section, we present a minimal
@@ -130,7 +131,7 @@ example to study the convergence of the Euler forward and
 Adams-Bashforth methods for a few non-proliferating cells and for three
 of the most popular force functions (namely GLS, Cubic and Piecewise
 Quadratic) can be studied.</p>
-<div class="section" id="setup">
+<section id="setup">
 <h2>Setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h2>
 <p>After importing relevant modules, we set up the simulation parameters as
 well as all three models (one per force function). Each model takes
@@ -175,8 +176,8 @@ will use Euler Forward for all models.</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="initial-conditions">
+</section>
+<section id="initial-conditions">
 <h2>Initial Conditions<a class="headerlink" href="#initial-conditions" title="Permalink to this headline">¶</a></h2>
 <p>Then, we create a list a cells using a list of (x, y) coordinates. Each
 cell takes at least 2 parameters: a (unique) id, and some coordinates.
@@ -198,8 +199,8 @@ and relax to a new configuration.</p>
 <span class="p">]</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="model-parameters">
+</section>
+<section id="model-parameters">
 <h2>Model Parameters<a class="headerlink" href="#model-parameters" title="Permalink to this headline">¶</a></h2>
 <p>The parameters of each force function can be set with a dictionnary
 containing all keywords argument to be passed to the force functions. In
@@ -235,8 +236,8 @@ that the relaxation time between the cells is one hour.</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="reference-solutions">
+</section>
+<section id="reference-solutions">
 <h2>Reference Solutions<a class="headerlink" href="#reference-solutions" title="Permalink to this headline">¶</a></h2>
 <p>Here we compute the reference solutions for each force functions, using
 fine timesteps. The <code class="docutils literal notranslate"><span class="pre">simulate</span></code> function takes the inital configuration
@@ -274,8 +275,8 @@ numpy array for efficiency.</p>
         <span class="p">)</span> <span class="c1"># (N_ref, n_cells, dim)</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="error-computation">
+</section>
+<section id="error-computation">
 <h2>Error computation<a class="headerlink" href="#error-computation" title="Permalink to this headline">¶</a></h2>
 <p>We now compute the error between the reference solution and solutions
 computed with coarser timesteps.</p>
@@ -320,8 +321,8 @@ computed with coarser timesteps.</p>
                 <span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="convergence-plot">
+</section>
+<section id="convergence-plot">
 <h2>Convergence Plot<a class="headerlink" href="#convergence-plot" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
@@ -390,17 +391,17 @@ computed with coarser timesteps.</p>
 </pre></div>
 </div>
 <img alt="_images/convergence_example_11_0.png" src="_images/convergence_example_11_0.png" />
-</div>
-<div class="section" id="references">
+</section>
+<section id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic simple">
 <li><p>Mathias, S., Coulier, A., Bouchnita, A., &amp; Hellander, A. (2020).
 Impact of force function formulations on the numerical simulation of
 centre-based models. Bulletin of Mathematical Biology, 82(10), 1-43.</p></li>
 </ol>
-</div>
-</div>
-<div class="section" id="cbmos">
+</section>
+</section>
+<section id="cbmos">
 <h1>cbmos<a class="headerlink" href="#cbmos" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
@@ -430,15 +431,15 @@ centre-based models. Bulletin of Mathematical Biology, 82(10), 1-43.</p></li>
 </li>
 </ul>
 </div>
-</div>
-<div class="section" id="indices-and-tables">
+</section>
+<section id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-</div>
+</section>
 
 
           </div>
