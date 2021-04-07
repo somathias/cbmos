@@ -22,7 +22,7 @@ plt.style.use('seaborn')
 
 
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
-              eps=None, eps_max =1e-3, eta=0.001, jacobian=None, force_args={},
+              eps=None, eps_max =1e-3, xi=0.001, jacobian=None, force_args={},
               tol=None, atol=None,
               out='', write_to_file=False, disp=False):
 
@@ -73,8 +73,8 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
             else:
                 # approximate matrix vector product Jv where J = I-dt*A
                 def Jv(v):
-                    return 1/eta*(y_next + eta*v
-                                  - y - dt*fun(t, y_next + eta*v)
+                    return 1/xi*(y_next + xi*v
+                                  - y - dt*fun(t, y_next + xi*v)
                                   - F_curly)
                 J = LinearOperator((len(y_next), len(y_next)), matvec=Jv)
 
