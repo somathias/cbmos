@@ -6,7 +6,8 @@ Created on Tue Jun 18 16:45:08 2019
 @author: Sonja Mathias
 """
 import numpy as np
-import euler_forward as ef
+
+import cbmos.solvers.euler_forward as ef
 
 
 @np.vectorize

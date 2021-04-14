@@ -1,87 +1,106 @@
 # CBMOS
 
-## Code structure
+CBMOS is a Python framework for the numerical analysis of center-based models.
+It focuses on flexibility and ease of use and is capable of simulating up to a
+few thousand cells within a few seconds, or even up to 10,000 cells if GPU
+support is available. CBMOS shines best for exploratory tasks and prototyping,
+for instance when one wants to compare different sets of parameters or solvers.
+At the moment, it implements most popular force functions, a few first and
+second-order explicit solvers, and even one implicit solver.
 
-The *master* branch has the currently stable version of the code - with EF handling t_eval.
+## Installation
+CBMOS is available on PyPI and can be installed through:
+```
+pip install cbmos
+```
 
-The *EF_for_benchmarks* branch has the currently stable version of the code - without EF handling t_eval, but with global adaptivity.
+## Getting started
+### Initial condition
 
-The main solver is found in cbmos_serial.py. Check it's __main__ function for an example on how to use it. All other file names aim to be self-explanatory. 
-
-Files starting with *test_* are for testing the code in the correspoding python file using pytest (see below).
-
-## Unit Testing
-Test are run through `pytest` or `python -m pytest`. Test functions are
-automatically found by pytest (https://docs.pytest.org/en/latest/goodpractices.html#test-discovery). All the tests are run automatically on bitbucket upon pushing.
-
-## Development 
-
-Branches implementing new features should start with *dev-*. Currently we have 
-
- - *dev-local_adaptivity*: started implementing local adaptivity
- - *force_functions*: started work on implementing the derivatives needed for implicit solvers
-
-## Experiments
-
-All experiments should be done in branches (off *master*) with names starting with *exp-*. We recommend running the experiments in jupyter notebooks for a nicer workflow :)
-
-### Relaxation experiment (*exp-relaxation*)
-
-Checkout *exp-relaxation* branch. Open the jupyter notebook *exp-relaxation.ipynb*. 
-
-**Note** that this branch does not yet use the new code implementing proliferation (everything after commit 7197dd7).
-
-### Adhesion experiment (*exp-adhesion*)
-Checkout *exp-adhesion* branch. Open the jupyter notebook *exp-adhesion.ipynb*. 
-
-**Note** that this branch does not yet use the new code implementing proliferation (everything after commit 7197dd7).
-
-### Collapsing volumes (*exp-collapsing_volumes*)
-Checkout *exp-collapsing_volumes* branch. There are three jupyter notebooks. Note that *exp-collapsing_volumes_1d.ipynb* and *exp-collapsing_volumes_2d.ipynb* need to be updated to work with the newer code (which has been merged into this branch). 
-*exp-collapsing_volumes_sheet.ipynb* is up-to-date and should run. 
-
-### Tumor growth (*exp-tumor_growth*)
-Checkout *exp-tumor_growth* branch. Open the jupyter notebook *exp-tumor_growth.ipynb*.
-
-Note the changes in cell.py. Cells have a default mean cell cycle duration of 6 hours in this branch (normal distribution N(6, 0.25)). 
-
-### Force function plots (*exp-plot_forces*)
-
-Plots the force laws for comparison. To do so, checkout the *exp-plot_forces* and run **plot_force_function.py**.
-The first figure shows force laws fitted to cubic force law in both height and location of the maximum. 
-The second figure shows force laws fitted only in height of the maximum and chosen to be small at the maximum interaction distance.
-The third figure shows details of the general polynomial force law.
-
-#### Parameter settings (for *exp-plot_forces*)
-
-  We fix 
-
-  - s = 1.0  # equilibrium rest length, set to 1 cell diameter
-  - rA = s+0.5  # set maximum interaction distance to 1.5 cell diameter
-  - rR = s+0.2  # set maximum repulsive interaction distance to 1.2 cell diameter
-  - rN = 0.3  # radius of nuclei for hard-core model
-
-  Then we use the cubic force law as a basis, since it only has a single free parameter left (the spring stiffness mu).
-
-  We can fix the force amplitude such that f_max^cubic = 1.0, ie then everything is in relation to the maximum force value of the cubic force law.
-
-  The maximum of the cubic force law is attained at r=7/6 for the above parameter values. Its value is mu_cubic/54, hence 
-
-  f_max^cubic = 1.0 <=> mu_cubic=54
-
-  Now we fit all other force laws to this.
-
-  - lennard-jones: m = 1.0
-  - morse: two options
-    1. fit maximum in height and location: m =1.0, a = 6*(log2)
-    2. fit maximum in height and make potential <10^-3 at rA=1.5:
-       m=1.0, a = 16.58759909 (found by scipy.optimize.minimize with
-       BFGS method)
-  - linear-exponential: same two options
-    1. fit maximum in height and location: mu = 6*e, a = 6
-    2. fit maximum in height and make potential <10^-3 at rA=1.5:
-       mu=55.63460379 (found by scipy.optimize.minimize with BFGS
-       method), a=-2*np.log(0.002/mu)
-  - piecewise quadratic: fit maximum in height: muR = 84, muA= 0.25*mR = 21 (location of maximum is then r=8/7)
+Setting up the initial condition of a simulation is very simple, all you need is create a list of cell objects. In this example we set up a Cartesian grid of 25 cells. Each cell will immediately divides after the simulation starts. We then define a simple plotting function to show the current cell configuration.
 
 
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+import cbmos
+import cbmos.force_functions as ff
+import cbmos.solvers.euler_forward as ef
+import cbmos.cell as cl
+
+n_x = 5
+n_y = 5
+cell_size = 0.5
+coordinates = [
+    (2*cell_size*i_x, 2*cell_size*i_y)
+    for i_x in range(n_x) for i_y in range(n_y)
+]
+
+sheet = [
+    cl.Cell(
+        i, # Cell ID, must be unique to each cell
+        [x,y], # Initial coordinates
+        -6.0, # Birthtime, in this case 6 hours before the simulation starts
+        True, # Whether or not the cell is proliferating
+        lambda t: 6 + t # Function generating the next division time
+    )
+    for i, (x, y) in enumerate(coordinates)
+]
+```
+
+
+```python
+def plot_population(cell_list, color='blue'):
+    fig=plt.figure()
+    ax=fig.add_subplot(1,1,1)
+    for cell in cell_list:
+        ax.add_patch(plt.Circle(cell.position ,0.5,color=color, alpha=0.4))
+        plt.plot(cell.position[0], cell.position[1], '.', color=color)
+    ax.set_aspect('equal')
+    plt.show()
+    
+plot_population(sheet)
+```
+
+![png](.images/output_3_0.png)
+
+### Simulation
+
+In this simulation, we use the Gls force and the Euler forward solver. The force function's parameters are given to the simulate function as a dictionary. Parameters can also be passed to the solver in the same way. This function returns a tuple containing the time points and a list of cells for each of these time points.
+
+
+```python
+# Initialize model
+model = cbmos.CBModel(ff.Gls(), ef.solve_ivp, dimension=2)
+```
+
+```python
+dt = 0.01
+t_data = np.arange(0, 4, dt)
+
+t_data, history = solver.simulate(
+    sheet, # Initial cell configuration
+    t_data, # Times at which the history is saved
+    {"mu": 5.70, "s": 1.0, "rA": 1.5}, # Force parameters
+    {'dt': dt}, # Solver parameters
+)
+```
+
+```python
+plot_population(history[-1])
+```
+
+![png](.images/output_7_0.png)
+
+
+## Documentation
+The package's documentation, as well as a few examples are available at
+[somathias.github.io/cbmos/](https://somathias.github.io/cbmos/)
+
+
+## Publications
+
+- Mathias, S., Coulier, A., Bouchnita, A. et al. Impact of Force Function
+  Formulations on the Numerical Simulation of Centre-Based Models. Bull Math
+  Biol 82, 132 (2020). [DOI](https://doi.org/10.1007/s11538-020-00810-2) (tag `exp-Mathias2020`)

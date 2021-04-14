@@ -1,6 +1,0 @@
-numpy
-scipy
-pytest
-matplotlib
-dask[complete]
-parse
