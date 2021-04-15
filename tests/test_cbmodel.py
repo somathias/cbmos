@@ -1,26 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jan 30 2019
 
-Unit tests of the CBM solver
-
-@author: Adrien Coulier
-"""
-import pytest
-import numpy as np
-import numpy.random as npr
-import cbmos_serial as cbmos
-import scipy.integrate as scpi
-import logging
 import io
 import parse
-import os
-
-import force_functions as ff
-import euler_forward as ef
+import pytest
+import logging
 import heapq as hq
-import cell as cl
+import numpy as np
+import numpy.random as npr
+import scipy.integrate as scpi
+
+import cbmos.cbmodel as cbmos
+import cbmos.force_functions as ff
+import cbmos.solvers.euler_forward as ef
+import cbmos.cell as cl
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -30,25 +23,25 @@ def two_cells():
     return np.array([[0., 0., 0.], [0.5, 0., 0.]]).reshape(-1)
 
 
-def test_ode_force(two_cells):
+def test_ode_system(two_cells):
     # Check that the force is made use of
-    solver = cbmos.CBMSolver(lambda r: 0., scpi.solve_ivp)
-    f = solver._ode_force({})
+    solver = cbmos.CBModel(lambda r: 0., scpi.solve_ivp)
+    f = solver._ode_system({})
     assert not f(0., two_cells).any()
-    solver = cbmos.CBMSolver(lambda r: 1., scpi.solve_ivp)
-    f = solver._ode_force({})
+    solver = cbmos.CBModel(lambda r: 1., scpi.solve_ivp)
+    f = solver._ode_system({})
     assert f(0., two_cells).any()
 
     # Check parameters are made use of
-    solver = cbmos.CBMSolver(lambda r, p=1.: p, scpi.solve_ivp)
-    f = solver._ode_force({})
+    solver = cbmos.CBModel(lambda r, p=1.: p, scpi.solve_ivp)
+    f = solver._ode_system({})
     assert f(0., two_cells).any()
-    f = solver._ode_force({'p': 0.})
+    f = solver._ode_system({'p': 0.})
     assert not f(0., two_cells).any()
 
     # Check force computation is correct
-    solver = cbmos.CBMSolver(lambda r: 1., scpi.solve_ivp)
-    f = solver._ode_force({})
+    solver = cbmos.CBModel(lambda r: 1., scpi.solve_ivp)
+    f = solver._ode_system({})
     total_force = f(0., two_cells).reshape(2, 3)
     assert np.array_equal(total_force[0], np.array([1., 0., 0.]))
     assert np.array_equal(total_force[0], -total_force[1])
@@ -56,7 +49,7 @@ def test_ode_force(two_cells):
 
 def test_calculate_positions(two_cells):
     for dim in [1, 2, 3]:
-        cbm_solver = cbmos.CBMSolver(ff.linear, ef.solve_ivp, dim)
+        cbm_solver = cbmos.CBModel(ff.Linear(), ef.solve_ivp, dim)
 
         T = np.linspace(0, 10, num=10)
 
@@ -71,79 +64,10 @@ def test_calculate_positions(two_cells):
             assert np.abs(sol[-1][:dim] - sol[-1][dim:]).sum() - s < 0.01
 
 
-def test_build_event_queue():
-    """
-    Note
-    ----
-    Assumes the event list is using heapq. This test will break if we change
-    data structure
-    """
-    dim = 3
-    cbm_solver = cbmos.CBMSolver(ff.linear, ef.solve_ivp, dim)
-
-    cells = [cl.Cell(i, [0, 0, i]) for i in range(5)]
-    for i, cell in enumerate(cells):
-        cell.division_time = cell.ID
-
-    cbm_solver.cell_list = cells
-    cbm_solver._build_event_queue()
-
-    for i in range(5):
-        assert hq.heappop(cbm_solver.event_queue)[1].ID == i
-
-
-def test_update_event_queue():
-    solver = cbmos.CBMSolver(lambda r: 0., scpi.solve_ivp)
-    cell = cl.Cell(0, np.zeros((1, 3)))
-
-    solver.event_queue = []
-    solver._update_event_queue(cell)
-    # check that event gets added
-    assert len(solver.event_queue) == 1
-    # check that it's the correct event
-    event = solver.event_queue[0]
-    assert event[0] == cell.division_time
-    assert event[1] == cell
-    # add more cells
-    cell2 = cl.Cell(1, np.zeros((1, 3))+0.25)
-    cell3 = cl.Cell(2, np.zeros((1, 3))+0.5)
-    solver._update_event_queue(cell2)
-    solver._update_event_queue(cell3)
-    assert len(solver.event_queue) == 3
-    # check that sorting is correct
-    assert solver.event_queue[0][0] <= solver.event_queue[1][0]
-    assert solver.event_queue[1][0] <= solver.event_queue[2][0]
-
-
-def test_get_next_event():
-    solver = cbmos.CBMSolver(lambda r: 0., scpi.solve_ivp)
-
-    cell_list = [
-            cl.Cell(
-                ID=i,
-                position=np.array([0, 0, i]),
-                birthtime=0.0,
-                proliferating=True,
-                division_time_generator=lambda t: npr.normal(24 + t)
-                )
-            for i in [0, 1, 2]]
-    solver.cell_list = cell_list
-    solver._build_event_queue()
-    assert len(solver.event_queue) == 3
-
-    solver._get_next_event()
-    assert len(solver.event_queue) == 2
-
-    solver._get_next_event()
-    assert len(solver.event_queue) == 1
-
-    solver._get_next_event()
-    assert len(solver.event_queue) == 0
-
 
 def test_get_division_direction():
     for dim in [1, 2, 3]:
-        cbm_solver = cbmos.CBMSolver(lambda r: 0., ef.solve_ivp, dim)
+        cbm_solver = cbmos.CBModel(lambda r: 0., ef.solve_ivp, dim)
 
         mean_division_direction = cbm_solver._get_division_direction()
         assert mean_division_direction.shape == (dim,)
@@ -156,8 +80,9 @@ def test_get_division_direction():
 
 
 def test_apply_division():
+    from cbmos.cbmodel._eventqueue import EventQueue
     dim = 3
-    cbm_solver = cbmos.CBMSolver(ff.linear, ef.solve_ivp, dim)
+    cbm_solver = cbmos.CBModel(ff.Linear(), ef.solve_ivp, dim)
 
     cell_list = [cl.Cell(i, [0, 0, i], proliferating=True) for i in range(5)]
     for i, cell in enumerate(cell_list):
@@ -165,7 +90,7 @@ def test_apply_division():
 
     cbm_solver.cell_list = cell_list
     cbm_solver.next_cell_index = 5
-    cbm_solver._build_event_queue()
+    cbm_solver._queue = EventQueue([])
 
     cbm_solver._apply_division(cell_list[0], 1)
 
@@ -181,7 +106,7 @@ def test_apply_division():
 
 def test_update_positions():
     dim = 3
-    cbm_solver = cbmos.CBMSolver(ff.linear, ef.solve_ivp, dim)
+    cbm_solver = cbmos.CBModel(ff.Linear(), ef.solve_ivp, dim)
 
     cell_list = [cl.Cell(i, [0, 0, i]) for i in range(5)]
     for i, cell in enumerate(cell_list):
@@ -198,15 +123,16 @@ def test_update_positions():
 
 def test_simulate():
     dim = 1
-    cbm_solver = cbmos.CBMSolver(ff.cubic, scpi.solve_ivp, dim)
+    cbm_solver = cbmos.CBModel(ff.Cubic(), scpi.solve_ivp, dim)
     cell_list = [cl.Cell(0, [0]), cl.Cell(1, [1.0], 0.0, True)]
     cell_list[1].division_time = 1.05  # make sure not to divide at t_data
 
     N = 100
     t_data = np.linspace(0, 10, N) # stay away from 24 hours
-    history = cbm_solver.simulate(cell_list, t_data, {}, {})
+    t_data_sol, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
     assert len(history) == N
+    assert t_data_sol.tolist() == t_data.tolist()
 
     assert len(history[10]) == 2
     assert np.isclose(abs(history[10][0].position - history[10][1].position), 1)
@@ -218,40 +144,39 @@ def test_simulate():
 
 def test_two_events_at_once():
     dim = 1
-    cbm_solver = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
+    cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
     cell_list[0].division_time = 1.05
     cell_list[1].division_time = 1.05
 
     t_data = np.linspace(0, 10, 100)
-    history = cbm_solver.simulate(cell_list, t_data, {}, {})
+    _, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
     assert len(history) == 100
 
 def test_event_at_t_data():
     dim = 1
-    cbm_solver = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
+    cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
     cell_list[0].division_time = 1.0
     cell_list[1].division_time = 1.0
 
     t_data = np.linspace(0, 10, 101)
-    history = cbm_solver.simulate(cell_list, t_data, {}, {})
+    _, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
     assert len(history) == len(t_data)
 
 def test_no_division_skipped():
-
     dim = 1
-    cbm_solver = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
+    cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
     cell_list[0].division_time = 1.0
     cell_list[1].division_time = 1.0
 
     t_data = np.linspace(0, 30, 101)
-    history = cbm_solver.simulate(cell_list, t_data, {}, {})
+    _, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
 
-    eq = [hq.heappop(cbm_solver.event_queue) for i in range(len(cbm_solver.event_queue))]
+    eq = [hq.heappop(cbm_solver._queue._events) for i in range(len(cbm_solver._queue._events))]
     assert eq == sorted(eq)
 
     assert len(eq) == len(history[-1]) - 1
@@ -261,17 +186,35 @@ def test_no_division_skipped():
             assert c.birthtime <= t
             assert c.division_time > t
 
+def test_min_event_resolution():
+    dim = 1
+    cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
+    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list[0].division_time = 0.25
+    cell_list[1].division_time = 0.25
+
+    t_data = [0, 0.4, 0.6, 1]
+    _, history = cbm_solver.simulate(
+            cell_list, t_data, {}, {},
+            raw_t=False, min_event_resolution=0.5,
+            )
+
+    assert len(history[0]) == 2
+    assert len(history[1]) == 2
+    assert len(history[2]) == 4
+    assert len(history[3]) == 4
+
 def test_cell_list_copied():
 
     dim = 1
-    cbm_solver_one = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
-    cbm_solver_two = cbmos.CBMSolver(ff.linear, scpi.solve_ivp, dim)
+    cbm_solver_one = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
+    cbm_solver_two = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
 
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
     t_data = np.linspace(0, 1, 101)
 
-    history_one = cbm_solver_one.simulate(cell_list, t_data, {}, {})
-    history_two = cbm_solver_two.simulate(cell_list, t_data, {}, {})
+    _, history_one = cbm_solver_one.simulate(cell_list, t_data, {}, {})
+    _, history_two = cbm_solver_two.simulate(cell_list, t_data, {}, {})
 
     assert history_two[0][0].position == np.array([0])
     assert history_two[0][1].position == np.array([0.3])
@@ -285,32 +228,67 @@ def test_tdata():
 
     params_cubic = {"mu": 6.91, "s": s, "rA": rA}
 
-    solver_ef = cbmos.CBMSolver(ff.cubic, ef.solve_ivp, 1)
+    solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
     t_data = np.linspace(0,1, n)
     cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [0.3], proliferating=False)]
-    sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03})
+    _, sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=False)
     y = np.array([np.squeeze([clt[0].position, clt[1].position]) for clt in sols])
 
     assert y.shape == (n, 2)
 
+def test_tdata_raw():
+    n = 100
+
+    s = 1.0    # rest length
+    tf = 1.0  # final time
+    rA = 1.5   # maximum interaction distance
+
+    params_cubic = {"mu": 6.91, "s": s, "rA": rA}
+
+    solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
+    t_data = np.linspace(0,1, n)
+    cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [0.3], proliferating=False)]
+    t_data_sol, sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=True)
+
+    assert len(t_data_sol) == len(sols)
+
+def test_tdata_raw_division():
+    n = 100
+
+    s = 1.0    # rest length
+    tf = 1.0  # final time
+    rA = 1.5   # maximum interaction distance
+
+    params_cubic = {"mu": 6.91, "s": s, "rA": rA}
+
+    solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
+    t_data = np.linspace(0,50, n)
+    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
+    t_data_sol, sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=True)
+
+    assert len(sols[-1]) > len(cell_list) # Make sure some cells multiplied
+    assert len(t_data_sol) == len(sols)
+    assert all([t[0] < t[1] for t in zip(t_data_sol, t_data_sol[1:])])
+
+
 def test_sparse_tdata():
     dim = 3
-    solver_cubic = cbmos.CBMSolver(ff.cubic, ef.solve_ivp, dim)
+    solver_cubic = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim)
     ancestor = [cl.Cell(0, np.zeros((dim,)), -5, True)]
     dt = 0.1
     t_f = 50
     t_data = np.linspace(0, t_f, 2)
-    tumor_cubic = solver_cubic.simulate(ancestor, t_data, {"mu":6.91}, {"dt":dt})
+    _, tumor_cubic = solver_cubic.simulate(ancestor, t_data, {"mu":6.91}, {"dt":dt})
 
 
 def test_seed():
     dim = 3
-    cbm_solver = cbmos.CBMSolver(ff.logarithmic, ef.solve_ivp, dim)
+    cbm_solver = cbmos.CBModel(ff.Logarithmic(), ef.solve_ivp, dim)
 
     cell_list = [cl.Cell(0, [0, 0, 0], proliferating=True)]
     t_data = np.linspace(0, 100, 10)
     histories = [
-            cbm_solver.simulate(cell_list, t_data, {}, {}, seed=seed)
+            cbm_solver.simulate(cell_list, t_data, {}, {}, seed=seed)[1]
             for seed in [0, 0, 1, None, None]]
 
     for cells in zip(*[history[-1] for history in histories]):
@@ -319,19 +297,21 @@ def test_seed():
         assert cells[3].position.tolist() != cells[4].position.tolist()
 
 
-def test_seed_division_time():
+def test_seed_division_time(caplog):
     logger = logging.getLogger()
     logs = io.StringIO()
     logger.addHandler(logging.StreamHandler(logs))
 
+    caplog.set_level(logging.DEBUG)
+
     dim = 3
-    cbm_solver = cbmos.CBMSolver(ff.logarithmic, ef.solve_ivp, dim)
+    cbm_solver = cbmos.CBModel(ff.Logarithmic(), ef.solve_ivp, dim)
 
     cell_list = [cl.Cell(0, [0, 0, 0], proliferating=True)]
     t_data = np.linspace(0, 100, 10)
 
     history = [
-            cbm_solver.simulate(cell_list, t_data, {}, {}, seed=seed)
+            cbm_solver.simulate(cell_list, t_data, {}, {}, seed=seed)[1]
             for seed in [0, 0, 1]]
 
     division_times = logs.getvalue().split("Starting new simulation\n")[1:]
@@ -341,7 +321,7 @@ def test_seed_division_time():
 
 def test_cell_dimension_exception():
     dim = 3
-    cbm_solver = cbmos.CBMSolver(ff.logarithmic, ef.solve_ivp, dim)
+    cbm_solver = cbmos.CBModel(ff.Logarithmic(), ef.solve_ivp, dim)
 
     cell_list = [cl.Cell(0, [0, 0], proliferating=True)]
     t_data = np.linspace(0, 100, 10)
@@ -350,13 +330,15 @@ def test_cell_dimension_exception():
         cbm_solver.simulate(cell_list, t_data, {}, {})
 
 
-def test_cell_birth():
+def test_cell_birth(caplog):
     logger = logging.getLogger()
     logs = io.StringIO()
     logger.addHandler(logging.StreamHandler(logs))
 
+    caplog.set_level(logging.DEBUG)
+
     dim = 2
-    cbm_solver = cbmos.CBMSolver(ff.cubic, ef.solve_ivp, dim)
+    cbm_solver = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim)
 
     cell_list = [
                 cl.Cell(0, [0, 0], -5.5, True,
@@ -388,26 +370,103 @@ def test_cell_list_order():
     del sheet[4]
     del sheet[0]
 
-    solver = cbmos.CBMSolver(ff.cubic, ef.solve_ivp, 2)
+    solver = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 2)
     dt = 0.01
     t_data = np.arange(0, 3, dt)
 
-    history = solver.simulate(sheet, t_data, {"mu": 6.91}, {'dt': dt}, seed=17)
+    _, history = solver.simulate(sheet, t_data, {"mu": 6.91}, {'dt': dt}, seed=17)
     history = history[1:]  # delete initial data because that's less cells
 
     ids = [cell.ID for cell in history[0]]
     assert np.all([ids == [cell.ID for cell in clt] for clt in history[1:]])
 
-def test_consistency_ts_history_length():
+def test_jacobian_1DN3():
 
-    cell_list = [cl.Cell(0, [0], -6.0, True, lambda t: 6 + t)]
-    t_data = np.linspace(0, 37.0, 100)
-    solver = cbmos.CBMSolver(ff.cubic, ef.solve_ivp, 1)
+    force = ff.Linear()
+    force_prime = force.derive()
 
-    os.remove('step_sizes.txt')
-    os.remove('time_points.txt')
-    history = solver.simulate(cell_list, t_data, {}, {})
+    y = np.array([1.0, 0.7, 2.5])[:, np.newaxis]
 
-    ts = np.loadtxt('time_points.txt')
-    assert len(ts) == len(history)
+    model = cbmos.CBModel(force, ef.solve_ivp, 1)
 
+    A = model.jacobian(y, {})
+
+    # calculate manually
+    y1 = y[0]
+    y2 = y[1]
+    y3 = y[2]
+
+    A12 = (y2-y1)**2/abs(y2-y1)**2\
+            *(force_prime(abs(y2-y1)) - force(abs(y2-y1))/abs(y2-y1))\
+            + force(abs(y2-y1))/abs(y2-y1)
+    A13 = (y3-y1)**2/abs(y3-y1)**2\
+            *(force_prime(abs(y3-y1)) - force(abs(y3-y1))/abs(y3-y1))\
+            + force(abs(y3-y1))/abs(y3-y1)
+    A23 = (y3-y2)**2/abs(y3-y2)**2\
+            *(force_prime(abs(y3-y2)) - force(abs(y3-y2))/abs(y3-y2))\
+            + force(abs(y3-y2))/abs(y3-y2)
+    A2 = np.squeeze(np.array([[- (A12 +A13), A12, A13],[A12, -(A12 + A23), A23],[A13, A23, -(A13 +A23)]]))
+
+    assert(np.all(A == A2))
+
+def test_jacobian_2DN3():
+
+    g = ff.Linear()
+    g_prime = g.derive()
+
+    y = np.array([[0., 0.], [0.7, 0.1], [0.3, -1.]])
+
+    model = cbmos.CBModel(g, ef.solve_ivp, 2)
+
+
+    A = model.jacobian(y, {})
+
+    # calculate manually
+    y1 = y[0, :][:, np.newaxis]
+    y2 = y[1, :][:, np.newaxis]
+    y3 = y[2, :][:, np.newaxis]
+
+    r12 = y2 - y1
+    norm_12 = np.linalg.norm(r12)
+    r13 = y3 - y1
+    norm_13 = np.linalg.norm(r13)
+    r23 = y3 - y2
+    norm_23 = np.linalg.norm(r23)
+
+    A12 = r12@r12.transpose()/norm_12**2*(g_prime(norm_12) - g(norm_12)/norm_12) + g(norm_12)/norm_12 * np.eye(2)
+    A13 = r13@r13.transpose()/norm_13**2*(g_prime(norm_13) - g(norm_13)/norm_13) + g(norm_13)/norm_13 * np.eye(2)
+    A23 = r23@r23.transpose()/norm_23**2*(g_prime(norm_23) - g(norm_23)/norm_23) + g(norm_23)/norm_23 * np.eye(2)
+
+    A2 = np.block([[- (A12 +A13), A12, A13],[A12, -(A12 + A23), A23],[A13, A23, -(A13 +A23)]])
+
+    assert(np.all(A == A2))
+
+def test_jacobian_3DN3():
+
+    g = ff.Linear()
+    g_prime = g.derive()
+
+    y = np.array([[0., 0., 0.], [0.7, 0.1, -0.6], [0.3, -1., -2.0]])
+
+    model = cbmos.CBModel(g, ef.solve_ivp, 3)
+    A = model.jacobian(y, {})
+
+    # calculate manually
+    y1 = y[0, :][:, np.newaxis]
+    y2 = y[1, :][:, np.newaxis]
+    y3 = y[2, :][:, np.newaxis]
+
+    r12 = y2 - y1
+    norm_12 = np.linalg.norm(r12)
+    r13 = y3 - y1
+    norm_13 = np.linalg.norm(r13)
+    r23 = y3 - y2
+    norm_23 = np.linalg.norm(r23)
+
+    A12 = r12@r12.transpose()/norm_12**2*(g_prime(norm_12) - g(norm_12)/norm_12) + g(norm_12)/norm_12 * np.eye(3)
+    A13 = r13@r13.transpose()/norm_13**2*(g_prime(norm_13) - g(norm_13)/norm_13) + g(norm_13)/norm_13 * np.eye(3)
+    A23 = r23@r23.transpose()/norm_23**2*(g_prime(norm_23) - g(norm_23)/norm_23) + g(norm_23)/norm_23 * np.eye(3)
+
+    A2 = np.block([[- (A12 +A13), A12, A13],[A12, -(A12 + A23), A23],[A13, A23, -(A13 +A23)]])
+
+    assert(np.all(A == A2))

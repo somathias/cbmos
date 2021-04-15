@@ -5,7 +5,7 @@ Created on Tue May 14 10:39:37 2019
 
 @author: Sonja Mathias
 """
-import cell as cl
+import cbmos.cell as cl
 
 
 def test_parameters():

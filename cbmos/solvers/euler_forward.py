@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jul  7 13:54:12 2020
-
-@author: Sonja Mathias
-"""
 
 import numpy as np
 from scipy.integrate._ivp.ivp import OdeResult
@@ -38,6 +33,15 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
     else:
         # do regular fixed time stepping
         t0, tf = float(t_span[0]), float(t_span[-1])
+        
+        if t_eval is not None:
+            assert t0 == t_eval[0]
+            assert tf == t_eval[-1]
+
+            # these variables are only needed if t_eval is not None
+            i = 1
+            tp = t0
+            yp = y0
 
         t = t0
         y = y0
@@ -53,10 +57,23 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
 
             t = t + dt
 
-            ts.append(t)
-            ys.append(y)
-            dts.append(dt)
-
+            if t_eval is not None:
+                while i < len(t_eval) and t >= t_eval[i]:
+                    if t == t_eval[i]:
+                        ts.append(t)
+                        ys.append(y)
+                        i += 1
+                    elif t > t_eval[i]:
+                        yint = yp + (t_eval[i]-tp)*(y-yp)/(t-tp)
+                        ts.append(t_eval[i])
+                        ys.append(yint)
+                        i += 1
+                tp = t
+                yp = y
+            else:
+                ts.append(t)
+                ys.append(y)
+                dts.append(dt)
 
         ts = np.hstack(ts)
         ys = np.vstack(ys).T

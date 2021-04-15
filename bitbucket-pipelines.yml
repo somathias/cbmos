@@ -12,5 +12,6 @@ pipelines:
           - pip
         script: # Modify the commands below to build your repository.
           - pip install --upgrade pip
-          - pip install -r requirements.txt
+          - pip install pytest
+          - pip install .
           - python -m pytest
