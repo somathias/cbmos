@@ -13,7 +13,13 @@ plt.style.use('seaborn')
 
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
               out='', write_to_file=False,
-              local_adaptivity=False, m0=2, m1=2, jacobian=None):
+              local_adaptivity=False, m0=2, m1=2,
+              jacobian=None, force_args={}):
+    """
+    Note: t_eval can only be taken into account when dt is provided and thus
+    fixed time stepping is done.
+    """
+
 
     adaptive_dt = True if dt is None else False
 
@@ -25,7 +31,8 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
         else:
             return _do_local_adaptive_timestepping_ws(fun, t_span, y0, eps,
                                                       eta, out, write_to_file,
-                                                      m0, m1, jacobian)
+                                                      m0, m1, jacobian,
+                                                      force_args)
     elif adaptive_dt:
         # choose time step adaptively globally
         return _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta, out,
@@ -33,7 +40,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
     else:
         # do regular fixed time stepping
         t0, tf = float(t_span[0]), float(t_span[-1])
-        
+
         if t_eval is not None:
             assert t0 == t_eval[0]
             assert tf == t_eval[-1]
@@ -48,7 +55,6 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
 
         ts = [t]
         ys = [y]
-        dts = []
 
         while t < tf:
 
@@ -73,18 +79,9 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
             else:
                 ts.append(t)
                 ys.append(y)
-                dts.append(dt)
 
         ts = np.hstack(ts)
         ys = np.vstack(ys).T
-        dts = np.hstack(dts)
-
-
-        if write_to_file:
-            with open('time_points'+out+'.txt', 'ab') as f:
-                np.savetxt(f, ts)
-            with open('step_sizes'+out+'.txt', 'ab') as f:
-                np.savetxt(f, dts)
 
         return OdeResult(t=ts, y=ys)
 
@@ -126,8 +123,6 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
 
     if write_to_file:
-        with open('time_points'+out+'.txt', 'ab') as f:
-            np.savetxt(f, ts)
         with open('step_sizes'+out+'.txt', 'ab') as f:
             np.savetxt(f, dts)
 
@@ -242,8 +237,6 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
     n_eq_per_level = np.vstack(n_eq_per_level).T
 
     if write_to_file:
-        with open('time_points'+out+'.txt', 'ab') as f:
-            np.savetxt(f, ts)
         with open('step_sizes'+out+'.txt', 'ab') as f:
             np.savetxt(f, dts)
         with open('step_sizes_local'+out+'.txt', 'ab') as f:
@@ -257,7 +250,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
 def _do_local_adaptive_timestepping_ws(fun, t_span, y0, eps, eta,
                                        out, write_to_file,
-                                       m0, m1, jacobian):
+                                       m0, m1, jacobian, force_args):
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -276,7 +269,7 @@ def _do_local_adaptive_timestepping_ws(fun, t_span, y0, eps, eta,
         y = copy.deepcopy(y)
 
         # calculate stability bound
-        A = jacobian(y)
+        A = jacobian(y, force_args)
         w, v = np.linalg.eigh(A)
 
         # the eigenvalues are sorted in ascending order
@@ -394,8 +387,6 @@ def _do_local_adaptive_timestepping_ws(fun, t_span, y0, eps, eta,
     n_eq_per_level = np.vstack(n_eq_per_level).T
 
     if write_to_file:
-        with open('time_points'+out+'.txt', 'ab') as f:
-            np.savetxt(f, ts)
         with open('step_sizes'+out+'.txt', 'ab') as f:
             np.savetxt(f, dts)
         with open('step_sizes_local'+out+'.txt', 'ab') as f:
@@ -415,7 +406,7 @@ if __name__ == "__main__":
     #@np.vectorize
     def func(t, y):
         return -50*np.eye(len(y))@y
-    def jacobian(y):
+    def jacobian(y, fa):
         return -50*np.eye(len(y))
 
 #    t_span = (0,1)
@@ -504,5 +495,5 @@ if __name__ == "__main__":
     plt.plot(sorted_AFs[-2,:], label='$t=t_f$')
     plt.plot(sorted_AFs[-1,:], label='$t=t_f$')
     plt.xlabel('k')
-    plt.ylabel('$|\eta_k|$, sorted decreasingly')
+    #plt.ylabel('$|\eta_k|$, sorted decreasingly')
     plt.legend()
