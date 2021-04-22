@@ -29,10 +29,13 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
             return _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                                    out, write_to_file, m0, m1)
         else:
-            return _do_local_adaptive_timestepping_ws(fun, t_span, y0, eps,
-                                                      eta, out, write_to_file,
-                                                      m0, m1, jacobian,
-                                                      force_args)
+            return _do_local_adaptive_timestepping_with_stability(fun, t_span,
+                                                                  y0, eps,
+                                                                  eta, out,
+                                                                  write_to_file,
+                                                                  m0, m1,
+                                                                  jacobian,
+                                                                  force_args)
     elif adaptive_dt:
         # choose time step adaptively globally
         return _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta, out,
@@ -252,9 +255,10 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
     return OdeResult(t=ts, y=ys)
 
-def _do_local_adaptive_timestepping_ws(fun, t_span, y0, eps, eta,
-                                       out, write_to_file,
-                                       m0, m1, jacobian, force_args):
+def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
+                                                   out, write_to_file,
+                                                   m0, m1, jacobian,
+                                                   force_args):
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
