@@ -39,51 +39,55 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
                                                 write_to_file)
     else:
         # do regular fixed time stepping
-        t0, tf = float(t_span[0]), float(t_span[-1])
+        return _do_fixed_timestepping(fun, t_span, y0, t_eval, dt)
+
+
+def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt):
+    t0, tf = float(t_span[0]), float(t_span[-1])
+
+    if t_eval is not None:
+        assert t0 == t_eval[0]
+        assert tf == t_eval[-1]
+
+        # these variables are only needed if t_eval is not None
+        i = 1
+        tp = t0
+        yp = y0
+
+    t = t0
+    y = y0
+
+    ts = [t]
+    ys = [y]
+
+    while t < tf:
+
+        y = copy.deepcopy(y)
+        y = y + dt*fun(t, y)
+
+        t = t + dt
 
         if t_eval is not None:
-            assert t0 == t_eval[0]
-            assert tf == t_eval[-1]
+            while i < len(t_eval) and t >= t_eval[i]:
+                if t == t_eval[i]:
+                    ts.append(t)
+                    ys.append(y)
+                    i += 1
+                elif t > t_eval[i]:
+                    yint = yp + (t_eval[i]-tp)*(y-yp)/(t-tp)
+                    ts.append(t_eval[i])
+                    ys.append(yint)
+                    i += 1
+            tp = t
+            yp = y
+        else:
+            ts.append(t)
+            ys.append(y)
 
-            # these variables are only needed if t_eval is not None
-            i = 1
-            tp = t0
-            yp = y0
+    ts = np.hstack(ts)
+    ys = np.vstack(ys).T
 
-        t = t0
-        y = y0
-
-        ts = [t]
-        ys = [y]
-
-        while t < tf:
-
-            y = copy.deepcopy(y)
-            y = y + dt*fun(t, y)
-
-            t = t + dt
-
-            if t_eval is not None:
-                while i < len(t_eval) and t >= t_eval[i]:
-                    if t == t_eval[i]:
-                        ts.append(t)
-                        ys.append(y)
-                        i += 1
-                    elif t > t_eval[i]:
-                        yint = yp + (t_eval[i]-tp)*(y-yp)/(t-tp)
-                        ts.append(t_eval[i])
-                        ys.append(yint)
-                        i += 1
-                tp = t
-                yp = y
-            else:
-                ts.append(t)
-                ys.append(y)
-
-        ts = np.hstack(ts)
-        ys = np.vstack(ys).T
-
-        return OdeResult(t=ts, y=ys)
+    return OdeResult(t=ts, y=ys)
 
 
 def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
