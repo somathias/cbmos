@@ -136,6 +136,62 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
     return OdeResult(t=ts, y=ys)
 
 
+def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
+                                                    out, write_to_file,
+                                                    jacobian,
+                                                    force_args):
+    t0, tf = float(t_span[0]), float(t_span[-1])
+
+    t = t0
+    y = y0
+
+    ts = [t]
+    ys = [y]
+    dts = []
+
+
+    while t < tf:
+        y = copy.deepcopy(y)
+
+        # calculate stability bound
+        A = jacobian(y, force_args)
+        w, v = np.linalg.eigh(A)
+
+        # the eigenvalues are sorted in ascending order
+        dt_s = 2.0/abs(w[0])
+
+        F = fun(t, y)
+        AF = A @ F
+
+        if write_to_file:
+            with open('AFs'+out+'.txt', 'ab') as f:
+                np.savetxt(f, np.abs(AF).reshape((1, -1)))
+
+        norm_AF = np.linalg.norm(AF, np.inf)
+        dt_a = np.sqrt(2*eps/norm_AF) if norm_AF > 0.0 else tf - t
+
+        # take minimum of stability and accuracy bound
+        dt = np.minimum(dt_s, dt_a)
+
+        y = y + dt*F
+        t = t + dt
+
+        ts.append(t)
+        ys.append(y)
+        dts.append(dt)
+
+    ts = np.hstack(ts)
+    ys = np.vstack(ys).T
+    dts = np.hstack(dts)
+
+
+    if write_to_file:
+        with open('step_sizes'+out+'.txt', 'ab') as f:
+            np.savetxt(f, dts)
+
+    return OdeResult(t=ts, y=ys)
+
+
 def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                     out, write_to_file,
                                     m0, m1):
