@@ -38,8 +38,16 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
                                                                   force_args)
     elif adaptive_dt:
         # choose time step adaptively globally
-        return _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta, out,
-                                                write_to_file)
+        if jacobian is None:
+            return _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
+                                                    out, write_to_file)
+        else:
+            return _do_global_adaptive_timestepping_with_stability(fun, t_span,
+                                                                   y0, eps,
+                                                                   out,
+                                                                   write_to_file,
+                                                                   jacobian,
+                                                                   force_args)
     else:
         # do regular fixed time stepping
         return _do_fixed_timestepping(fun, t_span, y0, t_eval, dt)
@@ -136,7 +144,7 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
     return OdeResult(t=ts, y=ys)
 
 
-def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
+def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
                                                     out, write_to_file,
                                                     jacobian,
                                                     force_args):
@@ -513,19 +521,18 @@ if __name__ == "__main__":
 
 
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
-                     eps=0.0001, eta = 0.00001, local_adaptivity=True,
+                     eps=0.0001, eta = 0.00001, local_adaptivity=False,
                      write_to_file=True, jacobian=jacobian)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
     plt.ylabel('y')
 
-    plt.figure()
-    ts = np.loadtxt('time_points.txt')
-    lev  = np.loadtxt('levels.txt')
-    plt.plot(ts[1:], lev)
-    plt.xlabel('time')
-    plt.ylabel('Number of levels')
+#    plt.figure()
+#    lev  = np.loadtxt('levels.txt')
+#    plt.plot(sol2.t, lev)
+#    plt.xlabel('time')
+#    plt.ylabel('Number of levels')
 
     plt.figure()
     dt  = np.loadtxt('step_sizes.txt')
@@ -534,20 +541,20 @@ if __name__ == "__main__":
     plt.xlabel('time')
     plt.ylabel('Global step size')
 
-    plt.figure()
-    dt_locals  = np.loadtxt('step_sizes_local.txt')
-    plt.plot(np.cumsum(dt_locals), dt_locals)
-    plt.xlabel('time')
-    plt.ylabel('Local step size')
-
-    plt.figure()
-    n_eq_per_level = np.loadtxt('n_eq_per_level.txt')
-    plt.plot(ts[1:], n_eq_per_level[0,:], label='level 0')
-    plt.plot(ts[1:], n_eq_per_level[1,:], label='level 1')
-    plt.plot(ts[1:], n_eq_per_level[2,:], label='level 2')
-    plt.legend()
-    plt.xlabel('time')
-    plt.ylabel('Number of equations per level')
+#    plt.figure()
+#    dt_locals  = np.loadtxt('step_sizes_local.txt')
+#    plt.plot(np.cumsum(dt_locals), dt_locals)
+#    plt.xlabel('time')
+#    plt.ylabel('Local step size')
+#
+#    plt.figure()
+#    n_eq_per_level = np.loadtxt('n_eq_per_level.txt')
+#    plt.plot(ts[1:], n_eq_per_level[0,:], label='level 0')
+#    plt.plot(ts[1:], n_eq_per_level[1,:], label='level 1')
+#    plt.plot(ts[1:], n_eq_per_level[2,:], label='level 2')
+#    plt.legend()
+#    plt.xlabel('time')
+#    plt.ylabel('Number of equations per level')
 
     plt.figure()
     AFs = np.loadtxt('AFs.txt')
