@@ -112,10 +112,10 @@ class LinearExponential:
         return _np.where(r < rA, mu*(r-s)*_np.exp(-a*(r-s)), 0.)
 
     def derive(self):
-        def fp(r, mu=1.0, s=1.0, a=5.0, rA=1.5):
+        def fp(r, mu=15.0, s=1.0, a=5.0, rA=1.5):
             if r is None:
                 return 0.
-            return _np.where(r < rA, mu*(1-a*(r-s))*np.exp(-a*(r-s)), 0.)
+            return _np.where(r < rA, mu*(1-a*(r-s))*_np.exp(-a*(r-s)), 0.)
 
         return fp
 
