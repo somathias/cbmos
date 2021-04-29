@@ -54,6 +54,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
 
 
 def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt):
+    print('Using fixed timestepping with dt='+str(dt)+' .')
     t0, tf = float(t_span[0]), float(t_span[-1])
 
     if t_eval is not None:
@@ -103,6 +104,7 @@ def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt):
 
 def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                      out, write_to_file):
+    print('Using global adaptive timestepping.')
     t0, tf = float(t_span[0]), float(t_span[-1])
 
     t = t0
@@ -148,6 +150,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
                                                     out, write_to_file,
                                                     jacobian,
                                                     force_args):
+    print('Using global adaptive timestepping with a stability bound.')
     t0, tf = float(t_span[0]), float(t_span[-1])
 
     t = t0
@@ -507,10 +510,6 @@ if __name__ == "__main__":
     except FileNotFoundError:
         print('Nothing to delete.')
     try:
-        os.remove('time_points.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    try:
         os.remove('n_eq_per_level.txt')
     except FileNotFoundError:
         print('Nothing to delete.')
@@ -519,10 +518,14 @@ if __name__ == "__main__":
     except FileNotFoundError:
         print('Nothing to delete.')
 
-
+#
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
                      eps=0.0001, eta = 0.00001, local_adaptivity=False,
                      write_to_file=True, jacobian=jacobian)
+#    sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
+#                     eps=0.0001, eta = 0.00001, local_adaptivity=False,
+#                     write_to_file=True)
+
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
