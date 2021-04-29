@@ -29,61 +29,76 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
             return _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                                    out, write_to_file, m0, m1)
         else:
-            return _do_local_adaptive_timestepping_ws(fun, t_span, y0, eps,
-                                                      eta, out, write_to_file,
-                                                      m0, m1, jacobian,
-                                                      force_args)
+            return _do_local_adaptive_timestepping_with_stability(fun, t_span,
+                                                                  y0, eps,
+                                                                  eta, out,
+                                                                  write_to_file,
+                                                                  m0, m1,
+                                                                  jacobian,
+                                                                  force_args)
     elif adaptive_dt:
         # choose time step adaptively globally
-        return _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta, out,
-                                                write_to_file)
+        if jacobian is None:
+            return _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
+                                                    out, write_to_file)
+        else:
+            return _do_global_adaptive_timestepping_with_stability(fun, t_span,
+                                                                   y0, eps,
+                                                                   out,
+                                                                   write_to_file,
+                                                                   jacobian,
+                                                                   force_args)
     else:
         # do regular fixed time stepping
-        t0, tf = float(t_span[0]), float(t_span[-1])
+        return _do_fixed_timestepping(fun, t_span, y0, t_eval, dt)
+
+
+def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt):
+    t0, tf = float(t_span[0]), float(t_span[-1])
+
+    if t_eval is not None:
+        assert t0 == t_eval[0]
+        assert tf == t_eval[-1]
+
+        # these variables are only needed if t_eval is not None
+        i = 1
+        tp = t0
+        yp = y0
+
+    t = t0
+    y = y0
+
+    ts = [t]
+    ys = [y]
+
+    while t < tf:
+
+        y = copy.deepcopy(y)
+        y = y + dt*fun(t, y)
+
+        t = t + dt
 
         if t_eval is not None:
-            assert t0 == t_eval[0]
-            assert tf == t_eval[-1]
+            while i < len(t_eval) and t >= t_eval[i]:
+                if t == t_eval[i]:
+                    ts.append(t)
+                    ys.append(y)
+                    i += 1
+                elif t > t_eval[i]:
+                    yint = yp + (t_eval[i]-tp)*(y-yp)/(t-tp)
+                    ts.append(t_eval[i])
+                    ys.append(yint)
+                    i += 1
+            tp = t
+            yp = y
+        else:
+            ts.append(t)
+            ys.append(y)
 
-            # these variables are only needed if t_eval is not None
-            i = 1
-            tp = t0
-            yp = y0
+    ts = np.hstack(ts)
+    ys = np.vstack(ys).T
 
-        t = t0
-        y = y0
-
-        ts = [t]
-        ys = [y]
-
-        while t < tf:
-
-            y = copy.deepcopy(y)
-            y = y + dt*fun(t, y)
-
-            t = t + dt
-
-            if t_eval is not None:
-                while i < len(t_eval) and t >= t_eval[i]:
-                    if t == t_eval[i]:
-                        ts.append(t)
-                        ys.append(y)
-                        i += 1
-                    elif t > t_eval[i]:
-                        yint = yp + (t_eval[i]-tp)*(y-yp)/(t-tp)
-                        ts.append(t_eval[i])
-                        ys.append(yint)
-                        i += 1
-                tp = t
-                yp = y
-            else:
-                ts.append(t)
-                ys.append(y)
-
-        ts = np.hstack(ts)
-        ys = np.vstack(ys).T
-
-        return OdeResult(t=ts, y=ys)
+    return OdeResult(t=ts, y=ys)
 
 
 def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
@@ -109,6 +124,62 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
         norm_AF = np.linalg.norm(AF, np.inf)
         dt = np.sqrt(2*eps/norm_AF) if norm_AF > 0.0 else tf - t
+
+        y = y + dt*F
+        t = t + dt
+
+        ts.append(t)
+        ys.append(y)
+        dts.append(dt)
+
+    ts = np.hstack(ts)
+    ys = np.vstack(ys).T
+    dts = np.hstack(dts)
+
+
+    if write_to_file:
+        with open('step_sizes'+out+'.txt', 'ab') as f:
+            np.savetxt(f, dts)
+
+    return OdeResult(t=ts, y=ys)
+
+
+def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
+                                                    out, write_to_file,
+                                                    jacobian,
+                                                    force_args):
+    t0, tf = float(t_span[0]), float(t_span[-1])
+
+    t = t0
+    y = y0
+
+    ts = [t]
+    ys = [y]
+    dts = []
+
+
+    while t < tf:
+        y = copy.deepcopy(y)
+
+        # calculate stability bound
+        A = jacobian(y, force_args)
+        w, v = np.linalg.eigh(A)
+
+        # the eigenvalues are sorted in ascending order
+        dt_s = 2.0/abs(w[0])
+
+        F = fun(t, y)
+        AF = A @ F
+
+        if write_to_file:
+            with open('AFs'+out+'.txt', 'ab') as f:
+                np.savetxt(f, np.abs(AF).reshape((1, -1)))
+
+        norm_AF = np.linalg.norm(AF, np.inf)
+        dt_a = np.sqrt(2*eps/norm_AF) if norm_AF > 0.0 else tf - t
+
+        # take minimum of stability and accuracy bound
+        dt = np.minimum(dt_s, dt_a)
 
         y = y + dt*F
         t = t + dt
@@ -248,9 +319,10 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
     return OdeResult(t=ts, y=ys)
 
-def _do_local_adaptive_timestepping_ws(fun, t_span, y0, eps, eta,
-                                       out, write_to_file,
-                                       m0, m1, jacobian, force_args):
+def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
+                                                   out, write_to_file,
+                                                   m0, m1, jacobian,
+                                                   force_args):
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -449,19 +521,18 @@ if __name__ == "__main__":
 
 
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
-                     eps=0.0001, eta = 0.00001, local_adaptivity=True,
+                     eps=0.0001, eta = 0.00001, local_adaptivity=False,
                      write_to_file=True, jacobian=jacobian)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
     plt.ylabel('y')
 
-    plt.figure()
-    ts = np.loadtxt('time_points.txt')
-    lev  = np.loadtxt('levels.txt')
-    plt.plot(ts[1:], lev)
-    plt.xlabel('time')
-    plt.ylabel('Number of levels')
+#    plt.figure()
+#    lev  = np.loadtxt('levels.txt')
+#    plt.plot(sol2.t, lev)
+#    plt.xlabel('time')
+#    plt.ylabel('Number of levels')
 
     plt.figure()
     dt  = np.loadtxt('step_sizes.txt')
@@ -470,20 +541,20 @@ if __name__ == "__main__":
     plt.xlabel('time')
     plt.ylabel('Global step size')
 
-    plt.figure()
-    dt_locals  = np.loadtxt('step_sizes_local.txt')
-    plt.plot(np.cumsum(dt_locals), dt_locals)
-    plt.xlabel('time')
-    plt.ylabel('Local step size')
-
-    plt.figure()
-    n_eq_per_level = np.loadtxt('n_eq_per_level.txt')
-    plt.plot(ts[1:], n_eq_per_level[0,:], label='level 0')
-    plt.plot(ts[1:], n_eq_per_level[1,:], label='level 1')
-    plt.plot(ts[1:], n_eq_per_level[2,:], label='level 2')
-    plt.legend()
-    plt.xlabel('time')
-    plt.ylabel('Number of equations per level')
+#    plt.figure()
+#    dt_locals  = np.loadtxt('step_sizes_local.txt')
+#    plt.plot(np.cumsum(dt_locals), dt_locals)
+#    plt.xlabel('time')
+#    plt.ylabel('Local step size')
+#
+#    plt.figure()
+#    n_eq_per_level = np.loadtxt('n_eq_per_level.txt')
+#    plt.plot(ts[1:], n_eq_per_level[0,:], label='level 0')
+#    plt.plot(ts[1:], n_eq_per_level[1,:], label='level 1')
+#    plt.plot(ts[1:], n_eq_per_level[2,:], label='level 2')
+#    plt.legend()
+#    plt.xlabel('time')
+#    plt.ylabel('Number of equations per level')
 
     plt.figure()
     AFs = np.loadtxt('AFs.txt')
