@@ -1,0 +1,41 @@
+name: Release docs
+on:
+    push:
+        branches: [ master ]
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: |
+          sudo apt-get install pandoc
+          python -m pip install --upgrade pip
+          pip install jupyterlab sphinx
+          pip install -e .
+    - name: Build docs
+      run: |
+          cd docs/
+          python -c "import cbmos"
+          make notebooks api
+          make html
+    - name: Commit to gh-pages
+      run: |
+        git clone https://github.com/somathias/cbmos.git --branch gh-pages --single-branch gh-pages
+        cp -r docs/_build/html/* gh-pages/
+        cd gh-pages
+        touch .nojekyll
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "Update documentation" -a || true
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+          branch: gh-pages
+          directory: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
