@@ -159,6 +159,8 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
     ts = [t]
     ys = [y]
     dts = []
+    dt_as = []
+    dt_ss = []
 
 
     while t < tf:
@@ -166,7 +168,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
 
         # calculate stability bound
         A = jacobian(y, force_args)
-        w, v = np.linalg.eigh(A)
+        w = np.linalg.eigvalsh(A)
 
         # the eigenvalues are sorted in ascending order
         dt_s = 2.0/abs(w[0])
@@ -190,10 +192,13 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
         ts.append(t)
         ys.append(y)
         dts.append(dt)
+        dt_as.append(dt_a)
+        dt_ss.append(dt_s)
 
     ts = np.hstack(ts)
     ys = np.vstack(ys).T
-    dts = np.hstack(dts)
+    #dts = np.hstack(dts)
+    dts = np.vstack([dts, dt_as, dt_ss]).T
 
 
     if write_to_file:
@@ -539,8 +544,8 @@ if __name__ == "__main__":
 
     plt.figure()
     dt  = np.loadtxt('step_sizes.txt')
-    plt.plot(np.cumsum(dt), dt)
-    plt.plot(np.cumsum(dt), 0.04*np.ones(len(np.cumsum(dt))))
+    plt.plot(sol2.t[:-1], dt[:,0])
+    plt.plot(sol2.t, 0.04*np.ones(len(sol2.t)))
     plt.xlabel('time')
     plt.ylabel('Global step size')
 
