@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Jan 22 11:16:04 2021
-
-@author: Sonja Mathias
-"""
 
 import numpy as np
 from scipy.integrate._ivp.ivp import OdeResult
@@ -22,9 +17,17 @@ plt.style.use('seaborn')
 
 
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
-              eps=0.001, eta=0.001, jacobian=None, force_args={},
-              tol=1e-5, atol=1e-5,
+              eps=None, eps_max =1e-3, eta=0.001, jacobian=None, force_args={},
+              tol=None, atol=None,
               out='', write_to_file=False, disp=False):
+
+    if eps is None:
+        eps = min(eps_max, dt)
+    if tol is None:
+        tol = min(eps_max, dt)
+    if atol is None:
+        atol = min(eps_max, dt)
+
 
     class gmres_counter(object):
         def __init__(self, disp=disp):

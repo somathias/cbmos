@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 17 16:00:48 2019
-
-@author: Sonja Mathias
-
 The average cell cycle duration for a typical rapidly proliferating human cell
 is 24 hours (https://bionumbers.hms.harvard.edu/bionumber.aspx?id=112260).
 
-We assume a normal distribution of cell cycle durations with mean=24h and
-sigma=1.0h.
+As a default, we assume a normal distribution of cell cycle durations with
+mean=24h and sigma=1.0h.
 """
 
 import numpy as _np
@@ -20,15 +16,29 @@ class Cell:
     """
     Parameters
     ----------
+    ID: int
+        Unique number used to identify the cell
     position : numpy array
         The position of this cell (1, 2, or 3d)
-    division_time : float -> float
+    birthtime: float
+        Cell's birthtime (0 by default). The first division time will be
+        computed from that value.
+    proliferating: bool
+        Whether or not the cell will proliferate
+    division_time_generator : float -> float
         function that takes the current time to generate the absolute next
         division time.
-        
-    NOTE: One should always use the constructor to access member variables, 
-    in order to ensure correct behavior. Eg. it is not possible to set the 
-    proliferating flag outside of the constructor because the division time 
+    division_time: float
+        first time at which the cell will divide next. If None, the division
+        time generator will be use to set that time.
+    parent_ID: int
+        ID of the parent cell, can be used to reconstruct cell lineages.
+
+    Note
+    ----
+    One should always use the constructor to access member variables,
+    in order to ensure correct behavior. Eg. it is not possible to set the
+    proliferating flag outside of the constructor because the division time
     would not be updated in that case.
 
 
@@ -53,10 +63,3 @@ class Cell:
 
     def __lt__(self, other):
         return self.division_time < other.division_time
-
-#    def generate_division_time(self, current_time=None):
-#        current_time = current_time if current_time is not None else self.birthtime
-#        if self.proliferating:
-#            return _np.random.randn() + 24.0 + current_time
-#        else:
-#            return _np.inf
