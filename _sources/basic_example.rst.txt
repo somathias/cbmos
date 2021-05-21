@@ -64,7 +64,9 @@ In this simulation, we use the Gls force and the Euler forward solver.
 The force function’s parameters are given to the simulate function as a
 dictionary. Parameters can also be passed to the solver in the same way.
 This function returns a tuple containing the time points and a list of
-cells for each of these time points.
+cells for each of these time points. If needed a detailed log of the
+division events can be displayed by `setting the log
+level <https://docs.python.org/3/howto/logging.html>`__ to ``debug``.
 
 .. code:: ipython3
 
