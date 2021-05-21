@@ -167,6 +167,11 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
         A = jacobian(y, force_args)
         w = np.linalg.eigvalsh(A)
 
+        if write_to_file:
+            with open('EVs'+out+'.txt', 'ab') as f:
+                np.savetxt(f, w.reshape((1, -1)))
+
+
         # the eigenvalues are sorted in ascending order
         dt_s = 2.0/abs(w[0])
 
