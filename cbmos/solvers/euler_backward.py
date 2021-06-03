@@ -49,6 +49,10 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
     dts = []
 
     while t < tf:
+
+        # take minimum of dt and tf-t in order to not overstep
+        dt = np.minimum(dt, tf-t)
+
         if disp:
             print('--------')
             print('t = '+str(t))

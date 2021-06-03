@@ -27,6 +27,10 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01):
     ys.append(y)
 
     while t < tf:
+
+        # take minimum of dt and tf-t in order to not overstep
+        dt = np.minimum(dt, tf-t)
+
         y = y + dt/2.0*(3*fun(t,y)-fun(ts[-2], ys[-2]))
         t = t + dt
 
