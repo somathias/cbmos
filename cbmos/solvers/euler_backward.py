@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Jan 22 11:16:04 2021
-
-@author: Sonja Mathias
-"""
 
 import numpy as np
 from scipy.integrate._ivp.ivp import OdeResult
@@ -54,6 +49,10 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, n_newton=20,
     dts = []
 
     while t < tf:
+
+        # take minimum of dt and tf-t in order to not overstep
+        dt = np.minimum(dt, tf-t)
+
         if disp:
             print('--------')
             print('t = '+str(t))

@@ -59,7 +59,7 @@ def plot_population(cell_list, color='blue'):
         plt.plot(cell.position[0], cell.position[1], '.', color=color)
     ax.set_aspect('equal')
     plt.show()
-    
+
 plot_population(sheet)
 ```
 
@@ -68,7 +68,6 @@ plot_population(sheet)
 ### Simulation
 
 In this simulation, we use the Gls force and the Euler forward solver. The force function's parameters are given to the simulate function as a dictionary. Parameters can also be passed to the solver in the same way. This function returns a tuple containing the time points and a list of cells for each of these time points.
-
 
 ```python
 # Initialize model
@@ -79,7 +78,7 @@ model = cbmos.CBModel(ff.Gls(), ef.solve_ivp, dimension=2)
 dt = 0.01
 t_data = np.arange(0, 4, dt)
 
-t_data, history = solver.simulate(
+t_data, history = model.simulate(
     sheet, # Initial cell configuration
     t_data, # Times at which the history is saved
     {"mu": 5.70, "s": 1.0, "rA": 1.5}, # Force parameters
@@ -94,10 +93,10 @@ plot_population(history[-1])
 ![png](.images/output_7_0.png)
 
 
+
 ## Documentation
 The package's documentation, as well as a few examples are available at
 [somathias.github.io/cbmos/](https://somathias.github.io/cbmos/)
-
 
 ## Publications
 

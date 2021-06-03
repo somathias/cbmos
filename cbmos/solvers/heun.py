@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jan 25 16:13:35 2019
-
-@author: Sonja Mathias
 """
 import numpy as np
 from scipy.integrate._ivp.ivp import OdeResult
@@ -23,6 +20,10 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.01):
     ys = [y]
 
     while t < tf:
+
+        # take minimum of dt and tf-t in order to not overstep
+        dt = np.minimum(dt, tf-t)
+
         y = y + dt/2.0*(fun(t, y) + fun(t + dt, y + dt*fun(t,y)))
         t = t + dt
 

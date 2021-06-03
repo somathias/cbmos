@@ -74,6 +74,9 @@ def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt):
 
     while t < tf:
 
+        # take minimum of dt and tf-t in order to not overstep
+        dt = np.minimum(dt, tf-t)
+
         y = copy.deepcopy(y)
         y = y + dt*fun(t, y)
 
@@ -126,6 +129,9 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
         norm_AF = np.linalg.norm(AF, np.inf)
         dt = np.sqrt(2*eps/norm_AF) if norm_AF > 0.0 else tf - t
+
+        # take minimum of dt and tf-t in order to not overstep
+        dt = np.minimum(dt, tf-t)
 
         y = y + dt*F
         t = t + dt
@@ -190,6 +196,9 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
 
         # take minimum of stability and accuracy bound
         dt = np.minimum(dt_s, dt_a)
+
+        # take minimum of dt and tf-t in order to not overstep
+        dt = np.minimum(dt, tf-t)
 
         y = y + dt*F
         t = t + dt
