@@ -14,6 +14,9 @@ import cbmos.cell as cl
 def func(t, y):
     return -50*y
 
+def jacobian(y, fa):
+    return -50*np.eye(len(y))
+
 
 def test_y_shape():
 
@@ -38,6 +41,23 @@ def test_t_eval():
     sol = ef.solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=t_eval, dt=0.01)
     assert len(sol.t) == len(t_eval)
 
+def test_no_overstep():
+    t_span = (0, 1)
+    y0 = np.array([1, 1])
+
+    # fixed time step
+    sol = ef.solve_ivp(func, t_span, y0, dt=0.03)
+    assert sol.t[-1] == t_span[1]
+
+    # global adaptivity
+    sol = ef.solve_ivp(func, t_span, y0)
+    assert sol.t[-1] == t_span[1]
+
+    # global adaptivity with stability bound
+    sol = ef.solve_ivp(func, t_span, y0, jacobian=jacobian)
+    assert sol.t[-1] == t_span[1]
+
+
 def test_jacobian_arguments():
     # test that local adaptivity code in EF can handle the correct signature
     # of the Jacobian with the force function arguments
@@ -54,9 +74,7 @@ def test_jacobian_arguments():
 
 def test_ordering_ts_when_using_global_adaptivity():
     # Simulation parameters
-    s = 1.0    # rest length
     tf = 10.0  # final time
-    rA = 1.5   # maximum interaction distance
     dim = 2
     seed=67
 
