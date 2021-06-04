@@ -134,7 +134,7 @@ class CBModel:
             if tau > t:
                 # calculate positions until the last t_data smaller or equal to min(tau, t_end)
                 t_eval = [t] \
-                    + [time for time in t_data if t < time <= min(tau, t_end)]
+                    + [time for time in self.t_data if t < time <= min(tau, t_end)]
                 y0 = _np.array([cell.position for cell in self.cell_list]).reshape(-1)
                 # only calculate positions if there is t_data before tau
                 if len(t_eval) > 1:
@@ -156,6 +156,21 @@ class CBModel:
                 if tau > t_eval[-1] and tau <=t_end:
                     y0 = sol.y[:, -1] if len(t_eval) > 1 else y0
                     sol = self._calculate_positions([t_eval[-1], tau], y0, force_args, solver_args, raw_t=raw_t)
+
+                    if raw_t:
+                        for y_t in sol.y[:, 1:].T:
+                            self._save_data(y_t.reshape(-1, self.dim))
+                        self.t_data.extend(sol.t[1:])
+                elif tau > t_end and raw_t:
+                    # continue the simulation until t_end (only necessary if
+                    # t_end is not in t_eval because raw_t is true (default))
+                    y0 = sol.y[:, -1] if len(t_eval) > 1 else y0
+                    sol = self._calculate_positions([t_eval[-1], t_end], y0, force_args, solver_args, raw_t=raw_t)
+
+                    #if raw_t:
+                    for y_t in sol.y[:, 1:].T:
+                        self._save_data(y_t.reshape(-1, self.dim))
+                    self.t_data.extend(sol.t[1:])
 
                 # update the positions for the current time point
                 self._update_positions(sol.y[:, -1].reshape(-1, self.dim).tolist())
@@ -257,6 +272,8 @@ class CBModel:
             tau, division_direction))
 
     def _calculate_positions(self, t_eval, y0, force_args, solver_args, raw_t=True):
+        _logging.debug("Calling solver with: t0={}, tf={}".format(
+            t_eval[0], t_eval[-1]))
         return self.solver(self._ode_system(force_args),
                            (t_eval[0], t_eval[-1]),
                            y0,
