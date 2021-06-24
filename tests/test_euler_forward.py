@@ -96,3 +96,16 @@ def test_ordering_ts_when_using_global_adaptivity():
 
     ts, history = model.simulate(cell_list, t_data, params, {"eps": 0.05,"eta":0.0001, 'write_to_file':True}, seed=seed)
     assert(np.all(np.diff(ts) >= 0))
+
+def test_fix_eqs():
+    def func(t, y):
+        return -50*np.eye(len(y))@y
+    def jacobian(y, fa):
+        return -50*np.eye(len(y))
+
+    t_eval = np.linspace(0,3,10)
+    y0 = np.array([0.5, 1.0, 3.5, 6.0])
+
+    sol = ef.solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None, jacobian=jacobian, fix_eqs=2)
+
+    assert(np.all(sol.y[:2, :].T == y0[:2]))

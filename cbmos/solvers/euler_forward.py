@@ -4,7 +4,7 @@
 import numpy as np
 from scipy.integrate._ivp.ivp import OdeResult
 import copy
-
+import logging as _logging
 
 import matplotlib.pyplot as plt
 import os
@@ -14,7 +14,7 @@ plt.style.use('seaborn')
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
               out='', write_to_file=False,
               local_adaptivity=False, m0=2, m1=2,
-              jacobian=None, force_args={}):
+              jacobian=None, force_args={}, fix_eqs=0):
     """
     Note: t_eval can only be taken into account when dt is provided and thus
     fixed time stepping is done.
@@ -47,13 +47,17 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
                                                                    out,
                                                                    write_to_file,
                                                                    jacobian,
-                                                                   force_args)
+                                                                   force_args,
+                                                                   fix_eqs)
     else:
         # do regular fixed time stepping
         return _do_fixed_timestepping(fun, t_span, y0, t_eval, dt)
 
 
 def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt):
+
+    _logging.debug("Using EF, fixed time stepping with dt={}".format(
+            dt))
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -108,6 +112,9 @@ def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt):
 def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                      out, write_to_file):
 
+    _logging.debug("Using EF, global adaptive time stepping with eps={}, eta={}".format(
+            eps, eta))
+
     t0, tf = float(t_span[0]), float(t_span[-1])
 
     t = t0
@@ -155,7 +162,11 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
 def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
                                                     out, write_to_file,
                                                     jacobian,
-                                                    force_args):
+                                                    force_args,
+                                                    fix_eqs):
+
+    _logging.debug("Using EF, global adaptive time stepping with Jacobian and eps={}".format(
+            eps))
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -170,15 +181,21 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
 
 
     while t < tf:
+        _logging.debug("t={}".format(t))
         y = copy.deepcopy(y)
 
         # calculate stability bound
         A = jacobian(y, force_args)
-        w = np.linalg.eigvalsh(A)
+        #w = np.linalg.eigvalsh(A)
+        w, v = np.linalg.eigh(A)
+        _logging.debug("Eigenvalues w={}".format(w))
+        _logging.debug("Eigenvectors v={}".format(v))
 
         if write_to_file:
-            with open('EVs'+out+'.txt', 'ab') as f:
+            with open('eigenvalues'+out+'.txt', 'ab') as f:
                 np.savetxt(f, w.reshape((1, -1)))
+            with open('eigenvectors'+out+'.txt', 'ab') as f:
+                np.savetxt(f, v.reshape((1, -1), order='F'))
 
 
         # the eigenvalues are sorted in ascending order
@@ -199,6 +216,9 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
 
         # take minimum of dt and tf-t in order to not overstep
         dt = np.minimum(dt, tf-t)
+
+        if fix_eqs > 0:
+            F[:fix_eqs] = 0.0
 
         y = y + dt*F
         t = t + dt
