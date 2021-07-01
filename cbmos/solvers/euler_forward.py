@@ -187,7 +187,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
         # calculate stability bound
         A = jacobian(y, force_args)
         #w = np.linalg.eigvalsh(A)
-        w, v = np.linalg.eigh(A)
+        w, v = np.linalg.eigh(A[fix_eqs:, fix_eqs:])  # adjust dimensions if equations are fixed
         _logging.debug("Eigenvalues w={}".format(w))
         _logging.debug("Eigenvectors v={}".format(v))
 
@@ -202,7 +202,10 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
         dt_s = 2.0/abs(w[0])
 
         F = fun(t, y)
+        F[:fix_eqs] = 0.0 # do not move fixed cells (by default fix_eqs=0)
+
         AF = A @ F
+        AF = AF[fix_eqs:] # adjust dimensions if equations are fixed
 
         if write_to_file:
             with open('AFs'+out+'.txt', 'ab') as f:
@@ -217,8 +220,8 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
         # take minimum of dt and tf-t in order to not overstep
         dt = np.minimum(dt, tf-t)
 
-        if fix_eqs > 0:
-            F[:fix_eqs] = 0.0
+#        if fix_eqs > 0:
+#            F[:fix_eqs] = 0.0
 
         y = y + dt*F
         t = t + dt
