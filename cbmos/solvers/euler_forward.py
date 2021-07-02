@@ -313,8 +313,9 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
         if (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
             # three levels
+            dt_1 = np.minimum(dt_1, (tf-t)/m1)#avoid overstepping at end of time interval
             for i in range(m1):
-
+                dt_0 = np.minimum(dt_0, (tf-t)/m0)
                 for j in range(m0):
                     y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
                     F = fun(t, y)
@@ -323,16 +324,19 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                 y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
                 F = fun(t, y)
 
+            dt_2 = np.minimum(dt_2, (tf-t))#avoid overstepping at end of time interval
             y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
 
             dt = dt_2
         elif (min_ind_1 < min_ind_2 and min_ind_2 == len(y0)) or (min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
             # two levels, always fall back on dt_1
+            dt_0 = np.minimum(dt_0, (tf-t)/m0)
             for j in range(m0):
                 y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
                 F = fun(t, y)
                 dts_local.append(dt_0)
 
+            dt_1 = np.minimum(dt_1, (tf-t))#avoid overstepping at end of time interval
             y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
             F = fun(t, y)
 
@@ -340,6 +344,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
         else:
             # single level
+            dt_0 = np.minimum(dt_0, (tf-t))
             y = y + dt_0*F
             dt = dt_0
             dts_local.append(dt_0)
@@ -436,6 +441,8 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
             n_eq_per_level.append(n_eqs)
             levels.append(np.sum(n_eqs > 0))
 
+            dt_0 = np.minimum(dt_0, tf-t) #avoid overstepping at end of time interval
+
             y = y + dt_0*F
             dt = dt_0
             dts_local.append(dt_0)
@@ -451,10 +458,13 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
             n_eq_per_level.append(n_eqs)
             levels.append(np.sum(n_eqs > 0))
 
+            dt_0 = np.minimum(dt_0, (tf-t)/m0)
             for j in range(m0):
                 y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
                 F = fun(t, y)
                 dts_local.append(dt_0)
+
+            dt_1 = np.minimum(dt_1, (tf-t))
 
             y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
             F = fun(t, y)
@@ -477,8 +487,10 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
 
             if (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
                 # three levels
-                for i in range(m1):
 
+                dt_1 = np.minimum(dt_1, (tf-t)/m1)#avoid overstepping at end of time interval
+                for i in range(m1):
+                    dt_0 = np.minimum(dt_0, (tf-t)/m0)#avoid overstepping at end of time interval
                     for j in range(m0):
                         y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
                         F = fun(t, y)
@@ -487,16 +499,19 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
                     y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
                     F = fun(t, y)
 
+                dt_2 = np.minimum(dt_2, tf-t)
                 y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
 
                 dt = dt_2
             elif (min_ind_1 < min_ind_2 and min_ind_2 == len(y0)) or (min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
                 # two levels, always fall back on dt_1
+                dt_0 = np.minimum(dt_0, (tf-t)/m0) #avoid overstepping at end of time interval
                 for j in range(m0):
                     y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
                     F = fun(t, y)
                     dts_local.append(dt_0)
 
+                dt_1 = np.minimum(dt_1, tf-t)
                 y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
                 F = fun(t, y)
 
@@ -504,6 +519,7 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
 
             else:
                 # single level
+                dt_0 = np.minimum(dt_0, tf-t)
                 y = y + dt_0*F
                 dt = dt_0
                 dts_local.append(dt_0)
