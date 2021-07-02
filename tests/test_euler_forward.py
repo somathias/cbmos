@@ -57,6 +57,14 @@ def test_no_overstep():
     sol = ef.solve_ivp(func, t_span, y0, jacobian=jacobian)
     assert sol.t[-1] == t_span[1]
 
+    # local adaptivity
+    sol = ef.solve_ivp(func, t_span, y0, local_adaptivity=True)
+    assert sol.t[-1] == t_span[1]
+
+    # local adaptivity with stability bound
+    sol = ef.solve_ivp(func, t_span, y0, jacobian=jacobian, local_adaptivity=True)
+    assert sol.t[-1] == t_span[1]
+
 
 def test_jacobian_arguments():
     # test that local adaptivity code in EF can handle the correct signature
