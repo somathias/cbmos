@@ -437,7 +437,7 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
 
         if dt_0 == dt_s:
             # single level sufficient with dt_s
-            n_eqs = np.array([len(y0), 0, 0])
+            n_eqs = np.array([0, 0, len(y0)])
             n_eq_per_level.append(n_eqs)
             levels.append(np.sum(n_eqs > 0))
 
@@ -454,7 +454,7 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
             # find corresponding indices
             min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
 
-            n_eqs = np.array([min_ind_1, len(y0) -min_ind_1, 0])
+            n_eqs = np.array([0, min_ind_1, len(y0) -min_ind_1])
             n_eq_per_level.append(n_eqs)
             levels.append(np.sum(n_eqs > 0))
 
@@ -479,14 +479,20 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
             min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
             min_ind_2 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_2, side='right')
 
-            n_eqs = np.array([min_ind_1,
-                              min_ind_2 - min_ind_1,
-                              len(y0) - min_ind_2])
-            n_eq_per_level.append(n_eqs)
-            levels.append(np.sum(n_eqs > 0))
+            # the algorithm is implemented such that the levels collapse down
+            # to level 0. However we count the number of equations per level
+            # such that level 2 is always the one with the biggest time step
+            # and that the lower levels become empty because this is more
+            # intuitive.
+
 
             if (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
                 # three levels
+                n_eqs = np.array([min_ind_1,
+                                  min_ind_2 - min_ind_1,
+                                  len(y0) - min_ind_2])
+                n_eq_per_level.append(n_eqs)
+                levels.append(np.sum(n_eqs > 0))
 
                 dt_1 = np.minimum(dt_1, (tf-t)/m1)#avoid overstepping at end of time interval
                 for i in range(m1):
@@ -505,6 +511,11 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
                 dt = dt_2
             elif (min_ind_1 < min_ind_2 and min_ind_2 == len(y0)) or (min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
                 # two levels, always fall back on dt_1
+                n_eqs = np.array([0, min_ind_1,
+                                  len(y0) - min_ind_1])
+                n_eq_per_level.append(n_eqs)
+                levels.append(np.sum(n_eqs > 0))
+
                 dt_0 = np.minimum(dt_0, (tf-t)/m0) #avoid overstepping at end of time interval
                 for j in range(m0):
                     y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
@@ -519,6 +530,10 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
 
             else:
                 # single level
+                n_eqs = np.array([0, 0, len(y0)])
+                n_eq_per_level.append(n_eqs)
+                levels.append(np.sum(n_eqs > 0))
+
                 dt_0 = np.minimum(dt_0, tf-t)
                 y = y + dt_0*F
                 dt = dt_0
