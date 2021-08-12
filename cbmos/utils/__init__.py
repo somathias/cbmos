@@ -9,6 +9,15 @@ def generate_cartesian_coordinates(n_x, n_y, scaling=1.0):
     """
     Generate cartesian coordinates which can be used to set up a cell
     population.
+
+    Parameters
+    ----------
+    n_x: int
+        number of columns
+    n_y: int
+        number of rows
+    scaling: float
+        distance between the cells, in cell diameters
     """
     return [(scaling*i_x, scaling*i_y)
             for i_x in range(n_x) for i_y in range(n_y)
@@ -19,6 +28,15 @@ def generate_honeycomb_coordinates(n_x, n_y, scaling=1.0):
     """
     Generate coordinates from a honeycomb mesh which can be used to set up a
     cell population.
+
+    Parameters
+    ----------
+    n_x: int
+        number of columns
+    n_y: int
+        number of rows
+    scaling: float
+        distance between the cells, in cell diameters
     """
     return [((2 * i_x + (i_y % 2)) * 0.5 * scaling,
              _np.sqrt(3) * i_y * 0.5 * scaling)
@@ -31,7 +49,20 @@ def setup_locally_compressed_monolayer(n_x, n_y, scaling=1.0, separation=0.3):
     Set up a locally compressed monolayer where the middle cell has just
     divided.
 
-    Returns: list of cells
+    Parameters
+    ----------
+    n_x: int
+        number of columns
+    n_y: int
+        number of rows
+    scaling: float
+        distance between mother cells, in cell diameters
+    separation: float
+        distance between daughter cells, in cell diameters
+
+    Returns
+    -------
+        list of cells
 
     """
 
