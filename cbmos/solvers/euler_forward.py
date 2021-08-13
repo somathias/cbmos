@@ -6,6 +6,8 @@ from scipy.integrate._ivp.ivp import OdeResult
 import copy
 import logging as _logging
 
+import geshgorin as gg
+
 import matplotlib.pyplot as plt
 import os
 plt.style.use('seaborn')
@@ -168,6 +170,8 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
     _logging.debug("Using EF, global adaptive time stepping with Jacobian and eps={}".format(
             eps))
 
+    print('Warning: geshgorin estimate currently assumes dim=2')
+
     t0, tf = float(t_span[0]), float(t_span[-1])
 
     t = t0
@@ -191,11 +195,16 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
         _logging.debug("Eigenvalues w={}".format(w))
         _logging.debug("Eigenvectors v={}".format(v))
 
+        #check geshgorin estimate
+        m, xi, rho = gg.estimate_eigenvalues(y, jacobian, force_args)
+
         if write_to_file:
             with open('eigenvalues'+out+'.txt', 'ab') as f:
                 np.savetxt(f, w.reshape((1, -1)))
             with open('eigenvectors'+out+'.txt', 'ab') as f:
                 np.savetxt(f, v.reshape((1, -1), order='F'))
+            with open('geshgorin'+out+'.txt', 'ab') as f:
+                np.savetxt(f, m)
 
 
         # the eigenvalues are sorted in ascending order
