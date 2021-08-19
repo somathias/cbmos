@@ -6,7 +6,7 @@ from scipy.integrate._ivp.ivp import OdeResult
 import copy
 import logging as _logging
 
-import geshgorin as gg
+import cbmos.solvers.geshgorin as gg
 
 import matplotlib.pyplot as plt
 import os
@@ -204,7 +204,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
             with open('eigenvectors'+out+'.txt', 'ab') as f:
                 np.savetxt(f, v.reshape((1, -1), order='F'))
             with open('geshgorin'+out+'.txt', 'ab') as f:
-                np.savetxt(f, m)
+                np.savetxt(f, [m])
 
 
         # the eigenvalues are sorted in ascending order
