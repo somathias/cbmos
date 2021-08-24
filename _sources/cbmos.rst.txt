@@ -9,6 +9,7 @@ Subpackages
 
    cbmos.cbmodel
    cbmos.solvers
+   cbmos.utils
 
 Submodules
 ----------

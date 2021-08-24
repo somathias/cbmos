@@ -19,14 +19,15 @@ current cell configuration.
     import cbmos.force_functions as ff
     import cbmos.solvers.euler_forward as ef
     import cbmos.cell as cl
+    import cbmos.utils as utils
     
+
+
+.. code:: ipython3
+
     n_x = 5
     n_y = 5
-    cell_size = 0.5
-    coordinates = [
-        (2*cell_size*i_x, 2*cell_size*i_y)
-        for i_x in range(n_x) for i_y in range(n_y)
-    ]
+    coordinates = utils.generate_cartesian_coordinates(n_x, n_y)
     
     sheet = [
         cl.Cell(
@@ -41,20 +42,11 @@ current cell configuration.
 
 .. code:: ipython3
 
-    def plot_population(cell_list, color='blue'):
-        fig=plt.figure()
-        ax=fig.add_subplot(1,1,1)
-        for cell in cell_list:
-            ax.add_patch(plt.Circle(cell.position ,0.5,color=color, alpha=0.4))
-            plt.plot(cell.position[0], cell.position[1], '.', color=color)
-        ax.set_aspect('equal')
-        plt.show()
-        
-    plot_population(sheet)
+    utils.plot_2d_population(sheet)
 
 
 
-.. image:: basic_example_files/basic_example_3_0.png
+.. image:: basic_example_files/basic_example_4_0.png
 
 
 Simulation
@@ -87,9 +79,10 @@ level <https://docs.python.org/3/howto/logging.html>`__ to ``debug``.
 
 .. code:: ipython3
 
-    plot_population(history[-1])
+    utils.plot_2d_population(history[-1])
 
 
 
-.. image:: basic_example_files/basic_example_7_0.png
+.. image:: basic_example_files/basic_example_8_0.png
+
 

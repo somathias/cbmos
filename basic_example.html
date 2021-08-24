@@ -47,14 +47,12 @@ current cell configuration.</p>
 <span class="kn">import</span> <span class="nn">cbmos.force_functions</span> <span class="k">as</span> <span class="nn">ff</span>
 <span class="kn">import</span> <span class="nn">cbmos.solvers.euler_forward</span> <span class="k">as</span> <span class="nn">ef</span>
 <span class="kn">import</span> <span class="nn">cbmos.cell</span> <span class="k">as</span> <span class="nn">cl</span>
-
-<span class="n">n_x</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="kn">import</span> <span class="nn">cbmos.utils</span> <span class="k">as</span> <span class="nn">utils</span>
+</pre></div>
+</div>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n_x</span> <span class="o">=</span> <span class="mi">5</span>
 <span class="n">n_y</span> <span class="o">=</span> <span class="mi">5</span>
-<span class="n">cell_size</span> <span class="o">=</span> <span class="mf">0.5</span>
-<span class="n">coordinates</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">cell_size</span><span class="o">*</span><span class="n">i_x</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">cell_size</span><span class="o">*</span><span class="n">i_y</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_x</span><span class="p">)</span> <span class="k">for</span> <span class="n">i_y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_y</span><span class="p">)</span>
-<span class="p">]</span>
+<span class="n">coordinates</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">generate_cartesian_coordinates</span><span class="p">(</span><span class="n">n_x</span><span class="p">,</span> <span class="n">n_y</span><span class="p">)</span>
 
 <span class="n">sheet</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">cl</span><span class="o">.</span><span class="n">Cell</span><span class="p">(</span>
@@ -68,19 +66,10 @@ current cell configuration.</p>
 <span class="p">]</span>
 </pre></div>
 </div>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot_population</span><span class="p">(</span><span class="n">cell_list</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">):</span>
-    <span class="n">fig</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
-    <span class="n">ax</span><span class="o">=</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">cell_list</span><span class="p">:</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">Circle</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">position</span> <span class="p">,</span><span class="mf">0.5</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">))</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">position</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cell</span><span class="o">.</span><span class="n">position</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-
-<span class="n">plot_population</span><span class="p">(</span><span class="n">sheet</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">utils</span><span class="o">.</span><span class="n">plot_2d_population</span><span class="p">(</span><span class="n">sheet</span><span class="p">)</span>
 </pre></div>
 </div>
-<img alt="_images/basic_example_3_0.png" src="_images/basic_example_3_0.png" />
+<img alt="_images/basic_example_4_0.png" src="_images/basic_example_4_0.png" />
 </section>
 <section id="simulation">
 <h2>Simulation<a class="headerlink" href="#simulation" title="Permalink to this headline">¶</a></h2>
@@ -106,10 +95,10 @@ level</a> to <code class="docutils literal notranslate"><span class="pre">debug<
 <span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_population</span><span class="p">(</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">utils</span><span class="o">.</span><span class="n">plot_2d_population</span><span class="p">(</span><span class="n">history</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 </pre></div>
 </div>
-<img alt="_images/basic_example_7_0.png" src="_images/basic_example_7_0.png" />
+<img alt="_images/basic_example_8_0.png" src="_images/basic_example_8_0.png" />
 </section>
 </section>
 
@@ -133,7 +122,7 @@ level</a> to <code class="docutils literal notranslate"><span class="pre">debug<
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -147,7 +136,7 @@ level</a> to <code class="docutils literal notranslate"><span class="pre">debug<
       &copy;2021, Sonja Mathias, Adrien Coulier, Andreas Hellander.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
