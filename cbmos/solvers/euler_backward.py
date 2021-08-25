@@ -81,6 +81,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, eps=0.01, eta=0.001,
                                       force_args, counter, tol, atol, out,
                                       write_to_file)
 
+
 def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt, n_newton,
                            eps_newton, xi, jacobian, force_args, counter,
                            tol, atol, out, write_to_file):
@@ -104,58 +105,25 @@ def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt, n_newton,
 
         _logging.debug("t={}".format(t))
 
-        y = copy.deepcopy(y)
-
-        # do Newton iterations
-        y_next = copy.deepcopy(y)  # initialize with current y
-        for j in np.arange(n_newton):
-
-            F_curly = y_next - y - dt*fun(t, y_next)
-
-            if jacobian is not None:
-                A = jacobian(y_next, force_args)
-                J = np.eye(A.shape[0]) - dt*A
-            else:
-                # approximate matrix vector product Jv where J = I-dt*A
-                def Jv(v):
-                    return 1/xi*(y_next + xi*v
-                                  - y - dt*fun(t, y_next + xi*v)
-                                  - F_curly)
-                J = LinearOperator((len(y_next), len(y_next)), matvec=Jv)
-
-            # solve linear system J*dy = F_curly for dy
-            dy, exitCode = gmres(J, -F_curly, callback=counter, tol=tol,
-                                 atol=atol, restart=5, maxiter=1,
-                                 callback_type='x') # maxiter= number of outer iterations/restarts, restart= number of inner iterations (between restarts)
-            _logging.debug("Number of GMRes iterations = {}".format(counter.niter))
-            #dy, exitCode = lgmres(J, -F_curly, callback=counter)
-            #dy, exitCode = cg(J, -F_curly)
-            # dy = scpi.linalg.solve(J, -F_curly)
-            #print('ExitCode='+str(exitCode))
-            y_next = y_next + dy
-
-            if np.linalg.norm(dy)/np.linalg.norm(y_next) < eps_newton:
-                _logging.debug("Relative error tolerance of {} achieved.".format(eps_newton))
-                break
-
-        y = copy.deepcopy(y_next)
+        y = _do_newton_iterations(fun, t, y, dt, n_newton, jacobian,
+                                  force_args, xi, counter, tol, atol,
+                                  eps_newton)
         t = t + dt
 
         ts.append(t)
         ys.append(y)
         dts.append(dt)
 
-
     ts = np.hstack(ts)
     ys = np.vstack(ys).T
     dts = np.hstack(dts)
-
 
     if write_to_file:
         with open('step_sizes'+out+'.txt', 'ab') as f:
             np.savetxt(f, dts)
 
     return OdeResult(t=ts, y=ys)
+
 
 def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
                                      n_newton, eps_newton, xi, jacobian,
@@ -202,45 +170,14 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
         if atol is None:
             atol = min(eps_max, dt)
 
-        # do Newton iterations
-        y_next = copy.deepcopy(y)  # initialize with current y
-        for j in np.arange(n_newton):
-
-            F_curly = y_next - y - dt*fun(t, y_next)
-
-            if jacobian is not None:
-                A = jacobian(y_next, force_args)
-                J = np.eye(A.shape[0]) - dt*A
-            else:
-                # approximate matrix vector product Jv where J = I-dt*A
-                def Jv(v):
-                    return 1/xi*(y_next + xi*v
-                                  - y - dt*fun(t, y_next + xi*v)
-                                  - F_curly)
-                J = LinearOperator((len(y_next), len(y_next)), matvec=Jv)
-
-            # solve linear system J*dy = F_curly for dy
-            dy, exitCode = gmres(J, -F_curly, callback=counter, tol=tol,
-                                 atol=atol, restart=5, maxiter=1,
-                                 callback_type='x') # maxiter= number of outer iterations/restarts, restart= number of inner iterations (between restarts)
-            _logging.debug("Number of GMRes iterations = {}".format(counter.niter))
-            #dy, exitCode = lgmres(J, -F_curly, callback=counter)
-            #dy, exitCode = cg(J, -F_curly)
-            # dy = scpi.linalg.solve(J, -F_curly)
-            #print('ExitCode='+str(exitCode))
-            y_next = y_next + dy
-
-            if np.linalg.norm(dy)/np.linalg.norm(y_next) < eps:
-                _logging.debug("Relative error tolerance of {} achieved.".format(eps))
-                break
-
-        y = copy.deepcopy(y_next)
+        y = _do_newton_iterations(fun, t, y, dt, n_newton, jacobian,
+                                  force_args, xi, counter, tol, atol,
+                                  eps_newton)
         t = t + dt
 
         ts.append(t)
         ys.append(y)
         dts.append(dt)
-
 
     ts = np.hstack(ts)
     ys = np.vstack(ys).T
@@ -314,56 +251,64 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, t_eval,
         if atol is None:
             atol = min(eps_max, dt)
 
-        # do Newton iterations
-        y_next = copy.deepcopy(y)  # initialize with current y
-        for j in np.arange(n_newton):
-
-            F_curly = y_next - y - dt*fun(t, y_next)
-
-            if jacobian is not None:
-                A = jacobian(y_next, force_args)
-                J = np.eye(A.shape[0]) - dt*A
-            else:
-                # approximate matrix vector product Jv where J = I-dt*A
-                def Jv(v):
-                    return 1/xi*(y_next + xi*v
-                                  - y - dt*fun(t, y_next + xi*v)
-                                  - F_curly)
-                J = LinearOperator((len(y_next), len(y_next)), matvec=Jv)
-
-            # solve linear system J*dy = F_curly for dy
-            dy, exitCode = gmres(J, -F_curly, callback=counter, tol=tol,
-                                 atol=atol, restart=5, maxiter=1,
-                                 callback_type='x') # maxiter= number of outer iterations/restarts, restart= number of inner iterations (between restarts)
-            _logging.debug("Number of GMRes iterations = {}".format(counter.niter))
-            #dy, exitCode = lgmres(J, -F_curly, callback=counter)
-            #dy, exitCode = cg(J, -F_curly)
-            # dy = scpi.linalg.solve(J, -F_curly)
-            #print('ExitCode='+str(exitCode))
-            y_next = y_next + dy
-
-            if np.linalg.norm(dy)/np.linalg.norm(y_next) < eps:
-                _logging.debug("Relative error tolerance of {} achieved.".format(eps))
-                break
-
-        y = copy.deepcopy(y_next)
+        y = _do_newton_iterations(fun, t, y, dt, n_newton, jacobian,
+                                  force_args, xi, counter, tol, atol,
+                                  eps_newton)
         t = t + dt
 
         ts.append(t)
         ys.append(y)
         dts.append(dt)
 
-
     ts = np.hstack(ts)
     ys = np.vstack(ys).T
     dts = np.hstack(dts)
-
 
     if write_to_file:
         with open('step_sizes'+out+'.txt', 'ab') as f:
             np.savetxt(f, dts)
 
     return OdeResult(t=ts, y=ys)
+
+
+def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
+                          counter, tol, atol, eps_newton):
+
+    # do Newton iterations
+    y_next = copy.deepcopy(y)  # initialize with current y
+    #y_next = y + dt*fun(t, y) # initialize with EF step
+    for j in np.arange(n_newton):
+
+        F_curly = y_next - y - dt*fun(t, y_next)
+
+        if jacobian is not None:
+            A = jacobian(y_next, force_args)
+            J = np.eye(A.shape[0]) - dt*A
+        else:
+            # approximate matrix vector product Jv where J = I-dt*A
+            def Jv(v):
+                return 1/xi*(y_next + xi*v
+                              - y - dt*fun(t, y_next + xi*v)
+                              - F_curly)
+            J = LinearOperator((len(y_next), len(y_next)), matvec=Jv)
+
+        # solve linear system J*dy = F_curly for dy
+        dy, exitCode = gmres(J, -F_curly, callback=counter, tol=tol,
+                             atol=atol, restart=5, maxiter=1,
+                             callback_type='x') # maxiter= number of outer iterations/restarts, restart= number of inner iterations (between restarts)
+        _logging.debug("Number of GMRes iterations = {}".format(counter.niter))
+        #dy, exitCode = lgmres(J, -F_curly, callback=counter)
+        #dy, exitCode = cg(J, -F_curly)
+        # dy = scpi.linalg.solve(J, -F_curly)
+        #print('ExitCode='+str(exitCode))
+        y_next = y_next + dy
+
+        if np.linalg.norm(dy)/np.linalg.norm(y_next) < eps_newton:
+            _logging.debug("Relative error tolerance of {} achieved.".format(eps_newton))
+            break
+
+    return copy.deepcopy(y_next)
+
 
 if __name__ == "__main__":
 
