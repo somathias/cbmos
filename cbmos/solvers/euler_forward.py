@@ -311,11 +311,10 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
         min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
         min_ind_2 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_2, side='right')
 
-        n_eqs = np.array([min_ind_1,
-                          min_ind_2 - min_ind_1,
-                          len(y0) - min_ind_2])
-        n_eq_per_level.append(n_eqs)
-        levels.append(np.sum(n_eqs > 0))
+#        n_eqs = np.array([min_ind_1,
+#                          min_ind_2 - min_ind_1,
+#                          len(y0) - min_ind_2])
+
 
 #            min_ind_2 = np.argmax(np.sqrt(2*eps/abs(af[inds])) >= dt_2)
 #            min_ind_1 = np.argmax(np.sqrt(2*eps/abs(af[inds])/m1) >= dt_1)
@@ -363,6 +362,9 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
         ts.append(t)
         ys.append(y)
         dts.append(dt)
+
+        n_eq_per_level.append(n_eqs)
+        levels.append(np.sum(n_eqs > 0))
 
     ts = np.hstack(ts)
     ys = np.vstack(ys).T
@@ -422,6 +424,11 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
         # the eigenvalues are sorted in ascending order
         dt_s = 2.0/abs(w[0])
 
+        Xi_s = 2.0*eps/(dt_s**2)
+        Xi_s2 = Xi_s
+        Xi_s1 = m1*Xi_s2
+        #Xi_s0 = m0*Xi_s1
+
         # calculate the accuracy bound
         F = fun(t, y)
         af = A @ F
@@ -434,125 +441,72 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
         # sort the indices such that abs(AF(inds)) is decreasing
         inds = np.argsort(-abs(af))
         # find largest and smallest eta_k
-        Xi_0 = abs(af[inds[0]])
+        Xi_a0 = abs(af[inds[0]])
+        Xi_a1 = Xi_a0/m0
+        Xi_a2 = Xi_a1/m1
 
 #        Xi_min = abs(af[inds[-1]])
 #        dt_max = np.sqrt(2*eps/Xi_min) if Xi_min > 0.0 else tf - t
 
-        dt_a = np.sqrt(2*eps / (m0*m1*Xi_0)) if Xi_0 > 0.0 else dt_s
+        dt_a = np.sqrt(2*eps / (m0*m1*Xi_a0)) if Xi_a0 > 0.0 else dt_s
         dt_0 = np.minimum(dt_a, dt_s)
         dt_1 = np.minimum(m0*dt_0, dt_s)
         dt_2 = np.minimum(m1*dt_1, dt_s)
 
-        if dt_0 == dt_s:
-            # single level sufficient with dt_s
-            n_eqs = np.array([0, 0, len(y0)])
-            n_eq_per_level.append(n_eqs)
-            levels.append(np.sum(n_eqs > 0))
+        #Xi_0 = np.maximum(Xi_a0, Xi_s0)
+        Xi_1 = np.maximum(Xi_a1, Xi_s1)
+        Xi_2 = np.maximum(Xi_a2, Xi_s2)
 
-            dt_0 = np.minimum(dt_0, tf-t) #avoid overstepping at end of time interval
 
-            y = y + dt_0*F
-            dt = dt_0
-            dts_local.append(dt_0)
+#
+#        if dt_0 == dt_s:
+#            # single level sufficient with dt_s
+#            (y, dt, n_eqs) = _do_single_level(t, y, tf, F, dt_0, dts_local)
+#
+#        elif dt_1 == dt_s:
+#            # two levels with dt_0 and dt_s
+#            (y, dt, n_eqs) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
+#                                            min_ind_1, m0, dts_local)
+#        else:
+#            # not restricted by stability in lower levels
+#            # calculate corresponding maximum eta for each level
+#            Xi_1 = Xi_0/m0
+#            Xi_2 = Xi_1/m1
 
-        elif dt_1 == dt_s:
-            # two levels with dt_0 and dt_s
-            # calculate corresponding maximum eta for each level
-            Xi_1 = Xi_0/m0
-            # find corresponding indices
-            min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
+        # find corresponding indices
+        min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
+        min_ind_2 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_2, side='right')
 
-            n_eqs = np.array([0, min_ind_1, len(y0) -min_ind_1])
-            n_eq_per_level.append(n_eqs)
-            levels.append(np.sum(n_eqs > 0))
+        # the algorithm is implemented such that the levels collapse down
+        # to level 0. However we count the number of equations per level
+        # such that level 2 is always the one with the biggest time step
+        # and that the lower levels become empty because this is more
+        # intuitive.
 
-            dt_0 = np.minimum(dt_0, (tf-t)/m0)
-            for j in range(m0):
-                y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
-                F = fun(t, y)
-                dts_local.append(dt_0)
 
-            dt_1 = np.minimum(dt_1, (tf-t))
+        if (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
+            # three levels
+            (y, dt, n_eqs) = _do_three_levels(fun, t, y, tf, F, dt_0, dt_1,
+                                              dt_2, inds, min_ind_1, min_ind_2,
+                                              m0, m1, dts_local)
 
-            y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
-            F = fun(t, y)
-            dt = dt_1
+        elif (min_ind_1 < min_ind_2 and min_ind_2 == len(y0)) or (min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
+            # two levels, always fall back on dt_1
+            (y, dt, n_eqs) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
+                                            min_ind_1, m0, dts_local)
+
         else:
-            # not restricted by stability in lower levels
-            # calculate corresponding maximum eta for each level
-            Xi_1 = Xi_0/m0
-            Xi_2 = Xi_1/m1
-
-            # find corresponding indices
-            min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
-            min_ind_2 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_2, side='right')
-
-            # the algorithm is implemented such that the levels collapse down
-            # to level 0. However we count the number of equations per level
-            # such that level 2 is always the one with the biggest time step
-            # and that the lower levels become empty because this is more
-            # intuitive.
-
-
-            if (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
-                # three levels
-                n_eqs = np.array([min_ind_1,
-                                  min_ind_2 - min_ind_1,
-                                  len(y0) - min_ind_2])
-                n_eq_per_level.append(n_eqs)
-                levels.append(np.sum(n_eqs > 0))
-
-                dt_1 = np.minimum(dt_1, (tf-t)/m1)#avoid overstepping at end of time interval
-                for i in range(m1):
-                    dt_0 = np.minimum(dt_0, (tf-t)/m0)#avoid overstepping at end of time interval
-                    for j in range(m0):
-                        y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
-                        F = fun(t, y)
-                        dts_local.append(dt_0)
-
-                    y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
-                    F = fun(t, y)
-
-                dt_2 = np.minimum(dt_2, tf-t)
-                y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
-
-                dt = dt_2
-            elif (min_ind_1 < min_ind_2 and min_ind_2 == len(y0)) or (min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
-                # two levels, always fall back on dt_1
-                n_eqs = np.array([0, min_ind_1,
-                                  len(y0) - min_ind_1])
-                n_eq_per_level.append(n_eqs)
-                levels.append(np.sum(n_eqs > 0))
-
-                dt_0 = np.minimum(dt_0, (tf-t)/m0) #avoid overstepping at end of time interval
-                for j in range(m0):
-                    y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
-                    F = fun(t, y)
-                    dts_local.append(dt_0)
-
-                dt_1 = np.minimum(dt_1, tf-t)
-                y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
-                F = fun(t, y)
-
-                dt = dt_1
-
-            else:
-                # single level
-                n_eqs = np.array([0, 0, len(y0)])
-                n_eq_per_level.append(n_eqs)
-                levels.append(np.sum(n_eqs > 0))
-
-                dt_0 = np.minimum(dt_0, tf-t)
-                y = y + dt_0*F
-                dt = dt_0
-                dts_local.append(dt_0)
+            # single level
+            (y, dt, n_eqs) = _do_single_level(t, y, tf, F, dt_0, dts_local)
 
         t = t + dt
 
         ts.append(t)
         ys.append(y)
         dts.append(dt)
+
+        n_eq_per_level.append(n_eqs)
+        levels.append(np.sum(n_eqs > 0))
 
     ts = np.hstack(ts)
     ys = np.vstack(ys).T
@@ -573,8 +527,72 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
     return OdeResult(t=ts, y=ys)
 
 
+def _do_single_level(t, y, tf, F, dt_0, dts_local):
+    # single level
+    n_eqs = np.array([0, 0, len(y)])
+    #n_eq_per_level.append(n_eqs)
+    #levels.append(np.sum(n_eqs > 0))
+
+    dt_0 = np.minimum(dt_0, tf-t)
+    y = y + dt_0*F
+    #dt = dt_0
+    dts_local.append(dt_0)
+    return (y, dt_0, n_eqs)
+
+def _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0, dts_local):
+
+#    # calculate corresponding maximum eta for each level
+#    Xi_1 = Xi_0/m0
+    # find corresponding indices
+    #min_ind_1 = len(y) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
+
+    n_eqs = np.array([0, min_ind_1, len(y) -min_ind_1])
+    #n_eq_per_level.append(n_eqs)
+    #levels.append(np.sum(n_eqs > 0))
+
+    dt_0 = np.minimum(dt_0, (tf-t)/m0)
+    for j in range(m0):
+        y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+        F = fun(t, y)
+        dts_local.append(dt_0)
+
+    dt_1 = np.minimum(dt_1, (tf-t))
+
+    y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
+    #dt = dt_1
+    return (y, dt_1, n_eqs)
+
+
+def _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2, inds, min_ind_1,
+                     min_ind_2, m0, m1, dts_local):
+    # three levels
+    n_eqs = np.array([min_ind_1,
+                      min_ind_2 - min_ind_1,
+                      len(y) - min_ind_2])
+    #n_eq_per_level.append(n_eqs)
+    #levels.append(np.sum(n_eqs > 0))
+
+    dt_1 = np.minimum(dt_1, (tf-t)/m1)#avoid overstepping at end of time interval
+    for i in range(m1):
+        dt_0 = np.minimum(dt_0, (tf-t)/m0)#avoid overstepping at end of time interval
+        for j in range(m0):
+            y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+            F = fun(t, y)
+            dts_local.append(dt_0)
+
+        y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
+        F = fun(t, y)
+
+    dt_2 = np.minimum(dt_2, tf-t)
+    y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
+    #F = fun(t, y)
+
+    return (y, dt_2, n_eqs)
 
 if __name__ == "__main__":
+
+    logger = _logging.getLogger()
+    logger.setLevel(_logging.DEBUG)
 
     # stability region for Euler forward for this problem is h<2/50=0.04
     #@np.vectorize
@@ -623,7 +641,7 @@ if __name__ == "__main__":
 
 
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
-                     eps=0.0001, eta = 0.00001, local_adaptivity=False,
+                     eps=0.0001, eta = 0.00001, local_adaptivity=True,
                      write_to_file=True, jacobian=jacobian)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
@@ -638,7 +656,7 @@ if __name__ == "__main__":
 
     plt.figure()
     dt  = np.loadtxt('step_sizes.txt')
-    plt.plot(sol2.t[:-1], dt[:,0])
+    plt.plot(sol2.t[:-1], dt)
     plt.plot(sol2.t, 0.04*np.ones(len(sol2.t)))
     plt.xlabel('time')
     plt.ylabel('Global step size')
