@@ -289,19 +289,19 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
         # find largest and smallest eta_k
         Xi_0 = abs(af[inds[0]])
 
-        Xi_min = abs(af[inds[-1]])
-        dt_max = np.sqrt(2*eps/Xi_min) if Xi_min > 0.0 else tf - t
+#        Xi_min = abs(af[inds[-1]])
+#        dt_max = np.sqrt(2*eps/Xi_min) if Xi_min > 0.0 else tf - t
 
         dt_0 = np.sqrt(2*eps / (m0*m1*Xi_0)) if Xi_0 > 0.0 else tf - t
 
-        if dt_0 == tf - t:
-            # This is the case if AF == 0
-            # then all higher levels should use the same time step
-            dt_1 = dt_0
-            dt_2 = dt_1
-        else:
-            dt_1 = m0*dt_0
-            dt_2 = m1*dt_1
+#        if dt_0 == tf - t:
+#            # This is the case if AF == 0
+#            # then all higher levels should use the same time step
+#            dt_1 = dt_0
+#            dt_2 = dt_1
+#        else:
+        dt_1 = m0*dt_0
+        dt_2 = m1*dt_1
 
         # calculate corresponding maximum eta for each level
         Xi_1 = Xi_0/m0
@@ -316,46 +316,20 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 #                          len(y0) - min_ind_2])
 
 
-#            min_ind_2 = np.argmax(np.sqrt(2*eps/abs(af[inds])) >= dt_2)
-#            min_ind_1 = np.argmax(np.sqrt(2*eps/abs(af[inds])/m1) >= dt_1)
-
         if (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
             # three levels
-            dt_1 = np.minimum(dt_1, (tf-t)/m1)#avoid overstepping at end of time interval
-            for i in range(m1):
-                dt_0 = np.minimum(dt_0, (tf-t)/m0)
-                for j in range(m0):
-                    y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
-                    F = fun(t, y)
-                    dts_local.append(dt_0)
+            (y, dt, n_eqs) = _do_three_levels(fun, t, y, tf, F, dt_0, dt_1,
+                                              dt_2, inds, min_ind_1, min_ind_2,
+                                              m0, m1, dts_local)
 
-                y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
-                F = fun(t, y)
-
-            dt_2 = np.minimum(dt_2, (tf-t))#avoid overstepping at end of time interval
-            y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
-
-            dt = dt_2
         elif (min_ind_1 < min_ind_2 and min_ind_2 == len(y0)) or (min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
             # two levels, always fall back on dt_1
-            dt_0 = np.minimum(dt_0, (tf-t)/m0)
-            for j in range(m0):
-                y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
-                F = fun(t, y)
-                dts_local.append(dt_0)
-
-            dt_1 = np.minimum(dt_1, (tf-t))#avoid overstepping at end of time interval
-            y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
-            F = fun(t, y)
-
-            dt = dt_1
+            (y, dt, n_eqs) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
+                                            min_ind_1, m0, dts_local)
 
         else:
             # single level
-            dt_0 = np.minimum(dt_0, (tf-t))
-            y = y + dt_0*F
-            dt = dt_0
-            dts_local.append(dt_0)
+            (y, dt, n_eqs) = _do_single_level(t, y, tf, F, dt_0, dts_local)
 
         t = t + dt
 
@@ -483,7 +457,6 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
         # and that the lower levels become empty because this is more
         # intuitive.
 
-
         if (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
             # three levels
             (y, dt, n_eqs) = _do_three_levels(fun, t, y, tf, F, dt_0, dt_1,
@@ -538,6 +511,7 @@ def _do_single_level(t, y, tf, F, dt_0, dts_local):
     #dt = dt_0
     dts_local.append(dt_0)
     return (y, dt_0, n_eqs)
+
 
 def _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0, dts_local):
 
@@ -642,7 +616,7 @@ if __name__ == "__main__":
 
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
                      eps=0.0001, eta = 0.00001, local_adaptivity=True,
-                     write_to_file=True, jacobian=jacobian)
+                     write_to_file=True,)# jacobian=jacobian)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
