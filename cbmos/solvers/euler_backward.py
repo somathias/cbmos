@@ -20,7 +20,7 @@ plt.style.use('seaborn')
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, eps=0.01, eta=0.001,
               n_newton=20, eps_newton=None, eps_max =1e-3, xi=0.001,
               jacobian=None, force_args={}, tol=None, atol=None,
-              out='', write_to_file=False, disp=False):
+              out='', write_to_file=False):
     """
     Note:
     -----
@@ -28,18 +28,6 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, eps=0.01, eta=0.001,
     Jacobian is provided, both the stability and the accuracy estimate are
     taken into account. If not, only the accuracy estimate is used.
     """
-
-    class gmres_counter(object):
-        def __init__(self, disp=disp):
-            self._disp = disp
-            self.niter = 0
-        def __call__(self, rk=None):
-            self.niter += 1
-            if self._disp:
-                print('iter %3i\trk = %s' % (self.niter, str(rk)))
-
-    counter = gmres_counter()
-
 
     adaptive_dt = True if dt is None else False
 
@@ -55,7 +43,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, eps=0.01, eta=0.001,
                                                                    xi,
                                                                    jacobian,
                                                                    force_args,
-                                                                   counter,
+
                                                                    eps_max,
                                                                    tol, atol,
                                                                    out,
@@ -64,7 +52,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, eps=0.01, eta=0.001,
             return _do_global_adaptive_timestepping(fun, t_span, y0, t_eval,
                                                     dt, eps, eta, n_newton,
                                                     eps_newton, xi, jacobian,
-                                                    force_args, counter,
+                                                    force_args,
                                                     eps_max, tol,
                                                     atol, out, write_to_file)
 
@@ -78,12 +66,12 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, eps=0.01, eta=0.001,
             atol = min(eps_max, dt)
         return _do_fixed_timestepping(fun, t_span, y0, t_eval, dt,
                                       n_newton, eps_newton, xi, jacobian,
-                                      force_args, counter, tol, atol, out,
+                                      force_args, tol, atol, out,
                                       write_to_file)
 
 
 def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt, n_newton,
-                           eps_newton, xi, jacobian, force_args, counter,
+                           eps_newton, xi, jacobian, force_args,
                            tol, atol, out, write_to_file):
     _logging.debug("Using EB, fixed time stepping with dt={}".format(
             dt))
@@ -106,7 +94,7 @@ def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt, n_newton,
         _logging.debug("t={}".format(t))
 
         y = _do_newton_iterations(fun, t, y, dt, n_newton, jacobian,
-                                  force_args, xi, counter, tol, atol,
+                                  force_args, xi, tol, atol,
                                   eps_newton)
         t = t + dt
 
@@ -127,7 +115,7 @@ def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt, n_newton,
 
 def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
                                      n_newton, eps_newton, xi, jacobian,
-                                     force_args, counter, eps_max, tol, atol,
+                                     force_args, eps_max, tol, atol,
                                      out, write_to_file):
     _logging.debug("Using EB, adaptive time stepping.")
 
@@ -171,7 +159,7 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
             atol = min(eps_max, dt)
 
         y = _do_newton_iterations(fun, t, y, dt, n_newton, jacobian,
-                                  force_args, xi, counter, tol, atol,
+                                  force_args, xi, tol, atol,
                                   eps_newton)
         t = t + dt
 
@@ -193,7 +181,7 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
 def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, t_eval,
                                                     dt, eps, eta, n_newton,
                                                     eps_newton, xi, jacobian,
-                                                    force_args, counter,
+                                                    force_args,
                                                     eps_max, tol,
                                                     atol, out, write_to_file):
 
@@ -252,7 +240,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, t_eval,
             atol = min(eps_max, dt)
 
         y = _do_newton_iterations(fun, t, y, dt, n_newton, jacobian,
-                                  force_args, xi, counter, tol, atol,
+                                  force_args, xi, tol, atol,
                                   eps_newton)
         t = t + dt
 
@@ -272,12 +260,25 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, t_eval,
 
 
 def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
-                          counter, tol, atol, eps_newton):
+                          tol, atol, eps_newton):
+
+    class gmres_counter(object):
+        def __init__(self, disp=False):
+            self._disp = disp
+            self.niter = 0
+        def __call__(self, rk=None):
+            self.niter += 1
+            if self._disp:
+                print('iter %3i\trk = %s' % (self.niter, str(rk)))
+
+    counter = gmres_counter()
 
     # do Newton iterations
     y_next = copy.deepcopy(y)  # initialize with current y
     #y_next = y + dt*fun(t, y) # initialize with EF step
+    n = 0
     for j in np.arange(n_newton):
+        n = n+1
 
         F_curly = y_next - y - dt*fun(t, y_next)
 
@@ -304,7 +305,7 @@ def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
         y_next = y_next + dy
 
         if np.linalg.norm(dy)/np.linalg.norm(y_next) < eps_newton:
-            _logging.debug("Relative error tolerance of {} achieved.".format(eps_newton))
+            _logging.debug("Relative error tolerance of {} achieved with {} Newton iterations.".format(eps_newton, n))
             break
 
     return copy.deepcopy(y_next)

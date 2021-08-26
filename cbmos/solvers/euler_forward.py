@@ -7,6 +7,7 @@ import copy
 import logging as _logging
 
 import cbmos.solvers.geshgorin as gg
+import cbmos.solvers.euler_backward as eb
 
 import matplotlib.pyplot as plt
 import os
@@ -16,7 +17,7 @@ plt.style.use('seaborn')
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
               out='', write_to_file=False,
               local_adaptivity=False, m0=2, m1=2,
-              jacobian=None, force_args={}, fix_eqs=0):
+              jacobian=None, force_args={}, fix_eqs=0, switch=False):
     """
     Note: t_eval can only be taken into account when dt is provided and thus
     fixed time stepping is done.
@@ -37,7 +38,8 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
                                                                   write_to_file,
                                                                   m0, m1,
                                                                   jacobian,
-                                                                  force_args)
+                                                                  force_args,
+                                                                  switch)
     elif adaptive_dt:
         # choose time step adaptively globally
         if jacobian is None:
@@ -361,7 +363,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
                                                    out, write_to_file,
                                                    m0, m1, jacobian,
-                                                   force_args):
+                                                   force_args, switch):
 
     _logging.debug("Using EF, local adaptive time stepping with Jacobian and eps={}, m0={} and m1={}".format(
             eps, m0, m1))
@@ -386,8 +388,8 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
         # calculate stability bound
         A = jacobian(y, force_args)
         w, v = np.linalg.eigh(A)
-        _logging.debug("Eigenvalues w={}".format(w))
-        _logging.debug("Eigenvectors v={}".format(v))
+        #_logging.debug("Eigenvalues w={}".format(w))
+        #_logging.debug("Eigenvectors v={}".format(v))
 
         if write_to_file:
             with open('eigenvalues'+out+'.txt', 'ab') as f:
@@ -457,20 +459,46 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
         # and that the lower levels become empty because this is more
         # intuitive.
 
-        if (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
+        if (min_ind_1 > 0) and (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
+            _logging.debug("Three levels. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
             # three levels
             (y, dt, n_eqs) = _do_three_levels(fun, t, y, tf, F, dt_0, dt_1,
                                               dt_2, inds, min_ind_1, min_ind_2,
                                               m0, m1, dts_local)
 
-        elif (min_ind_1 < min_ind_2 and min_ind_2 == len(y0)) or (min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
+        elif (min_ind_1 > 0 and min_ind_1 < min_ind_2 and min_ind_2 == len(y0)):
+            _logging.debug("Two levels, K_2 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
             # two levels, always fall back on dt_1
             (y, dt, n_eqs) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
                                             min_ind_1, m0, dts_local)
 
+        elif (min_ind_1 > 0 and min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
+            _logging.debug("Two levels, K_1 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            # two levels, always fall back on dt_1
+            (y, dt, n_eqs) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
+                                            min_ind_1, m0, dts_local)
+
+        elif (min_ind_1 == 0 and min_ind_1 < min_ind_2 and min_ind_2 < len(y0)):
+            _logging.debug("Two levels, K_0 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            # two levels, always fall back on dt_1
+            (y, dt, n_eqs) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
+                                            min_ind_1, m0, dts_local)
         else:
             # single level
-            (y, dt, n_eqs) = _do_single_level(t, y, tf, F, dt_0, dts_local)
+            _logging.debug("Single level. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            if dt_0 == dt_s and switch:
+                # EF restricted by stability, use EB with accuracy estimate
+                # instead
+                dt = dt_a
+                _logging.debug("Switching to EB with dt={}".format(dt))
+                y = eb._do_newton_iterations(fun, t, y, dt, 4, jacobian,
+                                             force_args, 0.001,
+                                             min(1e-3, dt), min(1e-3, dt),
+                                             min(1e-3, dt))
+                n_eqs = np.array([0, 0, len(y)])
+            else:
+                # do single level with EF
+                (y, dt, n_eqs) = _do_single_level(t, y, tf, F, dt_0, dts_local)
 
         t = t + dt
 
@@ -520,7 +548,7 @@ def _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0, dts_local)
     # find corresponding indices
     #min_ind_1 = len(y) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
 
-    n_eqs = np.array([0, min_ind_1, len(y) -min_ind_1])
+    n_eqs = np.array([0, min_ind_1, len(y) - min_ind_1])
     #n_eq_per_level.append(n_eqs)
     #levels.append(np.sum(n_eqs > 0))
 
@@ -584,7 +612,7 @@ if __name__ == "__main__":
 #    plt.plot(sol.t, sol.y)
 
     t_eval = np.linspace(0,3,10)
-    y0 = np.array([0.5, 2.7, 0.7, 1.3, 3.0, 5.0])
+    y0 = np.array([0.5, 2.7, 0.7, 1.3, 3.0, 0.2])
     #y0 = np.array([0.5, 0.7, 1.0, 3.0])
     #y0 = np.array([0.0, 0.0, 0.0])
 
@@ -616,7 +644,7 @@ if __name__ == "__main__":
 
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
                      eps=0.0001, eta = 0.00001, local_adaptivity=True,
-                     write_to_file=True,)# jacobian=jacobian)
+                     write_to_file=True, jacobian=jacobian, switch=True)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
@@ -649,16 +677,16 @@ if __name__ == "__main__":
 #    plt.legend()
 #    plt.xlabel('time')
 #    plt.ylabel('Number of equations per level')
-
-    plt.figure()
-    AFs = np.loadtxt('AFs.txt')
-    sorted_AFs = -np.sort(-abs(AFs))
-    plt.plot(sorted_AFs[0, :], label='$t=t_1$')
-    plt.plot(sorted_AFs[1,:], label='$t=t_2$')
-    plt.plot(sorted_AFs[2,:], label='$t=t_3$')
-
-    plt.plot(sorted_AFs[-2,:], label='$t=t_f$')
-    plt.plot(sorted_AFs[-1,:], label='$t=t_f$')
-    plt.xlabel('k')
-    #plt.ylabel('$|\eta_k|$, sorted decreasingly')
-    plt.legend()
+#
+#    plt.figure()
+#    AFs = np.loadtxt('AFs.txt')
+#    sorted_AFs = -np.sort(-abs(AFs))
+#    plt.plot(sorted_AFs[0, :], label='$t=t_1$')
+#    plt.plot(sorted_AFs[1,:], label='$t=t_2$')
+#    plt.plot(sorted_AFs[2,:], label='$t=t_3$')
+#
+#    plt.plot(sorted_AFs[-2,:], label='$t=t_f$')
+#    plt.plot(sorted_AFs[-1,:], label='$t=t_f$')
+#    plt.xlabel('k')
+#    #plt.ylabel('$|\eta_k|$, sorted decreasingly')
+#    plt.legend()
