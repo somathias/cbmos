@@ -27,19 +27,11 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
     adaptive_dt = True if dt is None else False
 
     if len(y0) > 1 and local_adaptivity:
-        if jacobian is None:
             # choose time step adaptively locally (if we have a system of eqs)
-            return _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
-                                                   out, write_to_file, m0, m1)
-        else:
-            return _do_local_adaptive_timestepping_with_stability(fun, t_span,
-                                                                  y0, eps,
-                                                                  eta, out,
-                                                                  write_to_file,
-                                                                  m0, m1,
-                                                                  jacobian,
-                                                                  force_args,
-                                                                  switch)
+        return _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
+                                               out, write_to_file, m0, m1,
+                                               jacobian, force_args, switch)
+
     elif adaptive_dt:
         # choose time step adaptively globally
         if jacobian is None:
@@ -258,7 +250,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
 
 def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                     out, write_to_file,
-                                    m0, m1):
+                                    m0, m1, jacobian, force_args, switch):
     _logging.debug("Using EF, local adaptive time stepping with eps={}, eta={}, m0={} and m1={}".format(
             eps, eta, m0, m1))
 
@@ -278,44 +270,21 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
         _logging.debug("t={}".format(t))
 
         y = copy.deepcopy(y)
+        F = fun(t, y)
+
         # choose time step adaptively locally (if we have a system of eqs)
-        F = fun(t, y)
-        af = 1/eta*(fun(t, y + eta * F) - F)
-
-        if write_to_file:
-            with open('AFs'+out+'.txt', 'ab') as f:
-                np.savetxt(f, np.abs(af).reshape((1, -1)))
-
-        # sort the indices such that abs(AF(inds)) is decreasing
-        inds = np.argsort(-abs(af))
-        # find largest and smallest eta_k
-        Xi_0 = abs(af[inds[0]])
-
-#        Xi_min = abs(af[inds[-1]])
-#        dt_max = np.sqrt(2*eps/Xi_min) if Xi_min > 0.0 else tf - t
-
-        dt_0 = np.sqrt(2*eps / (m0*m1*Xi_0)) if Xi_0 > 0.0 else tf - t
-
-#        if dt_0 == tf - t:
-#            # This is the case if AF == 0
-#            # then all higher levels should use the same time step
-#            dt_1 = dt_0
-#            dt_2 = dt_1
-#        else:
-        dt_1 = m0*dt_0
-        dt_2 = m1*dt_1
-
-        # calculate corresponding maximum eta for each level
-        Xi_1 = Xi_0/m0
-        Xi_2 = Xi_1/m1
+        K = 1 # ratio between work needed for EB and EF
+        (dt_0, dt_1, dt_2,
+         dt_a,
+         inds, af,
+         Xi_1, Xi_2,
+         EB_beneficial) = _choose_dts(fun, t, y, tf, F, eps, eta, out,
+                                      write_to_file, m0, m1, jacobian,
+                                      force_args, K)
 
         # find corresponding indices
         min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
         min_ind_2 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_2, side='right')
-
-#        n_eqs = np.array([min_ind_1,
-#                          min_ind_2 - min_ind_1,
-#                          len(y0) - min_ind_2])
 
 
         if (min_ind_1 > 0) and (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
@@ -355,164 +324,15 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
             # single level
             _logging.debug("Single level. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
             n_eqs = np.array([len(y), 0, 0])
-            (y, dt) = _do_single_level(t, y, tf, F, dt_0, dts_local)
 
-        t = t + dt
-
-        ts.append(t)
-        ys.append(y)
-        dts.append(dt)
-
-        n_eq_per_level.append(n_eqs)
-        levels.append(np.sum(n_eqs > 0))
-
-    ts = np.hstack(ts)
-    ys = np.vstack(ys).T
-    dts = np.hstack(dts)
-    dts_local = np.hstack(dts_local)
-    n_eq_per_level = np.vstack(n_eq_per_level).T
-
-    if write_to_file:
-        with open('step_sizes'+out+'.txt', 'ab') as f:
-            np.savetxt(f, dts)
-        with open('step_sizes_local'+out+'.txt', 'ab') as f:
-            np.savetxt(f, dts_local)
-        with open('levels'+out+'.txt', 'ab') as f:
-            np.savetxt(f, levels)
-        with open('n_eq_per_level'+out+'.txt', 'ab') as f:
-            np.savetxt(f, n_eq_per_level)
-
-    return OdeResult(t=ts, y=ys)
-
-def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
-                                                   out, write_to_file,
-                                                   m0, m1, jacobian,
-                                                   force_args, switch):
-
-    _logging.debug("Using EF, local adaptive time stepping with Jacobian and eps={}, m0={} and m1={}".format(
-            eps, m0, m1))
-
-    t0, tf = float(t_span[0]), float(t_span[-1])
-
-    t = t0
-    y = y0
-
-    ts = [t]
-    ys = [y]
-    dts = []
-    dts_local = []
-    levels = []
-    n_eq_per_level = []
-
-    while t < tf:
-        _logging.debug("t={}".format(t))
-
-        y = copy.deepcopy(y)
-
-        # calculate stability bound
-        A = jacobian(y, force_args)
-        w, v = np.linalg.eigh(A)
-        #_logging.debug("Eigenvalues w={}".format(w))
-        #_logging.debug("Eigenvectors v={}".format(v))
-
-        if write_to_file:
-            with open('eigenvalues'+out+'.txt', 'ab') as f:
-                np.savetxt(f, w.reshape((1, -1)))
-            with open('eigenvectors'+out+'.txt', 'ab') as f:
-                np.savetxt(f, v.reshape((1, -1), order='F'))
-
-        # the eigenvalues are sorted in ascending order
-        dt_s = 2.0/abs(w[0])
-
-        Xi_s = 2.0*eps/(dt_s**2)
-        Xi_s2 = Xi_s
-        Xi_s1 = m1*Xi_s2
-        #Xi_s0 = m0*Xi_s1
-
-        # calculate the accuracy bound
-        F = fun(t, y)
-        af = A @ F
-        #af = 1/eta*(fun(t, y + eta * F) - F)
-
-        if write_to_file:
-            with open('AFs'+out+'.txt', 'ab') as f:
-                np.savetxt(f, np.abs(af).reshape((1, -1)))
-
-        # sort the indices such that abs(AF(inds)) is decreasing
-        inds = np.argsort(-abs(af))
-        # find largest and smallest eta_k
-        Xi_a0 = abs(af[inds[0]])
-        Xi_a1 = Xi_a0/m0
-        Xi_a2 = Xi_a1/m1
-
-        dt_a = np.sqrt(2*eps / (m0*m1*Xi_a0)) if Xi_a0 > 0.0 else dt_s
-        dt_0 = np.minimum(dt_a, dt_s)
-        dt_1 = np.minimum(m0*dt_0, dt_s)
-        dt_2 = np.minimum(m1*dt_1, dt_s)
-
-        #Xi_0 = np.maximum(Xi_a0, Xi_s0)
-        Xi_1 = np.maximum(Xi_a1, Xi_s1)
-        Xi_2 = np.maximum(Xi_a2, Xi_s2)
-
-        # find corresponding indices
-        min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
-        min_ind_2 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_2, side='right')
-
-        # the algorithm is implemented such that the levels collapse down
-        # to level 0. However we count the number of equations per level
-        # such that level 2 is always the one with the biggest time step
-        # and that the lower levels become empty because this is more
-        # intuitive.
-
-        if (min_ind_1 > 0) and (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
-            _logging.debug("Three levels. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
-            # three levels
-            n_eqs = np.array([min_ind_1,
-                              min_ind_2 - min_ind_1,
-                              len(y) - min_ind_2])
-            (y, dt) = _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2,
-                                       inds, min_ind_1, min_ind_2, m0, m1,
-                                       dts_local)
-
-        elif (min_ind_1 > 0 and min_ind_1 < min_ind_2 and min_ind_2 == len(y0)):
-            _logging.debug("Two levels, K_2 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
-            # two levels
-            # K_2 empty, use m1=1 to ensure correct number of small time steps
-            n_eqs = np.array([min_ind_1, len(y) - min_ind_1, 0])
-            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                            min_ind_1, m0, 1, dts_local)
-
-        elif (min_ind_1 > 0 and min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
-            _logging.debug("Two levels, K_1 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
-            # two levels
-            # K_1 empty, use both m0 and m1 to ensure correct number of small time steps
-            n_eqs = np.array([min_ind_2, 0, len(y) - min_ind_2])
-            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_2, inds,
-                                            min_ind_1, m0, m1, dts_local)
-
-        elif (min_ind_1 == 0 and min_ind_1 < min_ind_2 and min_ind_2 < len(y0)):
-            _logging.debug("Two levels, K_0 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
-            # two levels
-            # K_0 is empty, however we shift the levels down, because else things don't seem to work
-            n_eqs = np.array([min_ind_2, len(y) - min_ind_2, 0])
-            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                            min_ind_1, m0, 1, dts_local)
-        else:
-            # single level
-            _logging.debug("Single level. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
-            n_eqs = np.array([len(y), 0, 0])
-            if dt_0 == dt_s and switch:
-                # EF restricted by stability, use EB with accuracy estimate
-                # instead
+            if switch and EB_beneficial:
                 dt = dt_a
                 _logging.debug("Switching to EB with dt={}".format(dt))
                 y = eb._do_newton_iterations(fun, t, y, dt, 4, jacobian,
                                              force_args, 0.001,
                                              min(1e-3, dt), min(1e-3, dt),
                                              min(1e-3, dt))
-
             else:
-                # do single level with EF
                 (y, dt) = _do_single_level(t, y, tf, F, dt_0, dts_local)
 
         t = t + dt
@@ -541,6 +361,77 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
             np.savetxt(f, n_eq_per_level)
 
     return OdeResult(t=ts, y=ys)
+
+
+def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1, jacobian,
+                force_args, K):
+
+
+    EB_beneficial = False
+
+    if jacobian is None:
+        # accuracy limit based only
+        af = 1/eta*(fun(t, y + eta * F) - F)
+        # sort the indices such that abs(AF(inds)) is decreasing
+        inds = np.argsort(-abs(af))
+        # find largest and smallest eta_k
+        Xi_0 = abs(af[inds[0]])
+        dt_a = np.sqrt(2*eps / (m0*m1*Xi_0)) if Xi_0 > 0.0 else tf - t
+
+        dt_0 = dt_a
+        dt_1 = m0*dt_0
+        dt_2 = m1*dt_1
+
+        # calculate corresponding maximum eta for each level
+        Xi_1 = Xi_0/m0
+        Xi_2 = Xi_1/m1
+
+    else:
+        # calculate stability bound
+        A = jacobian(y, force_args)
+        w, v = np.linalg.eigh(A)
+        #_logging.debug("Eigenvalues w={}".format(w))
+        #_logging.debug("Eigenvectors v={}".format(v))
+
+        if write_to_file:
+            with open('eigenvalues'+out+'.txt', 'ab') as f:
+                np.savetxt(f, w.reshape((1, -1)))
+            with open('eigenvectors'+out+'.txt', 'ab') as f:
+                np.savetxt(f, v.reshape((1, -1), order='F'))
+
+        # the eigenvalues are sorted in ascending order
+        dt_s = 2.0/abs(w[0])
+
+        Xi_s = 2.0*eps/(dt_s**2)
+        Xi_s2 = Xi_s
+        Xi_s1 = m1*Xi_s2
+        #Xi_s0 = m0*Xi_s1
+
+        # calculate the accuracy bound
+        af = A @ F
+        # sort the indices such that abs(AF(inds)) is decreasing
+        inds = np.argsort(-abs(af))
+        # find largest eta_k
+        Xi_a0 = abs(af[inds[0]])
+        Xi_a1 = Xi_a0/m0
+        Xi_a2 = Xi_a1/m1
+
+        dt_a = np.sqrt(2*eps / (m0*m1*Xi_a0)) if Xi_a0 > 0.0 else dt_s
+        dt_0 = np.minimum(dt_a, dt_s)
+        dt_1 = np.minimum(m0*dt_0, dt_s)
+        dt_2 = np.minimum(m1*dt_1, dt_s)
+
+        Xi_1 = np.maximum(Xi_a1, Xi_s1)
+        Xi_2 = np.maximum(Xi_a2, Xi_s2)
+
+        if dt_0 == dt_s and dt_a > K*dt_s:
+            EB_beneficial = True
+
+    if write_to_file:
+        with open('AFs'+out+'.txt', 'ab') as f:
+            np.savetxt(f, np.abs(af).reshape((1, -1)))
+
+    return (dt_0, dt_1, dt_2, dt_a, inds, af, Xi_1, Xi_2, EB_beneficial)
 
 
 def _do_single_level(t, y, tf, F, dt_0, dts_local):
@@ -587,6 +478,7 @@ def _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2, inds, min_ind_1,
     #F = fun(t, y)
 
     return (y, dt_2)
+
 
 if __name__ == "__main__":
 
@@ -641,7 +533,7 @@ if __name__ == "__main__":
 
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
                      eps=0.0001, eta = 0.00001, local_adaptivity=True,
-                     write_to_file=True)#, jacobian=jacobian, switch=True)
+                     write_to_file=True, jacobian=jacobian, switch=True)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
