@@ -308,15 +308,15 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
         elif (min_ind_1 > 0 and min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
             _logging.debug("Two levels, K_1 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
             # two levels
-            # K_1 empty, use both m0 and m1 to ensure correct number of small time steps
-            n_eqs = np.array([min_ind_2, 0, len(y) - min_ind_2])
+            # K_1 empty, however we shift the levels down, because else things don't seem to work
+            n_eqs = np.array([min_ind_2, len(y) - min_ind_2, 0])
             (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
                                             min_ind_1, m0, 1, dts_local)
 
         elif (min_ind_1 == 0 and min_ind_1 < min_ind_2 and min_ind_2 < len(y0)):
             _logging.debug("Two levels, K_0 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
             # two levels
-            # K_0 is empty, however we shift the levels down, because else things don't seem to work
+            # K_0 empty, however we shift the levels down, because else things don't seem to work
             n_eqs = np.array([min_ind_2, len(y) - min_ind_2, 0])
             (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
                                             min_ind_1, m0, 1, dts_local)
@@ -327,7 +327,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
             if switch and EB_beneficial:
                 dt = dt_a
-                _logging.debug("Switching to EB with dt={}".format(dt))
+                _logging.debug("Switching to EB with dt_a={}, dt_s={}, K={}".format(dt, dt_0, K))
                 y = eb._do_newton_iterations(fun, t, y, dt, 4, jacobian,
                                              force_args, 0.001,
                                              min(1e-3, dt), min(1e-3, dt),
@@ -363,9 +363,8 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
     return OdeResult(t=ts, y=ys)
 
 
-def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1, jacobian,
-                force_args, K):
-
+def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
+                jacobian, force_args, K):
 
     EB_beneficial = False
 
@@ -438,7 +437,6 @@ def _do_single_level(t, y, tf, F, dt_0, dts_local):
     # single level
     dt_0 = np.minimum(dt_0, tf-t)
     y = y + dt_0*F
-    #dt = dt_0
     dts_local.append(dt_0)
     return (y, dt_0)
 
@@ -455,16 +453,15 @@ def _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0, m1,
     dt_1 = np.minimum(dt_1, (tf-t))
 
     y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
-    #dt = dt_1
     return (y, dt_1)
 
 
 def _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2, inds, min_ind_1,
                      min_ind_2, m0, m1, dts_local):
 
-    dt_1 = np.minimum(dt_1, (tf-t)/m1)#avoid overstepping at end of time interval
+    dt_1 = np.minimum(dt_1, (tf-t)/m1)  # avoid overstepping at end of time interval
     for i in range(m1):
-        dt_0 = np.minimum(dt_0, (tf-t)/m0)#avoid overstepping at end of time interval
+        dt_0 = np.minimum(dt_0, (tf-t)/m0)  # avoid overstepping at end of time interval
         for j in range(m0):
             y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
             F = fun(t, y)
@@ -475,7 +472,6 @@ def _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2, inds, min_ind_1,
 
     dt_2 = np.minimum(dt_2, tf-t)
     y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
-    #F = fun(t, y)
 
     return (y, dt_2)
 
