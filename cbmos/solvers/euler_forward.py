@@ -318,20 +318,44 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 #                          len(y0) - min_ind_2])
 
 
-        if (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
+        if (min_ind_1 > 0) and (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
+            _logging.debug("Three levels. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
             # three levels
-            (y, dt, n_eqs) = _do_three_levels(fun, t, y, tf, F, dt_0, dt_1,
-                                              dt_2, inds, min_ind_1, min_ind_2,
-                                              m0, m1, dts_local)
+            n_eqs = np.array([min_ind_1,
+                              min_ind_2 - min_ind_1,
+                              len(y) - min_ind_2])
+            (y, dt) = _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2,
+                                       inds, min_ind_1, min_ind_2, m0, m1,
+                                       dts_local)
 
-        elif (min_ind_1 < min_ind_2 and min_ind_2 == len(y0)) or (min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
-            # two levels, always fall back on dt_1
-            (y, dt, n_eqs) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                            min_ind_1, m0, dts_local)
+        elif (min_ind_1 > 0 and min_ind_1 < min_ind_2 and min_ind_2 == len(y0)):
+            _logging.debug("Two levels, K_2 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            # two levels
+            # K_2 empty, use m1=1 to ensure correct number of small time steps
+            n_eqs = np.array([min_ind_1, len(y) - min_ind_1, 0])
+            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
+                                            min_ind_1, m0, 1, dts_local)
 
+        elif (min_ind_1 > 0 and min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
+            _logging.debug("Two levels, K_1 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            # two levels
+            # K_1 empty, use both m0 and m1 to ensure correct number of small time steps
+            n_eqs = np.array([min_ind_2, 0, len(y) - min_ind_2])
+            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
+                                            min_ind_1, m0, 1, dts_local)
+
+        elif (min_ind_1 == 0 and min_ind_1 < min_ind_2 and min_ind_2 < len(y0)):
+            _logging.debug("Two levels, K_0 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            # two levels
+            # K_0 is empty, however we shift the levels down, because else things don't seem to work
+            n_eqs = np.array([min_ind_2, len(y) - min_ind_2, 0])
+            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
+                                            min_ind_1, m0, 1, dts_local)
         else:
             # single level
-            (y, dt, n_eqs) = _do_single_level(t, y, tf, F, dt_0, dts_local)
+            _logging.debug("Single level. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            n_eqs = np.array([len(y), 0, 0])
+            (y, dt) = _do_single_level(t, y, tf, F, dt_0, dts_local)
 
         t = t + dt
 
@@ -476,6 +500,7 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
         else:
             # single level
             _logging.debug("Single level. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            n_eqs = np.array([len(y), 0, 0])
             if dt_0 == dt_s and switch:
                 # EF restricted by stability, use EB with accuracy estimate
                 # instead
@@ -485,10 +510,9 @@ def _do_local_adaptive_timestepping_with_stability(fun, t_span, y0, eps, eta,
                                              force_args, 0.001,
                                              min(1e-3, dt), min(1e-3, dt),
                                              min(1e-3, dt))
-                n_eqs = np.array([0, 0, len(y)])
+
             else:
                 # do single level with EF
-                n_eqs = np.array([0, 0, len(y)])
                 (y, dt) = _do_single_level(t, y, tf, F, dt_0, dts_local)
 
         t = t + dt
@@ -617,7 +641,7 @@ if __name__ == "__main__":
 
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
                      eps=0.0001, eta = 0.00001, local_adaptivity=True,
-                     write_to_file=True, jacobian=jacobian, switch=True)
+                     write_to_file=True)#, jacobian=jacobian, switch=True)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
