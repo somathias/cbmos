@@ -17,7 +17,7 @@ plt.style.use('seaborn')
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
               out='', write_to_file=False,
               local_adaptivity=False, m0=2, m1=2,
-              jacobian=None, force_args={}, fix_eqs=0, switch=False):
+              jacobian=None, force_args={}, fix_eqs=0, switch=False, K=5):
     """
     Note: t_eval can only be taken into account when dt is provided and thus
     fixed time stepping is done.
@@ -30,7 +30,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
             # choose time step adaptively locally (if we have a system of eqs)
         return _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                                out, write_to_file, m0, m1,
-                                               jacobian, force_args, switch)
+                                               jacobian, force_args, switch, K)
 
     elif adaptive_dt:
         # choose time step adaptively globally
@@ -250,7 +250,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
 
 def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                     out, write_to_file,
-                                    m0, m1, jacobian, force_args, switch):
+                                    m0, m1, jacobian, force_args, switch, K):
     _logging.debug("Using EF, local adaptive time stepping with eps={}, eta={}, m0={} and m1={}".format(
             eps, eta, m0, m1))
 
@@ -271,9 +271,10 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
         y = copy.deepcopy(y)
         F = fun(t, y)
+        _logging.debug("F={}".format(F))
 
         # choose time step adaptively locally (if we have a system of eqs)
-        K = 1 # ratio between work needed for EB and EF
+        #K = 2 # ratio between work needed for EB and EF
         (dt_0, dt_1, dt_2,
          dt_a,
          inds, af,
@@ -322,7 +323,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                             min_ind_1, m0, 1, dts_local)
         else:
             # single level
-            _logging.debug("Single level. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            _logging.debug("Single level, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
             n_eqs = np.array([len(y), 0, 0])
 
             if switch and EB_beneficial:
@@ -333,8 +334,10 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                              min(1e-3, dt), min(1e-3, dt),
                                              min(1e-3, dt))
             else:
+                _logging.debug("Using EF with with dt_a={}, dt_s={}, K={}".format(dt_a, dt_0, K))
                 (y, dt) = _do_single_level(t, y, tf, F, dt_0, dts_local)
 
+        _logging.debug("y={}".format(y))
         t = t + dt
 
         ts.append(t)
@@ -496,8 +499,8 @@ if __name__ == "__main__":
 #    plt.figure()
 #    plt.plot(sol.t, sol.y)
 
-    t_eval = np.linspace(0,3,10)
-    y0 = np.array([0.5, 2.7, 0.7, 1.3, 3.0, 0.2, 0.1])
+    t_eval = np.linspace(0, 3, 10)
+    y0 = np.array([0.7, 1.3, 3.0, 0.2])
     #y0 = np.array([0.5, 0.7, 1.0, 3.0])
     #y0 = np.array([0.0, 0.0, 0.0])
 
