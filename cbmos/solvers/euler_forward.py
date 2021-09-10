@@ -263,6 +263,9 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
     ys = [y]
     dts = []
     dts_local = []
+    dt_0s = []
+    dt_1s = []
+    dt_2s = []
     levels = []
     n_eq_per_level = []
 
@@ -289,7 +292,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
 
         if (min_ind_1 > 0) and (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
-            _logging.debug("Three levels. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            _logging.debug("Three levels. i_min^1={}, i_min^2={}, dt_0={}, dt_1={}, dt_2={}".format(min_ind_1, min_ind_2, dt_0, dt_1, dt_2))
             # three levels
             n_eqs = np.array([min_ind_1,
                               min_ind_2 - min_ind_1,
@@ -299,40 +302,40 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                        dts_local)
 
         elif (min_ind_1 > 0 and min_ind_1 < min_ind_2 and min_ind_2 == len(y0)):
-            _logging.debug("Two levels, K_2 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            _logging.debug("Two levels, K_2 empty. i_min^1={}, i_min^2={}, dt_0={}, dt_1={}".format(min_ind_1, min_ind_2, dt_0, dt_1))
             # two levels
             # K_2 empty, use m1=1 to ensure correct number of small time steps
-            n_eqs = np.array([min_ind_1, len(y) - min_ind_1, 0])
+            n_eqs = np.array([0, min_ind_1, len(y) - min_ind_1])
             (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
                                             min_ind_1, m0, 1, dts_local)
 
         elif (min_ind_1 > 0 and min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
-            _logging.debug("Two levels, K_1 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            _logging.debug("Two levels, K_1 empty. i_min^1={}, i_min^2={}, dt_0={}, dt_2={}".format(min_ind_1, min_ind_2, dt_0, dt_2))
             # two levels
             # K_1 empty, however we shift the levels down, because else things don't seem to work
-            n_eqs = np.array([min_ind_2, len(y) - min_ind_2, 0])
-            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                            min_ind_1, m0, 1, dts_local)
+            n_eqs = np.array([0, min_ind_2, len(y) - min_ind_2])
+            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_2, inds,
+                                            min_ind_1, m0, m1, dts_local)
 
         elif (min_ind_1 == 0 and min_ind_1 < min_ind_2 and min_ind_2 < len(y0)):
-            _logging.debug("Two levels, K_0 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            _logging.debug("Two levels, K_0 empty. i_min^1={}, i_min^2={}, dt_1={}, dt_2={}".format(min_ind_1, min_ind_2, dt_1, dt_2))
             # two levels
             # K_0 empty, however we shift the levels down, because else things don't seem to work
-            n_eqs = np.array([min_ind_2, len(y) - min_ind_2, 0])
-            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                            min_ind_1, m0, 1, dts_local)
+            n_eqs = np.array([0, min_ind_2, len(y) - min_ind_2])
+            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_1, dt_2, inds,
+                                            min_ind_1, 1, m1, dts_local)
         else:
             # single level
             _logging.debug("Single level, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
-            n_eqs = np.array([len(y), 0, 0])
+            n_eqs = np.array([0, 0, len(y)])
 
             if switch and EB_beneficial:
                 dt = dt_a
                 _logging.debug("Switching to EB with dt_a={}, dt_s={}, K={}".format(dt, dt_0, K))
                 y = eb._do_newton_iterations(fun, t, y, dt, 4, jacobian,
                                              force_args, 0.001,
-                                             min(1e-3, dt), min(1e-3, dt),
-                                             min(1e-3, dt))
+                                             min(1e-4, dt), min(1e-4, dt),
+                                             min(1e-4, dt))
             else:
                 _logging.debug("Using EF with with dt_a={}, dt_s={}, K={}".format(dt_a, dt_0, K))
                 (y, dt) = _do_single_level(t, y, tf, F, dt_0, dts_local)
@@ -344,6 +347,10 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
         ys.append(y)
         dts.append(dt)
 
+        dt_0s.append(dt_0)
+        dt_1s.append(dt_1)
+        dt_2s.append(dt_2)
+
         n_eq_per_level.append(n_eqs)
         levels.append(np.sum(n_eqs > 0))
 
@@ -351,11 +358,20 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
     ys = np.vstack(ys).T
     dts = np.hstack(dts)
     dts_local = np.hstack(dts_local)
+    dt_0s = np.hstack(dt_0s)
+    dt_1s = np.hstack(dt_1s)
+    dt_2s = np.hstack(dt_2s)
     n_eq_per_level = np.vstack(n_eq_per_level).T
 
     if write_to_file:
         with open('step_sizes'+out+'.txt', 'ab') as f:
             np.savetxt(f, dts)
+        with open('step_sizes_dt_0'+out+'.txt', 'ab') as f:
+            np.savetxt(f, dt_0s)
+        with open('step_sizes_dt_1'+out+'.txt', 'ab') as f:
+            np.savetxt(f, dt_1s)
+        with open('step_sizes_dt_2'+out+'.txt', 'ab') as f:
+            np.savetxt(f, dt_2s)
         with open('step_sizes_local'+out+'.txt', 'ab') as f:
             np.savetxt(f, dts_local)
         with open('levels'+out+'.txt', 'ab') as f:
@@ -423,8 +439,21 @@ def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
         dt_1 = np.minimum(m0*dt_0, dt_s)
         dt_2 = np.minimum(m1*dt_1, dt_s)
 
+        #
+        if dt_2 == dt_s and dt_1 < dt_s:
+            # largest level restricted by stability, adjust lower levels
+            dt_1 = dt_2/m1
+            dt_0 = dt_1/m0
+
+        if dt_1 == dt_s and dt_0 < dt_s:
+            # second (and third) level restricted by stability, adjust lower level
+            dt_0 = dt_1/m0
+
         Xi_1 = np.maximum(Xi_a1, Xi_s1)
         Xi_2 = np.maximum(Xi_a2, Xi_s2)
+
+        # do not overshoot the final time
+        dt_a = np.minimum(dt_a, tf -t)
 
         if dt_0 == dt_s and dt_a > K*dt_s:
             EB_beneficial = True
@@ -499,7 +528,7 @@ if __name__ == "__main__":
 #    plt.figure()
 #    plt.plot(sol.t, sol.y)
 
-    t_eval = np.linspace(0, 3, 10)
+    t_eval = np.linspace(0, 1, 10)
     y0 = np.array([0.7, 1.3, 3.0, 0.2])
     #y0 = np.array([0.5, 0.7, 1.0, 3.0])
     #y0 = np.array([0.0, 0.0, 0.0])
@@ -510,6 +539,18 @@ if __name__ == "__main__":
         print('Nothing to delete.')
     try:
         os.remove('step_sizes_local.txt')
+    except FileNotFoundError:
+        print('Nothing to delete.')
+    try:
+        os.remove('step_sizes_dt_0.txt')
+    except FileNotFoundError:
+        print('Nothing to delete.')
+    try:
+        os.remove('step_sizes_dt_1.txt')
+    except FileNotFoundError:
+        print('Nothing to delete.')
+    try:
+        os.remove('step_sizes_dt_2.txt')
     except FileNotFoundError:
         print('Nothing to delete.')
     try:
@@ -528,17 +569,17 @@ if __name__ == "__main__":
 #
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
                      eps=0.0001, eta = 0.00001, local_adaptivity=True,
-                     write_to_file=True, jacobian=jacobian, switch=True)
+                     write_to_file=True, jacobian=jacobian, switch=False)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
     plt.ylabel('y')
 
-#    plt.figure()
-#    lev  = np.loadtxt('levels.txt')
-#    plt.plot(sol2.t, lev)
+    plt.figure()
+    lev  = np.loadtxt('levels.txt')
+    plt.plot(sol2.t[:-1], lev)
 #    plt.xlabel('time')
-#    plt.ylabel('Number of levels')
+    plt.ylabel('Number of levels')
 
     plt.figure()
     dt  = np.loadtxt('step_sizes.txt')
@@ -547,20 +588,31 @@ if __name__ == "__main__":
     plt.xlabel('time')
     plt.ylabel('Global step size')
 
-#    plt.figure()
-#    dt_locals  = np.loadtxt('step_sizes_local.txt')
-#    plt.plot(np.cumsum(dt_locals), dt_locals)
-#    plt.xlabel('time')
-#    plt.ylabel('Local step size')
+    plt.figure()
+    dt_locals  = np.loadtxt('step_sizes_local.txt')
+    plt.plot(np.cumsum(dt_locals), dt_locals)
+    plt.xlabel('time')
+    plt.ylabel('Local step size')
+
+    plt.figure()
+    dt_0s = np.loadtxt('step_sizes_dt_0.txt')
+    dt_1s = np.loadtxt('step_sizes_dt_1.txt')
+    dt_2s = np.loadtxt('step_sizes_dt_2.txt')
+    plt.plot(sol2.t[:-1], dt_0s, label='dt_0')
+    plt.plot(sol2.t[:-1], dt_1s, label='dt_1')
+    plt.plot(sol2.t[:-1], dt_2s, label='dt_2')
+    plt.xlabel('time')
+    plt.ylabel('dt_i')
+    plt.legend()
 #
-#    plt.figure()
-#    n_eq_per_level = np.loadtxt('n_eq_per_level.txt')
+    plt.figure()
+    n_eq_per_level = np.loadtxt('n_eq_per_level.txt')
 #    plt.plot(ts[1:], n_eq_per_level[0,:], label='level 0')
 #    plt.plot(ts[1:], n_eq_per_level[1,:], label='level 1')
-#    plt.plot(ts[1:], n_eq_per_level[2,:], label='level 2')
+    plt.plot(sol2.t[:-1], n_eq_per_level[2,:], label='level 2')
 #    plt.legend()
 #    plt.xlabel('time')
-#    plt.ylabel('Number of equations per level')
+    plt.ylabel('Number of equations per level')
 #
 #    plt.figure()
 #    AFs = np.loadtxt('AFs.txt')
