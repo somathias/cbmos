@@ -292,7 +292,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
 
         if (min_ind_1 > 0) and (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
-            _logging.debug("Three levels. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            _logging.debug("Three levels. i_min^1={}, i_min^2={}, dt_0={}, dt_1={}, dt_2={}".format(min_ind_1, min_ind_2, dt_0, dt_1, dt_2))
             # three levels
             n_eqs = np.array([min_ind_1,
                               min_ind_2 - min_ind_1,
@@ -302,7 +302,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                        dts_local)
 
         elif (min_ind_1 > 0 and min_ind_1 < min_ind_2 and min_ind_2 == len(y0)):
-            _logging.debug("Two levels, K_2 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            _logging.debug("Two levels, K_2 empty. i_min^1={}, i_min^2={}, dt_0={}, dt_1={}".format(min_ind_1, min_ind_2, dt_0, dt_1))
             # two levels
             # K_2 empty, use m1=1 to ensure correct number of small time steps
             n_eqs = np.array([0, min_ind_1, len(y) - min_ind_1])
@@ -310,20 +310,20 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                             min_ind_1, m0, 1, dts_local)
 
         elif (min_ind_1 > 0 and min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
-            _logging.debug("Two levels, K_1 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            _logging.debug("Two levels, K_1 empty. i_min^1={}, i_min^2={}, dt_0={}, dt_2={}".format(min_ind_1, min_ind_2, dt_0, dt_2))
             # two levels
             # K_1 empty, however we shift the levels down, because else things don't seem to work
             n_eqs = np.array([0, min_ind_2, len(y) - min_ind_2])
-            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                            min_ind_1, m0, 1, dts_local)
+            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_2, inds,
+                                            min_ind_1, m0, m1, dts_local)
 
         elif (min_ind_1 == 0 and min_ind_1 < min_ind_2 and min_ind_2 < len(y0)):
-            _logging.debug("Two levels, K_0 empty. i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+            _logging.debug("Two levels, K_0 empty. i_min^1={}, i_min^2={}, dt_1={}, dt_2={}".format(min_ind_1, min_ind_2, dt_1, dt_2))
             # two levels
             # K_0 empty, however we shift the levels down, because else things don't seem to work
             n_eqs = np.array([0, min_ind_2, len(y) - min_ind_2])
-            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                            min_ind_1, m0, 1, dts_local)
+            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_1, dt_2, inds,
+                                            min_ind_1, 1, m1, dts_local)
         else:
             # single level
             _logging.debug("Single level, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
@@ -444,6 +444,7 @@ def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
             # largest level restricted by stability, adjust lower levels
             dt_1 = dt_2/m1
             dt_0 = dt_1/m0
+
         if dt_1 == dt_s and dt_0 < dt_s:
             # second (and third) level restricted by stability, adjust lower level
             dt_0 = dt_1/m0
