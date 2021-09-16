@@ -420,43 +420,37 @@ def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
         # the eigenvalues are sorted in ascending order
         dt_s = 2.0/abs(w[0])
 
-        Xi_s = 2.0*eps/(dt_s**2)
-        Xi_s2 = Xi_s
-        Xi_s1 = m1*Xi_s2
-        #Xi_s0 = m0*Xi_s1
-
         # calculate the accuracy bound
         af = A @ F
         # sort the indices such that abs(AF(inds)) is decreasing
         inds = np.argsort(-abs(af))
         # find largest eta_k
-        Xi_a0 = abs(af[inds[0]])
-        Xi_a1 = Xi_a0/m0
-        Xi_a2 = Xi_a1/m1
+        Xi_0 = abs(af[inds[0]])
 
-        dt_a = np.sqrt(2*eps / (m0*m1*Xi_a0)) if Xi_a0 > 0.0 else dt_s
-        dt_0 = np.minimum(dt_a, dt_s)
-        dt_1 = np.minimum(m0*dt_0, dt_s)
-        dt_2 = np.minimum(m1*dt_1, dt_s)
+        dt_a = np.sqrt(2*eps*m0*m1/Xi_0) if Xi_0 > 0.0 else tf - t
+        # do not overshoot the final time
+        dt_a = np.minimum(dt_a, tf - t)
 
-        #
-        if dt_2 == dt_s and dt_1 < dt_s:
-            # largest level restricted by stability, adjust lower levels
+        if dt_a < K * dt_s:
+            # stick with Euler forward
+            if dt_a > dt_s:
+                # stability bounded time step
+                dt_2 = dt_s
+                Xi_2 = 2.0*eps/(dt_s**2)
+                Xi_1 = m1*Xi_2
+            else:
+                # accuracy bounded time step
+                dt_2 = dt_a
+                Xi_1 = Xi_0/m0
+                Xi_2 = Xi_1/m1
+
             dt_1 = dt_2/m1
             dt_0 = dt_1/m0
 
-        if dt_1 == dt_s and dt_0 < dt_s:
-            # second (and third) level restricted by stability, adjust lower level
-            dt_0 = dt_1/m0
-
-        Xi_1 = np.maximum(Xi_a1, Xi_s1)
-        Xi_2 = np.maximum(Xi_a2, Xi_s2)
-
-        # do not overshoot the final time
-        dt_a = np.minimum(dt_a, tf -t)
-
-        if dt_0 == dt_s and dt_a > K*dt_s:
+        else:
             EB_beneficial = True
+            dt_0 = dt_s
+
 
     if write_to_file:
         with open('AFs'+out+'.txt', 'ab') as f:
@@ -530,6 +524,7 @@ if __name__ == "__main__":
 
     t_eval = np.linspace(0, 1, 10)
     y0 = np.array([0.7, 1.3, 3.0, 0.2])
+
     #y0 = np.array([0.5, 0.7, 1.0, 3.0])
     #y0 = np.array([0.0, 0.0, 0.0])
 
@@ -573,7 +568,7 @@ if __name__ == "__main__":
 
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
                      eps=0.0001, eta = 0.00001, local_adaptivity=True,
-                     write_to_file=True, jacobian=jacobian, switch=False)
+                     write_to_file=True, jacobian=jacobian, switch=True)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
@@ -611,8 +606,8 @@ if __name__ == "__main__":
 #
     plt.figure()
     n_eq_per_level = np.loadtxt('n_eq_per_level.txt')
-#    plt.plot(ts[1:], n_eq_per_level[0,:], label='level 0')
-#    plt.plot(ts[1:], n_eq_per_level[1,:], label='level 1')
+    plt.plot(sol2.t[:-1], n_eq_per_level[0,:], label='level 0')
+    plt.plot(sol2.t[:-1], n_eq_per_level[1,:], label='level 1')
     plt.plot(sol2.t[:-1], n_eq_per_level[2,:], label='level 2')
 #    plt.legend()
 #    plt.xlabel('time')
