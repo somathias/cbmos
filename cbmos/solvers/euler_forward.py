@@ -277,68 +277,69 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
         _logging.debug("F={}".format(F))
 
         # choose time step adaptively locally (if we have a system of eqs)
-        #K = 2 # ratio between work needed for EB and EF
         (dt_0, dt_1, dt_2,
          dt_a,
          inds, af,
          Xi_1, Xi_2,
          EB_beneficial) = _choose_dts(fun, t, y, tf, F, eps, eta, out,
                                       write_to_file, m0, m1, jacobian,
-                                      force_args, K)
+                                      force_args, K, switch)
 
-        # find corresponding indices
-        min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
-        min_ind_2 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_2, side='right')
-
-
-        if (min_ind_1 > 0) and (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
-            _logging.debug("Three levels. i_min^1={}, i_min^2={}, dt_0={}, dt_1={}, dt_2={}".format(min_ind_1, min_ind_2, dt_0, dt_1, dt_2))
-            # three levels
-            n_eqs = np.array([min_ind_1,
-                              min_ind_2 - min_ind_1,
-                              len(y) - min_ind_2])
-            (y, dt) = _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2,
-                                       inds, min_ind_1, min_ind_2, m0, m1,
-                                       dts_local)
-
-        elif (min_ind_1 > 0 and min_ind_1 < min_ind_2 and min_ind_2 == len(y0)):
-            _logging.debug("Two levels, K_2 empty. i_min^1={}, i_min^2={}, dt_0={}, dt_1={}".format(min_ind_1, min_ind_2, dt_0, dt_1))
-            # two levels
-            # K_2 empty, use m1=1 to ensure correct number of small time steps
-            n_eqs = np.array([0, min_ind_1, len(y) - min_ind_1])
-            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                            min_ind_1, m0, 1, dts_local)
-
-        elif (min_ind_1 > 0 and min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
-            _logging.debug("Two levels, K_1 empty. i_min^1={}, i_min^2={}, dt_0={}, dt_2={}".format(min_ind_1, min_ind_2, dt_0, dt_2))
-            # two levels
-            # K_1 empty, however we shift the levels down, because else things don't seem to work
-            n_eqs = np.array([0, min_ind_2, len(y) - min_ind_2])
-            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_2, inds,
-                                            min_ind_1, m0, m1, dts_local)
-
-        elif (min_ind_1 == 0 and min_ind_1 < min_ind_2 and min_ind_2 < len(y0)):
-            _logging.debug("Two levels, K_0 empty. i_min^1={}, i_min^2={}, dt_1={}, dt_2={}".format(min_ind_1, min_ind_2, dt_1, dt_2))
-            # two levels
-            # K_0 empty, however we shift the levels down, because else things don't seem to work
-            n_eqs = np.array([0, min_ind_2, len(y) - min_ind_2])
-            (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_1, dt_2, inds,
-                                            min_ind_1, 1, m1, dts_local)
-        else:
-            # single level
-            _logging.debug("Single level, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+        if EB_beneficial:
             n_eqs = np.array([0, 0, len(y)])
+            dt = np.minimum(dt_a, tf-t)
+            dts_local.append(dt)
+            _logging.debug("Switching to EB with dt_a={}, dt_s={}, K={}".format(dt, dt_0, K))
+            y = eb._do_newton_iterations(fun, t, y, dt, 4, jacobian,
+                                         force_args, 0.001,
+                                         min(1e-4, dt), min(1e-4, dt),
+                                         min(1e-4, dt))
+        else:
 
-            if switch and EB_beneficial:
-                dt = dt_a
-                _logging.debug("Switching to EB with dt_a={}, dt_s={}, K={}".format(dt, dt_0, K))
-                y = eb._do_newton_iterations(fun, t, y, dt, 4, jacobian,
-                                             force_args, 0.001,
-                                             min(1e-4, dt), min(1e-4, dt),
-                                             min(1e-4, dt))
+            # find corresponding indices
+            min_ind_1 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
+            min_ind_2 = len(y0) - np.searchsorted(abs(af[inds])[::-1], Xi_2, side='right')
+
+
+            if (min_ind_1 > 0) and (min_ind_1 < min_ind_2) and (min_ind_2 < len(y0)):
+                _logging.debug("Three levels. i_min^1={}, i_min^2={}, dt_0={}, dt_1={}, dt_2={}".format(min_ind_1, min_ind_2, dt_0, dt_1, dt_2))
+                # three levels
+                n_eqs = np.array([min_ind_1,
+                                  min_ind_2 - min_ind_1,
+                                  len(y) - min_ind_2])
+                (y, dt) = _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2,
+                                           inds, min_ind_1, min_ind_2, m0, m1,
+                                           dts_local)
+
+            elif (min_ind_1 > 0 and min_ind_1 < min_ind_2 and min_ind_2 == len(y0)):
+                _logging.debug("Two levels, K_2 empty. i_min^1={}, i_min^2={}, dt_0={}, dt_1={}".format(min_ind_1, min_ind_2, dt_0, dt_1))
+                # two levels
+                # K_2 empty, use m1=1 to ensure correct number of small time steps
+                n_eqs = np.array([min_ind_1, len(y) - min_ind_1, 0])
+                (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
+                                                min_ind_1, m0, 1, dts_local)
+
+            elif (min_ind_1 > 0 and min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
+                _logging.debug("Two levels, K_1 empty. i_min^1={}, i_min^2={}, dt_0={}, dt_2={}".format(min_ind_1, min_ind_2, dt_0, dt_2))
+                # two levels
+                # K_1 empty, however we shift the levels down, because else things don't seem to work
+                n_eqs = np.array([min_ind_2, 0, len(y) - min_ind_2])
+                (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_2, inds,
+                                                min_ind_1, m0, m1, dts_local)
+
+            elif (min_ind_1 == 0 and min_ind_1 < min_ind_2 and min_ind_2 < len(y0)):
+                _logging.debug("Two levels, K_0 empty. i_min^1={}, i_min^2={}, dt_1={}, dt_2={}".format(min_ind_1, min_ind_2, dt_1, dt_2))
+                # two levels
+                # K_0 empty, however we shift the levels down, because else things don't seem to work
+                n_eqs = np.array([0, min_ind_2, len(y) - min_ind_2])
+                (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_1, dt_2, inds,
+                                                min_ind_2, 1, m1, dts_local)
             else:
-                _logging.debug("Using EF with with dt_a={}, dt_s={}, K={}".format(dt_a, dt_0, K))
-                (y, dt) = _do_single_level(t, y, tf, F, dt_0, dts_local)
+                # single level
+                _logging.debug("Single level, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+                n_eqs = np.array([0, 0, len(y)])
+                _logging.debug("Using EF with with dt_a={}, dt_s={}, K={}".format(dt_a, dt_2, K))
+                (y, dt) = _do_single_level(t, y, tf, F, dt_2, dts_local)
 
         _logging.debug("y={}".format(y))
         t = t + dt
@@ -383,7 +384,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
 
 def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
-                jacobian, force_args, K):
+                jacobian, force_args, K, switch):
 
     EB_beneficial = False
 
@@ -429,28 +430,33 @@ def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
 
         dt_a = np.sqrt(2*eps*m0*m1/Xi_0) if Xi_0 > 0.0 else tf - t
         # do not overshoot the final time
-        dt_a = np.minimum(dt_a, tf - t)
+#        dt_a = np.minimum(dt_a, tf - t)
 
-        if dt_a < K * dt_s:
+        if dt_a > K * dt_s and switch:
+            EB_beneficial = True
+            dt_0 = dt_a
+            dt_1 = dt_a
+            dt_2 = dt_a
+            Xi_1 = None
+            Xi_2 = None
+        else:
             # stick with Euler forward
             if dt_a > dt_s:
                 # stability bounded time step
                 dt_2 = dt_s
                 Xi_2 = 2.0*eps/(dt_s**2)
                 Xi_1 = m1*Xi_2
+
             else:
                 # accuracy bounded time step
                 dt_2 = dt_a
                 Xi_1 = Xi_0/m0
                 Xi_2 = Xi_1/m1
 
+            #Xi_1 = Xi_0/m0
+            #Xi_2 = Xi_1/m1
             dt_1 = dt_2/m1
             dt_0 = dt_1/m0
-
-        else:
-            EB_beneficial = True
-            dt_0 = dt_s
-
 
     if write_to_file:
         with open('AFs'+out+'.txt', 'ab') as f:
@@ -523,7 +529,8 @@ if __name__ == "__main__":
 #    plt.plot(sol.t, sol.y)
 
     t_eval = np.linspace(0, 1, 10)
-    y0 = np.array([0.7, 1.3, 3.0, 0.2])
+    #y0 = np.array([0.7, 1.3, 3.0, 0.2])
+    y0 = np.array([3.0, 1.3, 0.7, 0.2])
 
     #y0 = np.array([0.5, 0.7, 1.0, 3.0])
     #y0 = np.array([0.0, 0.0, 0.0])
@@ -564,7 +571,7 @@ if __name__ == "__main__":
 #
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
                      eps=0.0001, eta = 0.00001, local_adaptivity=True,
-                     write_to_file=True, jacobian=jacobian, switch=True)
+                     write_to_file=True, jacobian=jacobian, switch=True, K=3)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
@@ -605,9 +612,11 @@ if __name__ == "__main__":
     plt.plot(sol2.t[:-1], n_eq_per_level[0,:], label='level 0')
     plt.plot(sol2.t[:-1], n_eq_per_level[1,:], label='level 1')
     plt.plot(sol2.t[:-1], n_eq_per_level[2,:], label='level 2')
-#    plt.legend()
-#    plt.xlabel('time')
+    plt.legend()
+    plt.xlabel('time')
     plt.ylabel('Number of equations per level')
+
+    print(sol2.t[-1])
 #
 #    plt.figure()
 #    AFs = np.loadtxt('AFs.txt')
