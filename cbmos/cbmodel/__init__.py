@@ -15,7 +15,7 @@ _NU = 1
 class CBModel:
     """
     Parameters
-    -----------
+    ----------
         force: `f(ndarray(dtype=float), **kwargs)` -> float
             forces to be applied between cells
         solver: `f(fun, t_span, y0)` -> scipy.intergrade._ivp.ivp.OdeResult
@@ -198,6 +198,7 @@ class CBModel:
         Save the current positions of the cells to `self.history`. If
         `positions` is provided, uses theses positions instead of the cells'
         own positions.
+
         Note
         ----
         self.history has to be instantiated before the first call to _save_data
@@ -272,6 +273,16 @@ class CBModel:
             tau, division_direction))
 
     def _calculate_positions(self, t_eval, y0, force_args, solver_args, raw_t=True):
+        """
+        Solve the ODE system
+
+        Returns
+        -------
+            t: array, shape (len(t_eval),)
+                Time points.
+            y: array, shape (n_cells * dim, len(t_eval))
+                Values of the solution at t.
+        """
         _logging.debug("Calling solver with: t0={}, tf={}".format(
             t_eval[0], t_eval[-1]))
         return self.solver(self._ode_system(force_args),
@@ -282,11 +293,18 @@ class CBModel:
 
     def _update_positions(self, y):
         """
+        Update cell positions from coordinate vector.
+
+        Parameters
+        ----------
+            y: [[float]*dim]
+                Coordinate vector.
+
         Note
         ----
-        The ordering in cell_list and sol.y has to match.
+        - The ordering in `cell_list` and `sol.y` has to match.
+        - `y` must be a *list*
         """
-
         for cell, pos in zip(self.cell_list, y):
             cell.position = _np.array(pos)
 
