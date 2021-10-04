@@ -68,46 +68,6 @@ def test_calculate_positions(two_cells):
             assert np.abs(sol[-1][:dim] - sol[-1][dim:]).sum() - s < 0.01
 
 
-
-def test_get_division_direction():
-    for dim in [1, 2, 3]:
-        cbm_solver = cbmos.CBModel(lambda r: 0., ef.solve_ivp, dim)
-
-        mean_division_direction = cbm_solver._get_division_direction()
-        assert mean_division_direction.shape == (dim,)
-        assert np.isclose(np.linalg.norm(mean_division_direction), 1)
-
-#        N = 1000
-#        for i in range(N):
-#            mean_division_direction += cbm_solver._get_division_direction()
-#        assert np.all(abs(mean_division_direction/N) < 1)
-
-
-def test_apply_division():
-    from cbmos.cbmodel._eventqueue import EventQueue
-    dim = 3
-    cbm_solver = cbmos.CBModel(ff.Linear(), ef.solve_ivp, dim)
-
-    cell_list = [cl.Cell(i, [0, 0, i], proliferating=True) for i in range(5)]
-    for i, cell in enumerate(cell_list):
-        cell.division_time = cell.ID
-
-    cbm_solver.cell_list = cell_list
-    cbm_solver.next_cell_index = 5
-    cbm_solver._queue = EventQueue([])
-
-    cbm_solver._apply_division(cell_list[0], 1)
-
-    assert len(cbm_solver.cell_list) == 6
-    assert cbm_solver.cell_list[5].ID == 5
-    assert cbm_solver.next_cell_index == 6
-    assert cell_list[0].division_time != 0
-
-    assert np.isclose(
-            np.linalg.norm(cell_list[0].position - cell_list[5].position),
-            cbm_solver.separation)
-
-
 def test_update_positions():
     dim = 3
     cbm_solver = cbmos.CBModel(ff.Linear(), ef.solve_ivp, dim)

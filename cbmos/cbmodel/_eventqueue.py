@@ -4,8 +4,8 @@ class EventQueue:
     """
     Parameters
     ----------
-        events: (float, Event)
-            List of events and the time at which they will occur.
+        events: Event
+            List of events.
         min_resolution: float
             time resolution at which events can happen
     """
@@ -15,13 +15,13 @@ class EventQueue:
 
         self._min_resolution = min_resolution
         events = [
-                (self._round_time(t), event)
-                for t, event in events
+                (self._round_time(event.tau), event)
+                for event in events
                 ]
         _hq.heapify(events)
         self._events = events
 
-    def push(self, t, event):
+    def push(self, event):
         """
         Add one event into the queue.
 
@@ -30,7 +30,7 @@ class EventQueue:
             event: (float, Event)
                 Event to be added to the queue
         """
-        _hq.heappush(self._events, (self._round_time(t), event))
+        _hq.heappush(self._events, (self._round_time(event.tau), event))
 
     def pop(self):
         """

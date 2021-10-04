@@ -60,6 +60,3 @@ class Cell:
                 ) if division_time is None else division_time
         self.generate_division_time = division_time_generator
         self.parent_ID = parent_ID if parent_ID is not None else ID
-
-    def __lt__(self, other):
-        return self.division_time < other.division_time

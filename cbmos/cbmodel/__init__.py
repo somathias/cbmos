@@ -6,6 +6,7 @@ import logging as _logging
 import time
 
 from .. import cell as _cl
+from .. import events as _ev
 
 from ._eventqueue import EventQueue
 
@@ -116,7 +117,10 @@ class CBModel:
 
         # build event queue once, since independent of environment (for now)
         self._queue = EventQueue(
-                [(cell.division_time, cell) for cell in self.cell_list],
+                [_ev.CellDivisionEvent(cell)
+                    for cell in self.cell_list
+                    if cell.proliferating
+                    ],
                 min_resolution=min_event_resolution,
                 )
 
@@ -128,8 +132,12 @@ class CBModel:
                 self.last_exec_time = exec_time
                 return (self.t_data, self.history)
 
-            # generate next event
-            tau, cells = self._queue.pop()
+            # generate next event(s)
+            # NB: if events are aggregated, multiple events can happen at time `tau`
+            try:
+                tau, events = self._queue.pop()
+            except IndexError:
+                tau, events = _np.inf, None
 
             if tau > t:
                 # calculate positions until the last t_data smaller or equal to min(tau, t_end)
@@ -183,8 +191,8 @@ class CBModel:
 
             # apply event if tau <= t_end
             if tau <= t_end:
-                for cell in cells:
-                    self._apply_division(cell, tau)
+                for event in events:
+                    event.apply(self)
 
             # update current time t to min(tau, t_end)
             t = min(tau, t_end)
@@ -216,60 +224,6 @@ class CBModel:
                     cell.generate_division_time, cell.division_time,
                     cell.parent_ID)
                 for cell in self.cell_list])
-
-    def _get_division_direction(self):
-
-        if self.dim == 1:
-            division_direction = _np.array([-1.0 + 2.0 * _npr.randint(2)])
-
-        elif self.dim == 2:
-            random_angle = 2.0 * _np.pi * _npr.rand()
-            division_direction = _np.array([
-                _np.cos(random_angle),
-                _np.sin(random_angle)])
-
-        elif self.dim == 3:
-            u = _npr.rand()
-            v = _npr.rand()
-            random_azimuth_angle = 2 * _np.pi * u
-            random_zenith_angle = _np.arccos(2 * v - 1)
-            division_direction = _np.array([
-                _np.cos(random_azimuth_angle) * _np.sin(random_zenith_angle),
-                _np.sin(random_azimuth_angle) * _np.sin(random_zenith_angle),
-                _np.cos(random_zenith_angle)])
-        return division_direction
-
-    def _apply_division(self, cell, tau):
-        """
-        Note
-        ----
-        The code assumes that all cell events are division events,
-        """
-
-        #check that the parent cell has set its proliferating flag to True
-        assert cell.proliferating
-
-        division_direction = self._get_division_direction()
-        updated_position_parent = cell.position -\
-            0.5 * self.separation * division_direction
-        position_daughter = cell.position +\
-            0.5 * self.separation * division_direction
-
-        daughter_cell = _cl.Cell(
-                self.next_cell_index, position_daughter, birthtime=tau,
-                proliferating=True,
-                division_time_generator=cell.generate_division_time,
-                parent_ID=cell.ID)
-        self.next_cell_index = self.next_cell_index + 1
-        self.cell_list.append(daughter_cell)
-        self._queue.push(daughter_cell.division_time, daughter_cell)
-
-        cell.position = updated_position_parent
-        cell.division_time = cell.generate_division_time(tau)
-        self._queue.push(cell.division_time, cell)
-
-        _logging.debug("Division event: t={}, direction={}".format(
-            tau, division_direction))
 
     def _calculate_positions(self, t_eval, y0, force_args, solver_args, raw_t=True):
         _logging.debug("Calling solver with: t0={}, tf={}".format(
