@@ -16,7 +16,7 @@ def test_constructor():
         t, event = queue.pop()
         assert t == i
         assert len(event) == 1
-        assert event[0].target_cell.ID == i
+        assert event[0].target_cell_ID == i
 
 def test_push():
     cell = cl.Cell(0, [0, 0], proliferating=True, division_time=1)
@@ -45,4 +45,4 @@ def test_aggregate():
 
     for true_t, true_ids in [(0.3, [0, 1]), (0.6, [2]), (0.8999999999999999, [3, 4])]:
         t, events = queue.pop()
-        assert t == true_t and [e.target_cell.ID for e in events] == true_ids
+        assert t == true_t and [e.target_cell_ID for e in events] == true_ids

@@ -18,6 +18,7 @@ import cbmos.cbmodel as cbmos
 import cbmos.force_functions as ff
 import cbmos.solvers.euler_forward as ef
 import cbmos.cell as cl
+import cbmos.events as ev
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -85,15 +86,23 @@ def test_update_positions():
         assert cell.position.tolist() == [0, i, i]
 
 
-def test_simulate():
+def test_simulate(caplog):
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Cubic(), scpi.solve_ivp, dim)
     cell_list = [cl.Cell(0, [0]), cl.Cell(1, [1.0], 0.0, True)]
     cell_list[1].division_time = 1.05  # make sure not to divide at t_data
 
+    event_list = [
+            ev.CellDivisionEvent(cell)
+            for cell in cell_list
+            if cell.proliferating
+            ]
+
     N = 100
     t_data = np.linspace(0, 10, N) # stay away from 24 hours
-    t_data_sol, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
+    t_data_sol, history = cbm_solver.simulate(
+            cell_list, t_data, {}, {},
+            raw_t=False, event_list=event_list)
 
     assert len(history) == N
     assert t_data_sol.tolist() == t_data.tolist()
@@ -113,8 +122,12 @@ def test_two_events_at_once():
     cell_list[0].division_time = 1.05
     cell_list[1].division_time = 1.05
 
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
+
     t_data = np.linspace(0, 10, 100)
-    _, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
+    _, history = cbm_solver.simulate(
+            cell_list, t_data, {}, {},
+            raw_t=False, event_list=[])
 
     assert len(history) == 100
 
@@ -125,8 +138,12 @@ def test_event_at_t_data():
     cell_list[0].division_time = 1.0
     cell_list[1].division_time = 1.0
 
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
+
     t_data = np.linspace(0, 10, 101)
-    _, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
+    _, history = cbm_solver.simulate(
+            cell_list, t_data, {}, {},
+            raw_t=False, event_list=event_list)
 
     assert len(history) == len(t_data)
 
@@ -137,10 +154,14 @@ def test_no_division_skipped():
     cell_list[0].division_time = 1.0
     cell_list[1].division_time = 1.0
 
-    t_data = np.linspace(0, 30, 101)
-    _, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
 
-    eq = [hq.heappop(cbm_solver._queue._events) for i in range(len(cbm_solver._queue._events))]
+    t_data = np.linspace(0, 30, 101)
+    _, history = cbm_solver.simulate(
+            cell_list, t_data, {}, {},
+            raw_t=False, event_list=event_list)
+
+    eq = [hq.heappop(cbm_solver.queue._events) for i in range(len(cbm_solver.queue._events))]
     assert eq == sorted(eq)
 
     assert len(eq) == len(history[-1]) - 1
@@ -157,10 +178,12 @@ def test_min_event_resolution():
     cell_list[0].division_time = 0.25
     cell_list[1].division_time = 0.25
 
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
+
     t_data = [0, 0.4, 0.6, 1]
     _, history = cbm_solver.simulate(
             cell_list, t_data, {}, {},
-            raw_t=False, min_event_resolution=0.5,
+            raw_t=False, event_list=event_list, min_event_resolution=0.5,
             )
 
     assert len(history[0]) == 2
@@ -177,8 +200,14 @@ def test_cell_list_copied():
     cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
     t_data = np.linspace(0, 1, 101)
 
-    _, history_one = cbm_solver_one.simulate(cell_list, t_data, {}, {})
-    _, history_two = cbm_solver_two.simulate(cell_list, t_data, {}, {})
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
+
+    _, history_one = cbm_solver_one.simulate(
+            cell_list, t_data, {}, {},
+            event_list=event_list)
+    _, history_two = cbm_solver_two.simulate(
+            cell_list, t_data, {}, {},
+            event_list=event_list)
 
     assert history_two[0][0].position == np.array([0])
     assert history_two[0][1].position == np.array([0.3])
@@ -195,7 +224,10 @@ def test_tdata():
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
     t_data = np.linspace(0,1, n)
     cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [0.3], proliferating=False)]
-    _, sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=False)
+
+    _, sols = solver_ef.simulate(
+            cell_list, t_data, params_cubic, {'dt': 0.03},
+            raw_t=False, event_list=[])
     y = np.array([np.squeeze([clt[0].position, clt[1].position]) for clt in sols])
 
     assert y.shape == (n, 2)
@@ -212,7 +244,10 @@ def test_tdata_raw():
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
     t_data = np.linspace(0,1, n)
     cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [0.3], proliferating=False)]
-    t_data_sol, sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=True)
+
+    t_data_sol, sols = solver_ef.simulate(
+            cell_list, t_data, params_cubic, {'dt': 0.03},
+            raw_t=True, event_list=[])
 
     assert len(t_data_sol) == len(sols)
 
@@ -227,8 +262,16 @@ def test_tdata_raw_division():
 
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
     t_data = np.linspace(0,50, n)
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
-    t_data_sol, sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=True)
+    cell_list = [
+            cl.Cell(0, [0], proliferating=True),
+            cl.Cell(1, [0.3], proliferating=True)
+            ]
+
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
+
+    t_data_sol, sols = solver_ef.simulate(
+            cell_list, t_data, params_cubic, {'dt': 0.03},
+            raw_t=True, event_list=event_list)
 
     assert len(sols[-1]) > len(cell_list) # Make sure some cells multiplied
     assert len(t_data_sol) == len(sols)
@@ -242,7 +285,12 @@ def test_sparse_tdata():
     dt = 0.1
     t_f = 50
     t_data = np.linspace(0, t_f, 2)
-    _, tumor_cubic = solver_cubic.simulate(ancestor, t_data, {"mu":6.91}, {"dt":dt})
+
+    event_list = [ev.CellDivisionEvent(cell) for cell in ancestor]
+
+    _, tumor_cubic = solver_cubic.simulate(
+            ancestor, t_data, {"mu":6.91}, {"dt":dt},
+            event_list=event_list)
 
 
 def test_seed():
@@ -250,9 +298,14 @@ def test_seed():
     cbm_solver = cbmos.CBModel(ff.Logarithmic(), ef.solve_ivp, dim)
 
     cell_list = [cl.Cell(0, [0, 0, 0], proliferating=True)]
+
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
+
     t_data = np.linspace(0, 100, 10)
     histories = [
-            cbm_solver.simulate(cell_list, t_data, {}, {}, seed=seed)[1]
+            cbm_solver.simulate(
+                cell_list, t_data, {}, {},
+                seed=seed, event_list=event_list)[1]
             for seed in [0, 0, 1, None, None]]
 
     for cells in zip(*[history[-1] for history in histories]):
@@ -272,10 +325,15 @@ def test_seed_division_time(caplog):
     cbm_solver = cbmos.CBModel(ff.Logarithmic(), ef.solve_ivp, dim)
 
     cell_list = [cl.Cell(0, [0, 0, 0], proliferating=True)]
+
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
+
     t_data = np.linspace(0, 100, 10)
 
     history = [
-            cbm_solver.simulate(cell_list, t_data, {}, {}, seed=seed)[1]
+            cbm_solver.simulate(
+                cell_list, t_data, {}, {},
+                seed=seed, event_list=event_list)[1]
             for seed in [0, 0, 1]]
 
     division_times = logs.getvalue().split("Starting new simulation\n")[1:]
@@ -288,10 +346,13 @@ def test_cell_dimension_exception():
     cbm_solver = cbmos.CBModel(ff.Logarithmic(), ef.solve_ivp, dim)
 
     cell_list = [cl.Cell(0, [0, 0], proliferating=True)]
+
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
+
     t_data = np.linspace(0, 100, 10)
 
     with pytest.raises(AssertionError):
-        cbm_solver.simulate(cell_list, t_data, {}, {})
+        cbm_solver.simulate(cell_list, t_data, {}, {}, event_list=event_list)
 
 
 def test_cell_birth(caplog):
@@ -307,9 +368,12 @@ def test_cell_birth(caplog):
     cell_list = [
                 cl.Cell(0, [0, 0], -5.5, True,
                         division_time_generator=lambda t: 6 + t)]
+
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
+
     t_data = np.linspace(0, 1, 10)
 
-    cbm_solver.simulate(cell_list, t_data, {}, {})
+    cbm_solver.simulate(cell_list, t_data, {}, {}, event_list=event_list)
 
     division_times = logs.getvalue()
     assert parse.search("Division event: t={:f}", division_times)[0] == 0.5
@@ -338,7 +402,11 @@ def test_cell_list_order():
     dt = 0.01
     t_data = np.arange(0, 3, dt)
 
-    _, history = solver.simulate(sheet, t_data, {"mu": 6.91}, {'dt': dt}, seed=17)
+    event_list = [ev.CellDivisionEvent(cell) for cell in sheet]
+
+    _, history = solver.simulate(
+            sheet, t_data, {"mu": 6.91}, {'dt': dt},
+            seed=17, event_list=event_list)
     history = history[1:]  # delete initial data because that's less cells
 
     ids = [cell.ID for cell in history[0]]

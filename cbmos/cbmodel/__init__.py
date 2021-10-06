@@ -1,6 +1,7 @@
 import numpy as _np
 import numpy.random as _npr
 import heapq as _hq
+import copy as _copy
 import logging as _logging
 
 import time
@@ -47,6 +48,7 @@ class CBModel:
             raw_t=True,
             max_execution_time=None,
             min_event_resolution=0.,
+            event_list=[],
             ):
         """
         Run the simulation with the given arguments and return the position
@@ -56,6 +58,8 @@ class CBModel:
         ----------
         cell_list: [Cell]
             Initial cell layout
+        event_list: [Event]
+            Scheduled events
         t_data: [float]
             times at which the history should be recorded, if `raw_t` is set to `True`,
             only the start and end time are taken into account and the rest is ignored.
@@ -104,10 +108,7 @@ class CBModel:
         t = t_data[0]
         t_end = t_data[-1]
         self.cell_list = [
-                _cl.Cell(
-                    cell.ID, cell.position, cell.birthtime,
-                    cell.proliferating, cell.generate_division_time,
-                    cell.division_time, cell.parent_ID)
+                _copy.copy(cell)
                 for cell in cell_list]
 
         self.next_cell_index = max(self.cell_list, key=lambda cell: cell.ID).ID + 1
@@ -116,11 +117,8 @@ class CBModel:
         self._save_data()
 
         # build event queue once, since independent of environment (for now)
-        self._queue = EventQueue(
-                [_ev.CellDivisionEvent(cell)
-                    for cell in self.cell_list
-                    if cell.proliferating
-                    ],
+        self.queue = EventQueue(
+                [_copy.copy(event) for event in event_list],
                 min_resolution=min_event_resolution,
                 )
 
@@ -135,7 +133,7 @@ class CBModel:
             # generate next event(s)
             # NB: if events are aggregated, multiple events can happen at time `tau`
             try:
-                tau, events = self._queue.pop()
+                tau, events = self.queue.pop()
             except IndexError:
                 tau, events = _np.inf, None
 
@@ -212,18 +210,13 @@ class CBModel:
         as an empty list.
         """
         # copy correct positions to cell list that is stored
+        self.history.append([
+            _copy.copy(cell)
+            for cell in self.cell_list])
+
         if positions is not None:
-            self.history.append([_cl.Cell(
-                    cell.ID, pos, cell.birthtime, cell.proliferating,
-                    cell.generate_division_time, cell.division_time,
-                    cell.parent_ID)
-                for cell, pos in zip(self.cell_list, positions)])
-        else:
-            self.history.append([_cl.Cell(
-                    cell.ID, cell.position, cell.birthtime, cell.proliferating,
-                    cell.generate_division_time, cell.division_time,
-                    cell.parent_ID)
-                for cell in self.cell_list])
+            for i, pos in enumerate(positions):
+                self.history[-1][i].position = pos
 
     def _calculate_positions(self, t_eval, y0, force_args, solver_args, raw_t=True):
         _logging.debug("Calling solver with: t0={}, tf={}".format(

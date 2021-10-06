@@ -1,6 +1,7 @@
 import numpy as _np
 import numpy.random as _npr
 import logging as _logging
+import bisect as _bisect
 
 from . import cell as _cl
 
@@ -42,31 +43,35 @@ class CellDivisionEvent(Event):
         assert target_cell.proliferating
 
         self.tau = target_cell.division_time
-        self.target_cell = target_cell
+        self.target_cell_ID = target_cell.ID
 
     def apply(self, cbmodel):
-        #check that the parent cell has set its proliferating flag to True
-        assert self.target_cell.proliferating
+        target_cell_index = _bisect.bisect_left(
+                [cell.ID for cell in cbmodel.cell_list],
+                self.target_cell_ID)
+        target_cell = cbmodel.cell_list[target_cell_index]
 
+        #check that the parent cell has set its proliferating flag to True
+        assert target_cell.proliferating
 
         division_direction = self._get_division_direction(cbmodel)
-        updated_position_parent = self.target_cell.position \
+        updated_position_parent = target_cell.position \
             - 0.5 * cbmodel.separation * division_direction
-        position_daughter = self.target_cell.position \
+        position_daughter = target_cell.position \
             + 0.5 * cbmodel.separation * division_direction
 
         daughter_cell = _cl.Cell(
                 cbmodel.next_cell_index, position_daughter, birthtime=self.tau,
                 proliferating=True,
-                division_time_generator=self.target_cell.generate_division_time,
-                parent_ID=self.target_cell.ID)
+                division_time_generator=target_cell.generate_division_time,
+                parent_ID=target_cell.ID)
         cbmodel.next_cell_index += 1
         cbmodel.cell_list.append(daughter_cell)
-        cbmodel._queue.push(CellDivisionEvent(daughter_cell))
+        cbmodel.queue.push(CellDivisionEvent(daughter_cell))
 
-        self.target_cell.position = updated_position_parent
-        self.target_cell.division_time = self.target_cell.generate_division_time(self.tau)
-        cbmodel._queue.push(CellDivisionEvent(self.target_cell))
+        target_cell.position = updated_position_parent
+        target_cell.division_time = target_cell.generate_division_time(self.tau)
+        cbmodel.queue.push(CellDivisionEvent(target_cell))
 
         _logging.debug("Division event: t={}, direction={}".format(
             self.tau, division_direction))

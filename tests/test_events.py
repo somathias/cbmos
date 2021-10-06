@@ -33,7 +33,7 @@ def test_apply_division():
 
     cbmodel.cell_list = cell_list
     cbmodel.next_cell_index = 5
-    cbmodel._queue = EventQueue([])
+    cbmodel.queue = EventQueue([])
     event = CellDivisionEvent(cell_list[0])
 
     event.apply(cbmodel)
