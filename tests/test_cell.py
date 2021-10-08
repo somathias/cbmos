@@ -8,8 +8,16 @@ Created on Tue May 14 10:39:37 2019
 import cbmos.cell as cl
 
 
-def test_parameters():
+def test_parameters_base():
+    ID = 17
+    position = [17.4]
 
+    cell = cl.ProliferatingCell(ID, position)
+
+    assert cell.ID == ID
+    assert cell.position == position
+
+def test_parameters_proliferating():
     ID = 17
     position = [17.4]
     birthtime = 0.45
@@ -17,7 +25,7 @@ def test_parameters():
     division_time_generator = lambda t: 3
     parent_ID = 5
 
-    cell = cl.Cell(ID, position, birthtime, proliferating, division_time_generator,
+    cell = cl.ProliferatingCell(ID, position, birthtime, proliferating, division_time_generator,
                    None, parent_ID)
 
     assert cell.ID == ID

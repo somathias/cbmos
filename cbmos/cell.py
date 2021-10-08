@@ -20,6 +20,20 @@ class Cell:
         Unique number used to identify the cell
     position : numpy array
         The position of this cell (1, 2, or 3d)
+    """
+    def __init__(self, ID, position):
+        self.ID = ID
+        self.position = _np.array(position)
+
+
+class ProliferatingCell(Cell):
+    """
+    Parameters
+    ----------
+    ID: int
+        Unique number used to identify the cell
+    position : numpy array
+        The position of this cell (1, 2, or 3d)
     birthtime: float
         Cell's birthtime (0 by default). The first division time will be
         computed from that value.
@@ -51,8 +65,8 @@ class Cell:
             division_time=None,
             parent_ID=None
             ):
-        self.ID = ID
-        self.position = _np.array(position)
+        Cell.__init__(self, ID, position)
+
         self.birthtime = birthtime
         self.proliferating = proliferating
         self.division_time = (

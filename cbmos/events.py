@@ -60,7 +60,7 @@ class CellDivisionEvent(Event):
         position_daughter = target_cell.position \
             + 0.5 * cbmodel.separation * division_direction
 
-        daughter_cell = _cl.Cell(
+        daughter_cell = _cl.ProliferatingCell(
                 cbmodel.next_cell_index, position_daughter, birthtime=self.tau,
                 proliferating=True,
                 division_time_generator=target_cell.generate_division_time,

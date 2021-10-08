@@ -26,7 +26,7 @@ def test_apply_division():
     cbmodel = cbmos.CBModel(ff.Linear(), ef.solve_ivp, dim)
 
     cell_list = [
-            cl.Cell(i, [0, 0, i], proliferating=True, division_time=i + 1)
+            cl.ProliferatingCell(i, [0, 0, i], proliferating=True, division_time=i + 1)
             for i in range(5)]
     for i, cell in enumerate(cell_list):
         cell.division_time = cell.ID

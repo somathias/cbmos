@@ -89,7 +89,7 @@ def test_update_positions():
 def test_simulate(caplog):
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Cubic(), scpi.solve_ivp, dim)
-    cell_list = [cl.Cell(0, [0]), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list = [cl.ProliferatingCell(0, [0]), cl.ProliferatingCell(1, [1.0], 0.0, True)]
     cell_list[1].division_time = 1.05  # make sure not to divide at t_data
 
     event_list = [
@@ -118,7 +118,10 @@ def test_simulate(caplog):
 def test_two_events_at_once():
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list = [
+            cl.ProliferatingCell(0, [0], proliferating=True),
+            cl.ProliferatingCell(1, [1.0], 0.0, True)
+            ]
     cell_list[0].division_time = 1.05
     cell_list[1].division_time = 1.05
 
@@ -134,7 +137,7 @@ def test_two_events_at_once():
 def test_event_at_t_data():
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list = [cl.ProliferatingCell(0, [0], proliferating=True), cl.ProliferatingCell(1, [1.0], 0.0, True)]
     cell_list[0].division_time = 1.0
     cell_list[1].division_time = 1.0
 
@@ -150,7 +153,7 @@ def test_event_at_t_data():
 def test_no_division_skipped():
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list = [cl.ProliferatingCell(0, [0], proliferating=True), cl.ProliferatingCell(1, [1.0], 0.0, True)]
     cell_list[0].division_time = 1.0
     cell_list[1].division_time = 1.0
 
@@ -174,7 +177,7 @@ def test_no_division_skipped():
 def test_min_event_resolution():
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list = [cl.ProliferatingCell(0, [0], proliferating=True), cl.ProliferatingCell(1, [1.0], 0.0, proliferating=True)]
     cell_list[0].division_time = 0.25
     cell_list[1].division_time = 0.25
 
@@ -197,7 +200,7 @@ def test_cell_list_copied():
     cbm_solver_one = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
     cbm_solver_two = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
 
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
+    cell_list = [cl.ProliferatingCell(0, [0], proliferating=True), cl.ProliferatingCell(1, [0.3], proliferating=True)]
     t_data = np.linspace(0, 1, 101)
 
     event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
@@ -223,7 +226,7 @@ def test_tdata():
 
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
     t_data = np.linspace(0,1, n)
-    cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [0.3], proliferating=False)]
+    cell_list = [cl.ProliferatingCell(0, [0], proliferating=False), cl.ProliferatingCell(1, [0.3], proliferating=False)]
 
     _, sols = solver_ef.simulate(
             cell_list, t_data, params_cubic, {'dt': 0.03},
@@ -243,7 +246,7 @@ def test_tdata_raw():
 
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
     t_data = np.linspace(0,1, n)
-    cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [0.3], proliferating=False)]
+    cell_list = [cl.ProliferatingCell(0, [0], proliferating=False), cl.ProliferatingCell(1, [0.3], proliferating=False)]
 
     t_data_sol, sols = solver_ef.simulate(
             cell_list, t_data, params_cubic, {'dt': 0.03},
@@ -263,8 +266,8 @@ def test_tdata_raw_division():
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
     t_data = np.linspace(0,50, n)
     cell_list = [
-            cl.Cell(0, [0], proliferating=True),
-            cl.Cell(1, [0.3], proliferating=True)
+            cl.ProliferatingCell(0, [0], proliferating=True),
+            cl.ProliferatingCell(1, [0.3], proliferating=True)
             ]
 
     event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
@@ -281,7 +284,7 @@ def test_tdata_raw_division():
 def test_sparse_tdata():
     dim = 3
     solver_cubic = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim)
-    ancestor = [cl.Cell(0, np.zeros((dim,)), -5, True)]
+    ancestor = [cl.ProliferatingCell(0, np.zeros((dim,)), -5, True)]
     dt = 0.1
     t_f = 50
     t_data = np.linspace(0, t_f, 2)
@@ -297,7 +300,7 @@ def test_seed():
     dim = 3
     cbm_solver = cbmos.CBModel(ff.Logarithmic(), ef.solve_ivp, dim)
 
-    cell_list = [cl.Cell(0, [0, 0, 0], proliferating=True)]
+    cell_list = [cl.ProliferatingCell(0, [0, 0, 0], proliferating=True)]
 
     event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
 
@@ -324,7 +327,7 @@ def test_seed_division_time(caplog):
     dim = 3
     cbm_solver = cbmos.CBModel(ff.Logarithmic(), ef.solve_ivp, dim)
 
-    cell_list = [cl.Cell(0, [0, 0, 0], proliferating=True)]
+    cell_list = [cl.ProliferatingCell(0, [0, 0, 0], proliferating=True)]
 
     event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
 
@@ -345,7 +348,7 @@ def test_cell_dimension_exception():
     dim = 3
     cbm_solver = cbmos.CBModel(ff.Logarithmic(), ef.solve_ivp, dim)
 
-    cell_list = [cl.Cell(0, [0, 0], proliferating=True)]
+    cell_list = [cl.ProliferatingCell(0, [0, 0], proliferating=True)]
 
     event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
 
@@ -366,7 +369,7 @@ def test_cell_birth(caplog):
     cbm_solver = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim)
 
     cell_list = [
-                cl.Cell(0, [0, 0], -5.5, True,
+                cl.ProliferatingCell(0, [0, 0], -5.5, True,
                         division_time_generator=lambda t: 6 + t)]
 
     event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
@@ -388,7 +391,7 @@ def test_cell_list_order():
 
     # make cell_list for the sheet
     sheet = [
-            cl.Cell(i, [x, y], -6.0, True, lambda t: 6 + t)
+            cl.ProliferatingCell(i, [x, y], -6.0, True, lambda t: 6 + t)
             for i, x, y in zip(range(n_x*n_y), xcrds, ycrds)]
     # delete cells to make it circular
     del sheet[24]
