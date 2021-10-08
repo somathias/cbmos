@@ -70,7 +70,7 @@ class ProliferatingCell(Cell):
         self.birthtime = birthtime
         self.proliferating = proliferating
         self.division_time = (
-                division_time_generator(birthtime) if proliferating else _np.inf
-                ) if division_time is None else division_time
+            division_time_generator(birthtime) if proliferating else _np.inf
+            ) if division_time is None else division_time
         self.generate_division_time = division_time_generator
         self.parent_ID = parent_ID if parent_ID is not None else ID

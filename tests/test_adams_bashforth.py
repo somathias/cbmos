@@ -9,6 +9,7 @@ import cbmos.solvers.adams_bashforth as ab
 def func(t, y):
     return -50*y
 
+
 def jacobian(y, fa):
     return -50*np.eye(len(y))
 

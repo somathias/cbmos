@@ -51,7 +51,7 @@ class CellDivisionEvent(Event):
                 self.target_cell_ID)
         target_cell = cbmodel.cell_list[target_cell_index]
 
-        #check that the parent cell has set its proliferating flag to True
+        # Check that the parent cell has set its proliferating flag to True
         assert target_cell.proliferating
 
         division_direction = self._get_division_direction(cbmodel)
@@ -76,7 +76,6 @@ class CellDivisionEvent(Event):
         _logging.debug("Division event: t={}, direction={}".format(
             self.tau, division_direction))
 
-
     def _get_division_direction(self, cbmodel):
         if cbmodel.dim == 1:
             division_direction = _np.array([-1.0 + 2.0 * _npr.randint(2)])
@@ -98,4 +97,3 @@ class CellDivisionEvent(Event):
                 _np.cos(random_zenith_angle)])
 
         return division_direction
-

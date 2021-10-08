@@ -17,6 +17,7 @@ def test_parameters_base():
     assert cell.ID == ID
     assert cell.position == position
 
+
 def test_parameters_proliferating():
     ID = 17
     position = [17.4]
@@ -25,8 +26,9 @@ def test_parameters_proliferating():
     division_time_generator = lambda t: 3
     parent_ID = 5
 
-    cell = cl.ProliferatingCell(ID, position, birthtime, proliferating, division_time_generator,
-                   None, parent_ID)
+    cell = cl.ProliferatingCell(
+            ID, position,
+            birthtime, proliferating, division_time_generator, None, parent_ID)
 
     assert cell.ID == ID
     assert cell.position == position

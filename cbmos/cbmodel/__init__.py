@@ -31,7 +31,11 @@ class CBModel:
             Numpy itself.
 
     """
-    def __init__(self, force, solver, dimension=3, separation=0.3, hpc_backend=_np):
+    def __init__(
+            self,
+            force, solver,
+            dimension=3, separation=0.3, hpc_backend=_np
+            ):
         self.force = force
         self.solver = solver
         self.dim = dimension
@@ -61,9 +65,10 @@ class CBModel:
         event_list: [Event]
             Scheduled events
         t_data: [float]
-            times at which the history should be recorded, if `raw_t` is set to `True`,
-            only the start and end time are taken into account and the rest is ignored.
-            The history is then recorded following the solver's output.
+            times at which the history should be recorded, if `raw_t` is set to
+            `True`, only the start and end time are taken into account and the
+            rest is ignored.  The history is then recorded following the
+            solver's output.
         force_args: dict
             arguments to pass to the force function
         solver_args: dict
@@ -71,8 +76,9 @@ class CBModel:
         seed: int
             seed for the random number generator
         raw_t: bool
-            whether or not to use the solver's raw output. In that case, `t_data`
-            is ignored and the raw times are returned along the history
+            whether or not to use the solver's raw output. In that case,
+            `t_data` is ignored and the raw times are returned along the
+            history
         max_execution_time: float
             Maximum execution time in seconds that the simulation should use.
             Since the elapsed time is only checked in between cell events, this
@@ -90,7 +96,8 @@ class CBModel:
         Note
         ----
         - Cell ordering in the output can vary between timepoints.
-        - Cell indices need to be unique for the whole duration of the simulation.
+        - Cell indices need to be unique for the whole duration of the
+        simulation.
         - If `raw_t` is false, t_data is returned as is, with the history. If
           `raw_t` is true, aggregated t_data from the solver is returned.
 
@@ -101,7 +108,7 @@ class CBModel:
         _npr.seed(seed)
 
         for cell in cell_list:
-                assert len(cell.position) == self.dim
+            assert len(cell.position) == self.dim
 
         _logging.debug("Starting new simulation")
 
@@ -111,7 +118,8 @@ class CBModel:
                 _copy.copy(cell)
                 for cell in cell_list]
 
-        self.next_cell_index = max(self.cell_list, key=lambda cell: cell.ID).ID + 1
+        self.next_cell_index = max(
+                self.cell_list, key=lambda cell: cell.ID).ID + 1
         self.history = []
         self.t_data = [t] if raw_t else t_data[:]
         self._save_data()
@@ -126,25 +134,39 @@ class CBModel:
 
             # check if max_execution_time has elapsed
             exec_time = time.time() - exec_time_start
-            if max_execution_time is not None and exec_time >= max_execution_time:
+            if (
+                    max_execution_time is not None
+                    and exec_time >= max_execution_time
+                    ):
                 self.last_exec_time = exec_time
                 return (self.t_data, self.history)
 
             # generate next event(s)
-            # NB: if events are aggregated, multiple events can happen at time `tau`
+            # NB: if events are aggregated,
+            #     multiple events can happen at time `tau`
             try:
                 tau, events = self.queue.pop()
             except IndexError:
                 tau, events = _np.inf, None
 
             if tau > t:
-                # calculate positions until the last t_data smaller or equal to min(tau, t_end)
+                # calculate positions until
+                # the last t_data smaller or equal to min(tau, t_end)
                 t_eval = [t] \
-                    + [time for time in self.t_data if t < time <= min(tau, t_end)]
-                y0 = _np.array([cell.position for cell in self.cell_list]).reshape(-1)
+                    + [
+                            time
+                            for time in self.t_data
+                            if t < time <= min(tau, t_end)
+                            ]
+                y0 = _np.array([
+                    cell.position
+                    for cell in self.cell_list
+                    ]).reshape(-1)
                 # only calculate positions if there is t_data before tau
                 if len(t_eval) > 1:
-                    sol = self._calculate_positions(t_eval, y0, force_args, solver_args, raw_t=raw_t)
+                    sol = self._calculate_positions(
+                            t_eval, y0, force_args, solver_args,
+                            raw_t=raw_t)
 
                     # save data for all t_data points passed
                     for y_t in sol.y[:, 1:].T:
@@ -154,14 +176,20 @@ class CBModel:
 
                 # check if max_execution_time has elapsed
                 exec_time = time.time() - exec_time_start
-                if max_execution_time is not None and exec_time >= max_execution_time:
+                if (
+                        max_execution_time is not None
+                        and exec_time >= max_execution_time
+                        ):
                     self.last_exec_time = exec_time
                     return (self.t_data, self.history)
 
                 # continue the simulation until tau if necessary
-                if tau > t_eval[-1] and tau <=t_end:
+                if tau > t_eval[-1] and tau <= t_end:
                     y0 = sol.y[:, -1] if len(t_eval) > 1 else y0
-                    sol = self._calculate_positions([t_eval[-1], tau], y0, force_args, solver_args, raw_t=raw_t)
+                    sol = self._calculate_positions(
+                            [t_eval[-1], tau], y0, force_args, solver_args,
+                            raw_t=raw_t
+                            )
 
                     if raw_t:
                         for y_t in sol.y[:, 1:].T:
@@ -171,19 +199,26 @@ class CBModel:
                     # continue the simulation until t_end (only necessary if
                     # t_end is not in t_eval because raw_t is true (default))
                     y0 = sol.y[:, -1] if len(t_eval) > 1 else y0
-                    sol = self._calculate_positions([t_eval[-1], t_end], y0, force_args, solver_args, raw_t=raw_t)
+                    sol = self._calculate_positions(
+                            [t_eval[-1], t_end], y0, force_args, solver_args,
+                            raw_t=raw_t
+                            )
 
-                    #if raw_t:
+                    # if raw_t:
                     for y_t in sol.y[:, 1:].T:
                         self._save_data(y_t.reshape(-1, self.dim))
                     self.t_data.extend(sol.t[1:])
 
                 # update the positions for the current time point
-                self._update_positions(sol.y[:, -1].reshape(-1, self.dim).tolist())
+                self._update_positions(
+                        sol.y[:, -1].reshape(-1, self.dim).tolist())
 
             # check if max_execution_time has elapsed
             exec_time = time.time() - exec_time_start
-            if max_execution_time is not None and exec_time >= max_execution_time:
+            if (
+                    max_execution_time is not None
+                    and exec_time >= max_execution_time
+                    ):
                 self.last_exec_time = exec_time
                 return (self.t_data, self.history)
 
@@ -218,7 +253,8 @@ class CBModel:
             for i, pos in enumerate(positions):
                 self.history[-1][i].position = pos
 
-    def _calculate_positions(self, t_eval, y0, force_args, solver_args, raw_t=True):
+    def _calculate_positions(
+            self, t_eval, y0, force_args, solver_args, raw_t=True):
         _logging.debug("Calling solver with: t0={}, tf={}".format(
             t_eval[0], t_eval[-1]))
         return self.solver(self._ode_system(force_args),
@@ -254,15 +290,15 @@ class CBModel:
             y_r = _np.expand_dims(
                     self.hpc_backend.asarray(y).reshape((-1, self.dim)),
                     axis=-1,
-                    ) # shape (n, d, 1)
-            cross_diff = y_r.transpose([2, 1, 0]) - y_r # shape (n, d, n)
-            norm = _np.sqrt((cross_diff**2).sum(axis=1)) # shape (n, n)
+                    )  # shape (n, d, 1)
+            cross_diff = y_r.transpose([2, 1, 0]) - y_r  # shape (n, d, n)
+            norm = _np.sqrt((cross_diff**2).sum(axis=1))  # shape (n, n)
             forces = _np.expand_dims(
-                self.force(norm, **force_args)\
-                    / (norm + _np.diag(self.hpc_backend.ones(y_r.shape[0]))),
+                self.force(norm, **force_args)
+                / (norm + _np.diag(self.hpc_backend.ones(y_r.shape[0]))),
                 axis=1,
-                ) # shape (n, 1, n)
-            total_force = (forces * cross_diff).sum(axis=2) # shape (n, d)
+                )  # shape (n, 1, n)
+            total_force = (forces * cross_diff).sum(axis=2)  # shape (n, d)
 
             fty = (_NU*total_force).reshape(-1)
 
@@ -288,13 +324,15 @@ class CBModel:
         np.ndarray(size=(n_cell*dim, n_cell*dim))
         """
 
-        y_r = self.hpc_backend.asarray(_np.expand_dims(y.reshape((-1, self.dim)), axis=-1))
+        y_r = self.hpc_backend.asarray(
+                _np.expand_dims(y.reshape((-1, self.dim)), axis=-1))
         n = y_r.shape[0]
-        cross_diff = y_r - y_r.transpose([2, 1, 0]) # shape (n, d, n)
+        cross_diff = y_r - y_r.transpose([2, 1, 0])  # shape (n, d, n)
         norm = _np.sqrt((cross_diff**2).sum(axis=1))
-        r_hat = _np.expand_dims(_np.moveaxis(cross_diff, 1, 2), axis=-1) # shape (n, n, d, 1)
+        r_hat = _np.expand_dims(
+                _np.moveaxis(cross_diff, 1, 2), axis=-1)  # shape (n, n, d, 1)
 
-        B = r_hat @ r_hat.transpose([0, 1, 3, 2]) # shape (n, n, d, d)
+        B = r_hat @ r_hat.transpose([0, 1, 3, 2])  # shape (n, n, d, d)
 
         with _np.errstate(divide='ignore', invalid='ignore'):
             # Ignore divide by 0 warnings
@@ -304,10 +342,17 @@ class CBModel:
             B = B / (norm*norm)[:, :, _np.newaxis, _np.newaxis]
 
             B = (
-                    B*(self.force.derive()(norm, **force_args)-self.force(norm, **force_args)/norm)[:, :, _np.newaxis, _np.newaxis]
-                    + (self.hpc_backend.identity(self.dim))[_np.newaxis, _np.newaxis, :, :]
-                    * (self.force(norm, **force_args)/norm)[:, :, _np.newaxis, _np.newaxis]
-                    )
+                B * (
+                    self.force.derive()(norm, **force_args)
+                    - self.force(norm, **force_args)/norm
+                    )[:, :, _np.newaxis, _np.newaxis]
+                + (
+                    self.hpc_backend.identity(self.dim)
+                  )[_np.newaxis, _np.newaxis, :, :]
+                * (
+                    self.force(norm, **force_args)/norm
+                  )[:, :, _np.newaxis, _np.newaxis]
+                )
 
             B[_np.isnan(B)] = 0
 
@@ -315,7 +360,10 @@ class CBModel:
         B[_np.array(range(n)), _np.array(range(n)), :, :] = - B.sum(axis=0)
 
         # Step 3: Build block matrix
-        B_block =  B.reshape(n, n, self.dim, self.dim).swapaxes(1, 2).reshape(self.dim*n, -1)
+        B_block = B\
+            .reshape(n, n, self.dim, self.dim)\
+            .swapaxes(1, 2)\
+            .reshape(self.dim*n, -1)
 
         if self.hpc_backend.__name__ == "cupy":
             return self.hpc_backend.asnumpy(B_block)

@@ -10,13 +10,16 @@ import cbmos.cell as cl
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 def test_get_division_direction():
     for dim in [1, 2, 3]:
         cbmodel = cbmos.CBModel(lambda r: 0., ef.solve_ivp, dim)
 
-        mean_division_direction = events.CellDivisionEvent._get_division_direction(None, cbmodel)
+        mean_division_direction = \
+            events.CellDivisionEvent._get_division_direction(None, cbmodel)
         assert mean_division_direction.shape == (dim,)
         assert np.isclose(np.linalg.norm(mean_division_direction), 1)
+
 
 def test_apply_division():
     from cbmos.cbmodel._eventqueue import EventQueue
@@ -26,7 +29,9 @@ def test_apply_division():
     cbmodel = cbmos.CBModel(ff.Linear(), ef.solve_ivp, dim)
 
     cell_list = [
-            cl.ProliferatingCell(i, [0, 0, i], proliferating=True, division_time=i + 1)
+            cl.ProliferatingCell(
+                i, [0, 0, i],
+                proliferating=True, division_time=i + 1)
             for i in range(5)]
     for i, cell in enumerate(cell_list):
         cell.division_time = cell.ID

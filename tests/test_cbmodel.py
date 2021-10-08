@@ -89,7 +89,10 @@ def test_update_positions():
 def test_simulate(caplog):
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Cubic(), scpi.solve_ivp, dim)
-    cell_list = [cl.ProliferatingCell(0, [0]), cl.ProliferatingCell(1, [1.0], 0.0, True)]
+    cell_list = [
+            cl.ProliferatingCell(0, [0]),
+            cl.ProliferatingCell(1, [1.0], 0.0, True)
+            ]
     cell_list[1].division_time = 1.05  # make sure not to divide at t_data
 
     event_list = [
@@ -99,7 +102,7 @@ def test_simulate(caplog):
             ]
 
     N = 100
-    t_data = np.linspace(0, 10, N) # stay away from 24 hours
+    t_data = np.linspace(0, 10, N)  # stay away from 24 hours
     t_data_sol, history = cbm_solver.simulate(
             cell_list, t_data, {}, {},
             raw_t=False, event_list=event_list)
@@ -108,12 +111,18 @@ def test_simulate(caplog):
     assert t_data_sol.tolist() == t_data.tolist()
 
     assert len(history[10]) == 2
-    assert np.isclose(abs(history[10][0].position - history[10][1].position), 1)
+    assert np.isclose(
+            abs(history[10][0].position - history[10][1].position), 1)
 
     assert len(history[-1]) == 3
-    scells = sorted(history[-1], key=lambda c:c.position)
-    assert np.isclose(abs(scells[0].position - scells[1].position), 1, atol=1e-03)
-    assert np.isclose(abs(scells[1].position - scells[2].position), 1, atol=1e-03)
+    scells = sorted(history[-1], key=lambda c: c.position)
+    assert np.isclose(
+            abs(scells[0].position - scells[1].position), 1,
+            atol=1e-03)
+    assert np.isclose(
+            abs(scells[1].position - scells[2].position), 1,
+            atol=1e-03)
+
 
 def test_two_events_at_once():
     dim = 1
@@ -134,10 +143,14 @@ def test_two_events_at_once():
 
     assert len(history) == 100
 
+
 def test_event_at_t_data():
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
-    cell_list = [cl.ProliferatingCell(0, [0], proliferating=True), cl.ProliferatingCell(1, [1.0], 0.0, True)]
+    cell_list = [
+            cl.ProliferatingCell(0, [0], proliferating=True),
+            cl.ProliferatingCell(1, [1.0], 0.0, True)
+            ]
     cell_list[0].division_time = 1.0
     cell_list[1].division_time = 1.0
 
@@ -150,10 +163,14 @@ def test_event_at_t_data():
 
     assert len(history) == len(t_data)
 
+
 def test_no_division_skipped():
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
-    cell_list = [cl.ProliferatingCell(0, [0], proliferating=True), cl.ProliferatingCell(1, [1.0], 0.0, True)]
+    cell_list = [
+            cl.ProliferatingCell(0, [0], proliferating=True),
+            cl.ProliferatingCell(1, [1.0], 0.0, True)
+            ]
     cell_list[0].division_time = 1.0
     cell_list[1].division_time = 1.0
 
@@ -164,7 +181,10 @@ def test_no_division_skipped():
             cell_list, t_data, {}, {},
             raw_t=False, event_list=event_list)
 
-    eq = [hq.heappop(cbm_solver.queue._events) for i in range(len(cbm_solver.queue._events))]
+    eq = [
+            hq.heappop(cbm_solver.queue._events)
+            for i in range(len(cbm_solver.queue._events))
+            ]
     assert eq == sorted(eq)
 
     assert len(eq) == len(history[-1]) - 1
@@ -174,10 +194,14 @@ def test_no_division_skipped():
             assert c.birthtime <= t
             assert c.division_time > t
 
+
 def test_min_event_resolution():
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
-    cell_list = [cl.ProliferatingCell(0, [0], proliferating=True), cl.ProliferatingCell(1, [1.0], 0.0, proliferating=True)]
+    cell_list = [
+            cl.ProliferatingCell(0, [0], proliferating=True),
+            cl.ProliferatingCell(1, [1.0], 0.0, proliferating=True)
+            ]
     cell_list[0].division_time = 0.25
     cell_list[1].division_time = 0.25
 
@@ -194,13 +218,17 @@ def test_min_event_resolution():
     assert len(history[2]) == 4
     assert len(history[3]) == 4
 
+
 def test_cell_list_copied():
 
     dim = 1
     cbm_solver_one = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
     cbm_solver_two = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
 
-    cell_list = [cl.ProliferatingCell(0, [0], proliferating=True), cl.ProliferatingCell(1, [0.3], proliferating=True)]
+    cell_list = [
+            cl.ProliferatingCell(0, [0], proliferating=True),
+            cl.ProliferatingCell(1, [0.3], proliferating=True)
+            ]
     t_data = np.linspace(0, 1, 101)
 
     event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
@@ -215,6 +243,7 @@ def test_cell_list_copied():
     assert history_two[0][0].position == np.array([0])
     assert history_two[0][1].position == np.array([0.3])
 
+
 def test_tdata():
     n = 100
 
@@ -225,15 +254,22 @@ def test_tdata():
     params_cubic = {"mu": 6.91, "s": s, "rA": rA}
 
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
-    t_data = np.linspace(0,1, n)
-    cell_list = [cl.ProliferatingCell(0, [0], proliferating=False), cl.ProliferatingCell(1, [0.3], proliferating=False)]
+    t_data = np.linspace(0, 1, n)
+    cell_list = [
+            cl.ProliferatingCell(0, [0], proliferating=False),
+            cl.ProliferatingCell(1, [0.3], proliferating=False)
+            ]
 
     _, sols = solver_ef.simulate(
             cell_list, t_data, params_cubic, {'dt': 0.03},
             raw_t=False, event_list=[])
-    y = np.array([np.squeeze([clt[0].position, clt[1].position]) for clt in sols])
+    y = np.array([
+        np.squeeze([clt[0].position, clt[1].position])
+        for clt in sols
+        ])
 
     assert y.shape == (n, 2)
+
 
 def test_tdata_raw():
     n = 100
@@ -245,14 +281,18 @@ def test_tdata_raw():
     params_cubic = {"mu": 6.91, "s": s, "rA": rA}
 
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
-    t_data = np.linspace(0,1, n)
-    cell_list = [cl.ProliferatingCell(0, [0], proliferating=False), cl.ProliferatingCell(1, [0.3], proliferating=False)]
+    t_data = np.linspace(0, 1, n)
+    cell_list = [
+            cl.ProliferatingCell(0, [0], proliferating=False),
+            cl.ProliferatingCell(1, [0.3], proliferating=False)
+            ]
 
     t_data_sol, sols = solver_ef.simulate(
             cell_list, t_data, params_cubic, {'dt': 0.03},
             raw_t=True, event_list=[])
 
     assert len(t_data_sol) == len(sols)
+
 
 def test_tdata_raw_division():
     n = 100
@@ -264,7 +304,7 @@ def test_tdata_raw_division():
     params_cubic = {"mu": 6.91, "s": s, "rA": rA}
 
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
-    t_data = np.linspace(0,50, n)
+    t_data = np.linspace(0, 50, n)
     cell_list = [
             cl.ProliferatingCell(0, [0], proliferating=True),
             cl.ProliferatingCell(1, [0.3], proliferating=True)
@@ -276,7 +316,7 @@ def test_tdata_raw_division():
             cell_list, t_data, params_cubic, {'dt': 0.03},
             raw_t=True, event_list=event_list)
 
-    assert len(sols[-1]) > len(cell_list) # Make sure some cells multiplied
+    assert len(sols[-1]) > len(cell_list)  # Make sure some cells multiplied
     assert len(t_data_sol) == len(sols)
     assert all([t[0] < t[1] for t in zip(t_data_sol, t_data_sol[1:])])
 
@@ -292,7 +332,7 @@ def test_sparse_tdata():
     event_list = [ev.CellDivisionEvent(cell) for cell in ancestor]
 
     _, tumor_cubic = solver_cubic.simulate(
-            ancestor, t_data, {"mu":6.91}, {"dt":dt},
+            ancestor, t_data, {"mu": 6.91}, {"dt": dt},
             event_list=event_list)
 
 
@@ -369,8 +409,10 @@ def test_cell_birth(caplog):
     cbm_solver = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim)
 
     cell_list = [
-                cl.ProliferatingCell(0, [0, 0], -5.5, True,
-                        division_time_generator=lambda t: 6 + t)]
+                cl.ProliferatingCell(
+                    0, [0, 0], -5.5, True,
+                    division_time_generator=lambda t: 6 + t)
+                ]
 
     event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
 
@@ -415,6 +457,7 @@ def test_cell_list_order():
     ids = [cell.ID for cell in history[0]]
     assert np.all([ids == [cell.ID for cell in clt] for clt in history[1:]])
 
+
 def test_jacobian_1DN3():
 
     force = ff.Linear()
@@ -432,17 +475,22 @@ def test_jacobian_1DN3():
     y3 = y[2]
 
     A12 = (y2-y1)**2/abs(y2-y1)**2\
-            *(force_prime(abs(y2-y1)) - force(abs(y2-y1))/abs(y2-y1))\
-            + force(abs(y2-y1))/abs(y2-y1)
+        * (force_prime(abs(y2-y1)) - force(abs(y2-y1))/abs(y2-y1))\
+        + force(abs(y2-y1))/abs(y2-y1)
     A13 = (y3-y1)**2/abs(y3-y1)**2\
-            *(force_prime(abs(y3-y1)) - force(abs(y3-y1))/abs(y3-y1))\
-            + force(abs(y3-y1))/abs(y3-y1)
+        * (force_prime(abs(y3-y1)) - force(abs(y3-y1))/abs(y3-y1))\
+        + force(abs(y3-y1))/abs(y3-y1)
     A23 = (y3-y2)**2/abs(y3-y2)**2\
-            *(force_prime(abs(y3-y2)) - force(abs(y3-y2))/abs(y3-y2))\
-            + force(abs(y3-y2))/abs(y3-y2)
-    A2 = np.squeeze(np.array([[- (A12 +A13), A12, A13],[A12, -(A12 + A23), A23],[A13, A23, -(A13 +A23)]]))
+        * (force_prime(abs(y3-y2)) - force(abs(y3-y2))/abs(y3-y2))\
+        + force(abs(y3-y2))/abs(y3-y2)
+    A2 = np.squeeze(np.array([
+        [-(A12 + A13), A12, A13],
+        [A12, -(A12 + A23), A23],
+        [A13, A23, -(A13 + A23)]
+        ]))
 
     assert(np.all(A == A2))
+
 
 def test_jacobian_2DN3():
 
@@ -452,7 +500,6 @@ def test_jacobian_2DN3():
     y = np.array([[0., 0.], [0.7, 0.1], [0.3, -1.]])
 
     model = cbmos.CBModel(g, ef.solve_ivp, 2)
-
 
     A = model.jacobian(y, {})
 
@@ -468,13 +515,24 @@ def test_jacobian_2DN3():
     r23 = y3 - y2
     norm_23 = np.linalg.norm(r23)
 
-    A12 = r12@r12.transpose()/norm_12**2*(g_prime(norm_12) - g(norm_12)/norm_12) + g(norm_12)/norm_12 * np.eye(2)
-    A13 = r13@r13.transpose()/norm_13**2*(g_prime(norm_13) - g(norm_13)/norm_13) + g(norm_13)/norm_13 * np.eye(2)
-    A23 = r23@r23.transpose()/norm_23**2*(g_prime(norm_23) - g(norm_23)/norm_23) + g(norm_23)/norm_23 * np.eye(2)
+    A12 = r12@r12.transpose() / norm_12**2\
+        * (g_prime(norm_12) - g(norm_12)/norm_12)\
+        + g(norm_12)/norm_12 * np.eye(2)
+    A13 = r13@r13.transpose() / norm_13**2\
+        * (g_prime(norm_13) - g(norm_13)/norm_13)\
+        + g(norm_13)/norm_13 * np.eye(2)
+    A23 = r23@r23.transpose() / norm_23**2\
+        * (g_prime(norm_23) - g(norm_23)/norm_23)\
+        + g(norm_23)/norm_23 * np.eye(2)
 
-    A2 = np.block([[- (A12 +A13), A12, A13],[A12, -(A12 + A23), A23],[A13, A23, -(A13 +A23)]])
+    A2 = np.block([
+        [-(A12 + A13), A12, A13],
+        [A12, -(A12 + A23), A23],
+        [A13, A23, -(A13 + A23)]
+        ])
 
     assert(np.all(A == A2))
+
 
 def test_jacobian_3DN3():
 
@@ -498,10 +556,20 @@ def test_jacobian_3DN3():
     r23 = y3 - y2
     norm_23 = np.linalg.norm(r23)
 
-    A12 = r12@r12.transpose()/norm_12**2*(g_prime(norm_12) - g(norm_12)/norm_12) + g(norm_12)/norm_12 * np.eye(3)
-    A13 = r13@r13.transpose()/norm_13**2*(g_prime(norm_13) - g(norm_13)/norm_13) + g(norm_13)/norm_13 * np.eye(3)
-    A23 = r23@r23.transpose()/norm_23**2*(g_prime(norm_23) - g(norm_23)/norm_23) + g(norm_23)/norm_23 * np.eye(3)
+    A12 = r12@r12.transpose() / norm_12**2\
+        * (g_prime(norm_12) - g(norm_12)/norm_12)\
+        + g(norm_12)/norm_12 * np.eye(3)
+    A13 = r13@r13.transpose() / norm_13**2\
+        * (g_prime(norm_13) - g(norm_13)/norm_13)\
+        + g(norm_13)/norm_13 * np.eye(3)
+    A23 = r23@r23.transpose() / norm_23**2\
+        * (g_prime(norm_23) - g(norm_23)/norm_23)\
+        + g(norm_23)/norm_23 * np.eye(3)
 
-    A2 = np.block([[- (A12 +A13), A12, A13],[A12, -(A12 + A23), A23],[A13, A23, -(A13 +A23)]])
+    A2 = np.block([
+        [-(A12 + A13), A12, A13],
+        [A12, -(A12 + A23), A23]
+        [A13, A23, -(A13 + A23)]
+        ])
 
     assert(np.all(A == A2))
