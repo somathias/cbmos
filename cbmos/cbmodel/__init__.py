@@ -124,8 +124,7 @@ class CBModel:
         self.t_data = [t] if raw_t else t_data[:]
         self._save_data()
 
-        # build event queue once, since independent of environment (for now)
-        self.queue = EventQueue(
+        self._queue = EventQueue(
                 [_copy.copy(event) for event in event_list],
                 min_resolution=min_event_resolution,
                 )
@@ -145,7 +144,7 @@ class CBModel:
             # NB: if events are aggregated,
             #     multiple events can happen at time `tau`
             try:
-                tau, events = self.queue.pop()
+                tau, events = self._queue.pop()
             except IndexError:
                 tau, events = _np.inf, None
 
@@ -369,3 +368,16 @@ class CBModel:
             return self.hpc_backend.asnumpy(B_block)
         else:
             return _np.asarray(B_block)
+
+    def queue_event(self, event):
+        """
+        Add an event to the queue after the simulation has started.
+
+        Parameters
+        ----------
+            event: Event
+        """
+        try:
+            self._queue.push(event)
+        except AttributeError:
+            raise AttributeError("Events can only be queued while the simulation is running, use the `events` argument in the `simulate` function instead.")

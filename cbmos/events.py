@@ -67,11 +67,11 @@ class CellDivisionEvent(Event):
                 parent_ID=target_cell.ID)
         cbmodel.next_cell_index += 1
         cbmodel.cell_list.append(daughter_cell)
-        cbmodel.queue.push(CellDivisionEvent(daughter_cell))
+        cbmodel.queue_event(CellDivisionEvent(daughter_cell))
 
         target_cell.position = updated_position_parent
         target_cell.division_time = target_cell.generate_division_time(self.tau)
-        cbmodel.queue.push(CellDivisionEvent(target_cell))
+        cbmodel.queue_event(CellDivisionEvent(target_cell))
 
         _logging.debug("Division event: t={}, direction={}".format(
             self.tau, division_direction))

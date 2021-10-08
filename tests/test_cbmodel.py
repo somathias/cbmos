@@ -182,8 +182,8 @@ def test_no_division_skipped():
             raw_t=False, event_list=event_list)
 
     eq = [
-            hq.heappop(cbm_solver.queue._events)
-            for i in range(len(cbm_solver.queue._events))
+            hq.heappop(cbm_solver._queue._events)
+            for i in range(len(cbm_solver._queue._events))
             ]
     assert eq == sorted(eq)
 
@@ -573,3 +573,11 @@ def test_jacobian_3DN3():
         ])
 
     assert(np.all(A == A2))
+
+
+def test_queue_event():
+    dim = 1
+    cbm_solver = cbmos.CBModel(ff.Cubic(), scpi.solve_ivp, dim)
+
+    with pytest.raises(AttributeError):
+        cbm_solver.queue(CellDivisionEvent(cl.ProliferatingCell(0, [0])))
