@@ -500,7 +500,7 @@ def _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0, m1,
     dt_0 = _np.minimum(dt_0, (tf-t)/m0)
     for j in range(m0*m1):
         y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
-        F = fun(t, y)
+        #F = fun(t, y)
         dts_local.append(dt_0)
 
     dt_1 = _np.minimum(dt_1, (tf-t))
@@ -517,11 +517,11 @@ def _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2, inds, min_ind_1,
         dt_0 = _np.minimum(dt_0, (tf-t)/m0)  # avoid overstepping at end of time interval
         for j in range(m0):
             y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
-            F = fun(t, y)
+            #F = fun(t, y)
             dts_local.append(dt_0)
 
         y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
-        F = fun(t, y)
+        #F = fun(t, y)
 
     dt_2 = _np.minimum(dt_2, tf-t)
     y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
