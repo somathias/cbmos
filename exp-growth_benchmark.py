@@ -57,7 +57,7 @@ cell_list = [
 
 data = {}
 
-for tf in [10, 20, 30]:
+for tf in [600, 500, 400, 300]:
 
     t_data = [0.0, tf]
 
