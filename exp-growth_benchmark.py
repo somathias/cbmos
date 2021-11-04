@@ -3,7 +3,7 @@ Growth benchmark: the simulation is run until a fixed simulation time. Simulatio
 Wall time is then recorded
 
 Usage:
-    python3 exp-growth_benchmark.py <output.json> <sep> <dim> <hpc_backend=cp>
+    python3 exp-growth_benchmark.py <output> <sep> <dim> <hpc_backend=cp>
 """
 import numpy as np
 import numpy.random as npr

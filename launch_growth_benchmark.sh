@@ -3,4 +3,4 @@
   
 pip3 install .
 
-python3 exp-growth_benchmark.py growth_benchmark_0.3_3_nmax_500 0.3 3 False
+python3 exp-growth_benchmark.py growth_benchmark_0.3_3_nmax_1000 0.3 3 False
