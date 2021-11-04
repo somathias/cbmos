@@ -470,3 +470,15 @@ def test_jacobian_3DN3():
     A2 = np.block([[- (A12 +A13), A12, A13],[A12, -(A12 + A23), A23],[A13, A23, -(A13 +A23)]])
 
     assert(np.all(A == A2))
+
+def test_n_target_cells():
+    dim = 1
+    cbmodel = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
+    cell_list = [cl.Cell(0, [0], proliferating=True)]
+
+    n_target = 3
+    tf = 50.0
+    ts, history = cbmodel.simulate(cell_list, [0, tf], {}, {}, n_target_cells = [1, 2, n_target])
+
+    assert len(history[-1] ) >= n_target
+    assert ts[-1] < tf
