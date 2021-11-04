@@ -137,11 +137,11 @@ class CBModel:
             if n_target_cells:
                 if len(self.history[-1]) >= n_target_cells[-1]:
                     # target number of cells has been reached
-                    self.target_cell_count_checkpoints.append((len(self.history[-1]), exec_time))
+                    self.target_cell_count_checkpoints.append((t, len(self.history[-1]), exec_time))
                     self.last_exec_time = exec_time
                     return (self.t_data, self.history)
                 elif len(self.history[-1]) >= n_target_cells[n_target_cells_index]:
-                    self.target_cell_count_checkpoints.append((len(self.history[-1]), exec_time))
+                    self.target_cell_count_checkpoints.append((t, len(self.history[-1]), exec_time))
                     n_target_cells_index += 1
 
             # generate next event
