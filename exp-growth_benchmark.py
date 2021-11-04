@@ -42,10 +42,15 @@ mu = 5.70
 params_cubic = {"mu": mu, "s": s, "rA": rA}
 DT = 0.01
 
+tf = 1000.0
+#tf = 100.0
+t_data = [0.0, tf]
+
 eps = 0.01
 eta = 0.0001
 
 n_run = 5
+#n_run = 2
 
 rate = 1.5
 npr.seed(seed)
@@ -55,78 +60,54 @@ cell_list = [
         proliferating=True, division_time_generator=lambda t: npr.exponential(rate*(t+1.0)) + t)
     ]
 
+n_target_cell_counts = [100, 200, 300, 400, 500]
+#n_target_cell_counts = [10, 20]
+
+# global adaptivity (accuracy only)
 data = {}
+if bool(sys.argv[4]) == True:
+    #burn-in
+    cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta}, seed=seed, n_target_cells=n_target_cell_counts)
+for i in range(n_run):
+    ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta}, seed=seed, n_target_cells=n_target_cell_counts)
+    data[i] = cbmodel.target_cell_count_checkpoints
 
-for tf in [10, 20, 30]:
+with open(sys.argv[1]+'_glob_adap_acc.json', 'w') as f:
+    json.dump(data, f)
 
-    t_data = [0.0, tf]
+# global adaptivity
+data = {}
+if bool(sys.argv[4]) == True:
+    #burn-in
+    cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic}, seed=seed, n_target_cells=n_target_cell_counts)
+for i in range(n_run):
+    ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic}, seed=seed, n_target_cells=n_target_cell_counts)
+    data[i] = cbmodel.target_cell_count_checkpoints
 
-    # fixed time stepping
-    time_fixed_dt = []
-    n_fixed_dt = []
-    if bool(sys.argv[4]) == True:
-        #burn-in
-        cbmodel.simulate(cell_list, t_data, params_cubic, {"dt": DT}, seed=seed)
-    for _ in range(n_run):
-        start_fixed_dt = time.time()
-        ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"dt": DT}, seed=seed)
-        stop_fixed_dt = time.time()
-        time_fixed_dt.append(stop_fixed_dt - start_fixed_dt)
-        n_fixed_dt.append(len(history[-1]))
+with open(sys.argv[1]+'_glob_adap_stab.json', 'w') as f:
+    json.dump(data, f)
 
-    # global adaptivity (accuracy only)
-    time_global_adap_acc = []
-    n_global_adap_acc = []
-    if bool(sys.argv[4]) == True:
-        #burn-in
-        cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta}, seed=seed)
-    for _ in range(n_run):
-        start_global_adap_acc = time.time()
-        ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta}, seed=seed)
-        stop_global_adap_acc = time.time()
-        time_global_adap_acc.append(stop_global_adap_acc - start_global_adap_acc)
-        n_global_adap_acc.append(len(history[-1]))
+# local adaptivity
+data = {}
+if bool(sys.argv[4]) == True:
+    #burn-in
+    cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic, "local_adaptivity": True}, seed=seed, n_target_cells=n_target_cell_counts)
+for i in range(n_run):
+    ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic, "local_adaptivity": True}, seed=seed, n_target_cells=n_target_cell_counts)
+    data[i] = cbmodel.target_cell_count_checkpoints
 
-    # global adaptivity
-    time_global_adap_stab = []
-    n_global_adap_stab = []
-    if bool(sys.argv[4]) == True:
-        #burn-in
-        cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic}, seed=seed)
-    for _ in range(n_run):
-        start_global_adap_stab = time.time()
-        ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic}, seed=seed)
-        stop_global_adap_stab = time.time()
-        time_global_adap_stab.append(stop_global_adap_stab - start_global_adap_stab)
-        n_global_adap_stab.append(len(history[-1]))
+with open(sys.argv[1]+'_local_adap.json', 'w') as f:
+    json.dump(data, f)
 
-    # local adaptivity
-    time_local_adap = []
-    n_local_adap = []
-    if bool(sys.argv[4]) == True:
-        #burn-in
-        cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic, "local_adaptivity": True}, seed=seed)
-    for _ in range(n_run):
-        start_local_adap = time.time()
-        ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic, "local_adaptivity": True}, seed=seed)
-        stop_local_adap = time.time()
-        time_local_adap.append(stop_local_adap - start_local_adap)
-        n_local_adap.append(len(history[-1]))
+# fixed time stepping
+data = {}
+if bool(sys.argv[4]) == True:
+    #burn-in
+    cbmodel.simulate(cell_list, t_data, params_cubic, {"dt": DT}, seed=seed, n_target_cells=n_target_cell_counts)
+for i in range(n_run):
+    ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"dt": DT}, seed=seed, n_target_cells=n_target_cell_counts)
+    data[i] =  cbmodel.target_cell_count_checkpoints
 
-
-    data[tf] = {
-        'fixed_dt': time_fixed_dt,
-        'n_fixed_dt' : n_fixed_dt,
-        'global_adap_acc': time_global_adap_acc,
-        'n_global_adap_acc' : n_global_adap_acc,
-        'global_adap_stab': time_global_adap_stab,
-        'n_global_adap_stab' : n_global_adap_stab,
-        'local_adap': time_local_adap,
-        'n_local_adap' : n_local_adap
-#        'np': time_np,
-#        'cp': time_cp,
-        }
-
-with open(sys.argv[1], 'w') as f:
+with open(sys.argv[1]+'_fixed_dt.json', 'w') as f:
     json.dump(data, f)
 
