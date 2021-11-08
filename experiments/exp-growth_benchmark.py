@@ -3,7 +3,7 @@ Growth benchmark: the simulation is run until a fixed simulation time. Simulatio
 Wall time is then recorded
 
 Usage:
-    python3 exp-growth_benchmark.py <output> <sep> <dim> <hpc_backend=cp>
+    python3 exp-growth_benchmark.py <output> <sep> <dim> <rate>
 """
 import numpy as np
 import numpy.random as npr
@@ -24,14 +24,14 @@ if len(sys.argv) < 2:
 
 separation = float(sys.argv[2])
 dimension = int(sys.argv[3])
+if len(sys.argv) > 4:
+    rate = float(sys.argv[4])
+else:
+    rate = 1.5
 
 #dim = 2 # let's have a two-dimensional model
 seed = 1
 
-#if bool(sys.argv[4]) == True:
-#    cbmodel = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dimension,
-#                              separation, hpc_backend=cp)
-#else:
 cbmodel = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dimension,
                               separation, hpc_backend=np)
 
@@ -52,7 +52,6 @@ eta = 0.0001
 n_run = 5
 #n_run = 2
 
-rate = 1.5
 npr.seed(seed)
 cell_list = [
     cl.Cell(
@@ -65,9 +64,7 @@ n_target_cell_counts = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 
 # global adaptivity (accuracy only)
 data = {}
-if bool(sys.argv[4]) == True:
-    #burn-in
-    cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta}, seed=seed, n_target_cells=n_target_cell_counts)
+
 for i in range(n_run):
     ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta}, seed=seed, n_target_cells=n_target_cell_counts)
     data[i] = cbmodel.target_cell_count_checkpoints
@@ -77,9 +74,6 @@ with open(sys.argv[1]+'_glob_adap_acc.json', 'w') as f:
 
 # global adaptivity
 data = {}
-if bool(sys.argv[4]) == True:
-    #burn-in
-    cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic}, seed=seed, n_target_cells=n_target_cell_counts)
 for i in range(n_run):
     ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic}, seed=seed, n_target_cells=n_target_cell_counts)
     data[i] = cbmodel.target_cell_count_checkpoints
@@ -89,9 +83,6 @@ with open(sys.argv[1]+'_glob_adap_stab.json', 'w') as f:
 
 # local adaptivity
 data = {}
-if bool(sys.argv[4]) == True:
-    #burn-in
-    cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic, "local_adaptivity": True}, seed=seed, n_target_cells=n_target_cell_counts)
 for i in range(n_run):
     ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic, "local_adaptivity": True}, seed=seed, n_target_cells=n_target_cell_counts)
     data[i] = cbmodel.target_cell_count_checkpoints
@@ -101,9 +92,6 @@ with open(sys.argv[1]+'_local_adap.json', 'w') as f:
 
 # fixed time stepping
 data = {}
-if bool(sys.argv[4]) == True:
-    #burn-in
-    cbmodel.simulate(cell_list, t_data, params_cubic, {"dt": DT}, seed=seed, n_target_cells=n_target_cell_counts)
 for i in range(n_run):
     ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"dt": DT}, seed=seed, n_target_cells=n_target_cell_counts)
     data[i] =  cbmodel.target_cell_count_checkpoints
