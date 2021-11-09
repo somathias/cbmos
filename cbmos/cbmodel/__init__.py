@@ -46,7 +46,8 @@ class CBModel:
             raw_t=True,
             max_execution_time=None,
             min_event_resolution=0.,
-            n_target_cells=[]
+            n_target_cells=[],
+            throw_away_history=False
             ):
         """
         Run the simulation with the given arguments and return the position
@@ -204,6 +205,9 @@ class CBModel:
 
             # update current time t to min(tau, t_end)
             t = min(tau, t_end)
+
+            if throw_away_history:
+                self.history = [self.history[-1]]
 
         exec_time = time.time() - exec_time_start
         self.last_exec_time = exec_time

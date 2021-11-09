@@ -64,7 +64,6 @@ def test_calculate_positions(two_cells):
             assert np.abs(sol[-1][:dim] - sol[-1][dim:]).sum() - s < 0.01
 
 
-
 def test_get_division_direction():
     for dim in [1, 2, 3]:
         cbm_solver = cbmos.CBModel(lambda r: 0., ef.solve_ivp, dim)
@@ -128,8 +127,9 @@ def test_simulate():
     cell_list[1].division_time = 1.05  # make sure not to divide at t_data
 
     N = 100
-    t_data = np.linspace(0, 10, N) # stay away from 24 hours
-    t_data_sol, history = cbm_solver.simulate(cell_list, t_data, {}, {}, raw_t=False)
+    t_data = np.linspace(0, 10, N)  # stay away from 24 hours
+    t_data_sol, history = cbm_solver.simulate(cell_list, t_data, {}, {},
+                                              raw_t=False)
 
     assert len(history) == N
     assert t_data_sol.tolist() == t_data.tolist()
@@ -138,14 +138,16 @@ def test_simulate():
     assert np.isclose(abs(history[10][0].position - history[10][1].position), 1)
 
     assert len(history[-1]) == 3
-    scells = sorted(history[-1], key=lambda c:c.position)
+    scells = sorted(history[-1], key=lambda c: c.position)
     assert np.isclose(abs(scells[0].position - scells[1].position), 1, atol=1e-03)
     assert np.isclose(abs(scells[1].position - scells[2].position), 1, atol=1e-03)
+
 
 def test_two_events_at_once():
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list = [cl.Cell(0, [0], proliferating=True),
+                 cl.Cell(1, [1.0], 0.0, True)]
     cell_list[0].division_time = 1.05
     cell_list[1].division_time = 1.05
 
@@ -154,10 +156,12 @@ def test_two_events_at_once():
 
     assert len(history) == 100
 
+
 def test_event_at_t_data():
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list = [cl.Cell(0, [0], proliferating=True),
+                 cl.Cell(1, [1.0], 0.0, True)]
     cell_list[0].division_time = 1.0
     cell_list[1].division_time = 1.0
 
@@ -166,10 +170,12 @@ def test_event_at_t_data():
 
     assert len(history) == len(t_data)
 
+
 def test_no_division_skipped():
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list = [cl.Cell(0, [0], proliferating=True),
+                 cl.Cell(1, [1.0], 0.0, True)]
     cell_list[0].division_time = 1.0
     cell_list[1].division_time = 1.0
 
@@ -186,10 +192,12 @@ def test_no_division_skipped():
             assert c.birthtime <= t
             assert c.division_time > t
 
+
 def test_min_event_resolution():
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [1.0], 0.0, True)]
+    cell_list = [cl.Cell(0, [0], proliferating=True),
+                 cl.Cell(1, [1.0], 0.0, True)]
     cell_list[0].division_time = 0.25
     cell_list[1].division_time = 0.25
 
@@ -204,13 +212,15 @@ def test_min_event_resolution():
     assert len(history[2]) == 4
     assert len(history[3]) == 4
 
+
 def test_cell_list_copied():
 
     dim = 1
     cbm_solver_one = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
     cbm_solver_two = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
 
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
+    cell_list = [cl.Cell(0, [0], proliferating=True),
+                 cl.Cell(1, [0.3], proliferating=True)]
     t_data = np.linspace(0, 1, 101)
 
     _, history_one = cbm_solver_one.simulate(cell_list, t_data, {}, {})
@@ -219,54 +229,58 @@ def test_cell_list_copied():
     assert history_two[0][0].position == np.array([0])
     assert history_two[0][1].position == np.array([0.3])
 
+
 def test_tdata():
     n = 100
 
     s = 1.0    # rest length
-    tf = 1.0  # final time
     rA = 1.5   # maximum interaction distance
 
     params_cubic = {"mu": 6.91, "s": s, "rA": rA}
 
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
-    t_data = np.linspace(0,1, n)
-    cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [0.3], proliferating=False)]
-    _, sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=False)
+    t_data = np.linspace(0, 1, n)
+    cell_list = [cl.Cell(0, [0], proliferating=False),
+                 cl.Cell(1, [0.3], proliferating=False)]
+    _, sols = solver_ef.simulate(cell_list, t_data, params_cubic,
+                                 {'dt': 0.03}, raw_t=False)
     y = np.array([np.squeeze([clt[0].position, clt[1].position]) for clt in sols])
 
     assert y.shape == (n, 2)
 
+
 def test_tdata_raw():
     n = 100
-
     s = 1.0    # rest length
-    tf = 1.0  # final time
     rA = 1.5   # maximum interaction distance
 
     params_cubic = {"mu": 6.91, "s": s, "rA": rA}
 
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
-    t_data = np.linspace(0,1, n)
-    cell_list = [cl.Cell(0, [0], proliferating=False), cl.Cell(1, [0.3], proliferating=False)]
-    t_data_sol, sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=True)
+    t_data = np.linspace(0, 1, n)
+    cell_list = [cl.Cell(0, [0], proliferating=False),
+                 cl.Cell(1, [0.3], proliferating=False)]
+    t_data_sol, sols = solver_ef.simulate(cell_list, t_data, params_cubic,
+                                          {'dt': 0.03}, raw_t=True)
 
     assert len(t_data_sol) == len(sols)
 
+
 def test_tdata_raw_division():
     n = 100
-
     s = 1.0    # rest length
-    tf = 1.0  # final time
     rA = 1.5   # maximum interaction distance
 
     params_cubic = {"mu": 6.91, "s": s, "rA": rA}
 
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
-    t_data = np.linspace(0,50, n)
-    cell_list = [cl.Cell(0, [0], proliferating=True), cl.Cell(1, [0.3], proliferating=True)]
-    t_data_sol, sols = solver_ef.simulate(cell_list, t_data, params_cubic, {'dt': 0.03}, raw_t=True)
+    t_data = np.linspace(0, 50, n)
+    cell_list = [cl.Cell(0, [0], proliferating=True),
+                 cl.Cell(1, [0.3], proliferating=True)]
+    t_data_sol, sols = solver_ef.simulate(cell_list, t_data, params_cubic,
+                                          {'dt': 0.03}, raw_t=True)
 
-    assert len(sols[-1]) > len(cell_list) # Make sure some cells multiplied
+    assert len(sols[-1]) > len(cell_list)  # Make sure some cells multiplied
     assert len(t_data_sol) == len(sols)
     assert all([t[0] < t[1] for t in zip(t_data_sol, t_data_sol[1:])])
 
@@ -278,7 +292,8 @@ def test_sparse_tdata():
     dt = 0.1
     t_f = 50
     t_data = np.linspace(0, t_f, 2)
-    _, tumor_cubic = solver_cubic.simulate(ancestor, t_data, {"mu":6.91}, {"dt":dt})
+    _, tumor_cubic = solver_cubic.simulate(ancestor, t_data, {"mu": 6.91},
+                                           {"dt": dt})
 
 
 def test_seed():
@@ -374,7 +389,8 @@ def test_cell_list_order():
     dt = 0.01
     t_data = np.arange(0, 3, dt)
 
-    _, history = solver.simulate(sheet, t_data, {"mu": 6.91}, {'dt': dt}, seed=17)
+    _, history = solver.simulate(sheet, t_data, {"mu": 6.91}, {'dt': dt},
+                                 seed=17)
     history = history[1:]  # delete initial data because that's less cells
 
     ids = [cell.ID for cell in history[0]]
@@ -409,6 +425,7 @@ def test_jacobian_1DN3():
 
     assert(np.all(A == A2))
 
+
 def test_jacobian_2DN3():
 
     g = ff.Linear()
@@ -417,7 +434,6 @@ def test_jacobian_2DN3():
     y = np.array([[0., 0.], [0.7, 0.1], [0.3, -1.]])
 
     model = cbmos.CBModel(g, ef.solve_ivp, 2)
-
 
     A = model.jacobian(y, {})
 
@@ -437,9 +453,12 @@ def test_jacobian_2DN3():
     A13 = r13@r13.transpose()/norm_13**2*(g_prime(norm_13) - g(norm_13)/norm_13) + g(norm_13)/norm_13 * np.eye(2)
     A23 = r23@r23.transpose()/norm_23**2*(g_prime(norm_23) - g(norm_23)/norm_23) + g(norm_23)/norm_23 * np.eye(2)
 
-    A2 = np.block([[- (A12 +A13), A12, A13],[A12, -(A12 + A23), A23],[A13, A23, -(A13 +A23)]])
+    A2 = np.block([[-(A12 + A13), A12, A13],
+                   [A12, -(A12 + A23), A23],
+                   [A13, A23, -(A13 + A23)]])
 
     assert(np.all(A == A2))
+
 
 def test_jacobian_3DN3():
 
@@ -467,9 +486,12 @@ def test_jacobian_3DN3():
     A13 = r13@r13.transpose()/norm_13**2*(g_prime(norm_13) - g(norm_13)/norm_13) + g(norm_13)/norm_13 * np.eye(3)
     A23 = r23@r23.transpose()/norm_23**2*(g_prime(norm_23) - g(norm_23)/norm_23) + g(norm_23)/norm_23 * np.eye(3)
 
-    A2 = np.block([[- (A12 +A13), A12, A13],[A12, -(A12 + A23), A23],[A13, A23, -(A13 +A23)]])
+    A2 = np.block([[-(A12 + A13), A12, A13],
+                   [A12, -(A12 + A23), A23],
+                   [A13, A23, -(A13 + A23)]])
 
     assert(np.all(A == A2))
+
 
 def test_n_target_cells():
     dim = 1
@@ -478,7 +500,20 @@ def test_n_target_cells():
 
     n_target = 3
     tf = 50.0
-    ts, history = cbmodel.simulate(cell_list, [0, tf], {}, {}, n_target_cells = [1, 2, n_target])
+    ts, history = cbmodel.simulate(cell_list, [0, tf], {}, {},
+                                   n_target_cells=[1, 2, n_target])
 
-    assert len(history[-1] ) >= n_target
+    assert len(history[-1]) >= n_target
     assert ts[-1] < tf
+
+
+def test_throw_away_history():
+    dim = 1
+    cbmodel = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
+    cell_list = [cl.Cell(0, [0], proliferating=True)]
+
+    tf = 50.0
+    ts, history = cbmodel.simulate(cell_list, [0, tf], {}, {},
+                                   throw_away_history=True)
+
+    assert len(history) == 1
