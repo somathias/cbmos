@@ -23,13 +23,20 @@ class Linear:
         """
         if r is None:
             return 0.
-        return _np.where(r < rA, mu*(r-s), 0.)
+        close_cells = r[r < rA]
+        res = _np.zeros(shape=r.shape)
+        res[r < rA] = mu*(close_cells-s)
+        return res
+        #return _np.where(r < rA, mu*(r-s), 0.)
 
     def derive(self):
         def fp(r, mu=1.0, s=1.0, rA=1.5):
             if r is None:
                 return 0.
-            return _np.where(r < rA, mu, 0.)
+            res = _np.zeros(shape=r.shape)
+            res[r < rA] = mu
+            return res
+            #return _np.where(r < rA, mu, 0.)
 
         return fp
 
@@ -44,19 +51,27 @@ class Morse:
 
         Parameters:
           m: maximum value, default 1.0
-          a: controls the bredth of the potential, default 1.0
+          a: controls the bredth of the potential, default 5.0
           s: rest length, default 1.0
 
         """
         if r is None:
             return 0.
-        return _np.where(r < rA, - m*(_np.exp(-2*a*(r-s-_np.log(2)/a))-2*_np.exp(-a*(r-s-_np.log(2)/a))), 0.)
+        close_cells = r[r < rA]
+        res = _np.zeros(shape=r.shape)
+        res[r < rA] = - m*(_np.exp(-2*a*(close_cells-s-_np.log(2)/a))-2*_np.exp(-a*(close_cells-s-_np.log(2)/a)))
+        return res
+        #return _np.where(r < rA, - m*(_np.exp(-2*a*(r-s-_np.log(2)/a))-2*_np.exp(-a*(r-s-_np.log(2)/a))), 0.)
 
     def derive(self):
         def fp(r, m=1.0, a=5.0, s=1.0, rA=1.5):
             if r is None:
                 return 0.
-            return _np.where(r < rA, - 2*a*m*(_np.exp(-2*a*(r-s-_np.log(2)/a))-_np.exp(-a*(r-s-_np.log(2)/a))), 0.)
+            close_cells = r[r < rA]
+            res = _np.zeros(shape=r.shape)
+            res[r < rA] = - 2*a*m*(_np.exp(-2*a*(close_cells-s-_np.log(2)/a))-_np.exp(-a*(close_cells-s-_np.log(2)/a)))
+            return res
+            #return _np.where(r < rA, - 2*a*m*(_np.exp(-2*a*(r-s-_np.log(2)/a))-_np.exp(-a*(r-s-_np.log(2)/a))), 0.)
 
         return fp
 
@@ -77,13 +92,21 @@ class LennardJones:
         """
         if r is None:
             return 0.
-        return _np.where(r < rA, -4*m*(_np.power(s/r, 12)-_np.power(s/r, 6)), 0.)
+        close_cells = r[r < rA]
+        res = _np.zeros(shape=r.shape)
+        res[r < rA] = -4*m*(_np.power(s/close_cells, 12)-_np.power(s/close_cells, 6))
+        return res
+        #return _np.where(r < rA, -4*m*(_np.power(s/r, 12)-_np.power(s/r, 6)), 0.)
 
     def derive(self):
         def fp(r, m=1.0, s=1.0, rA=1.5):
             if r is None:
                 return 0.
-            return _np.where(r < rA, -4*m*(-12/r*_np.power(s/r, 12)+6/r*_np.power(s/r, 6)), 0.)
+            close_cells = r[r < rA]
+            res = _np.zeros(shape=r.shape)
+            res[r < rA] = -4*m*(-12/r*_np.power(s/close_cells, 12)+6/r*_np.power(s/close_cells, 6))
+            return res
+            #return _np.where(r < rA, -4*m*(-12/r*_np.power(s/r, 12)+6/r*_np.power(s/r, 6)), 0.)
 
         return fp
 
@@ -107,13 +130,21 @@ class LinearExponential:
         """
         if r is None:
             return 0.
-        return _np.where(r < rA, mu*(r-s)*_np.exp(-a*(r-s)), 0.)
+        close_cells = r[r < rA]
+        res = _np.zeros(shape=r.shape)
+        res[r < rA] = mu*(close_cells-s)*_np.exp(-a*(close_cells-s))
+        return res
+        #return _np.where(r < rA, mu*(r-s)*_np.exp(-a*(r-s)), 0.)
 
     def derive(self):
         def fp(r, mu=15.0, s=1.0, a=5.0, rA=1.5):
             if r is None:
                 return 0.
-            return _np.where(r < rA, mu*(1-a*(r-s))*_np.exp(-a*(r-s)), 0.)
+            close_cells = r[r < rA]
+            res = _np.zeros(shape=r.shape)
+            res[r < rA] = mu*(1-a*(close_cells-s))*_np.exp(-a*(close_cells-s))
+            return res
+            #return _np.where(r < rA, mu*(1-a*(r-s))*_np.exp(-a*(r-s)), 0.)
 
         return fp
 
@@ -136,13 +167,21 @@ class Cubic:
         """
         if r is None:
             return 0.
-        return _np.where(r < rA, mu*(r-rA)**2*(r-s), 0.)
+        close_cells = r[r < rA]
+        res = _np.zeros(shape=r.shape)
+        res[r < rA] = mu*(close_cells-rA)**2*(close_cells-s)
+        return res
+        #return _np.where(r < rA, mu*(r-rA)**2*(r-s), 0.)
 
     def derive(self):
         def fp(r, mu=50.0, s=1.0, rA=1.5):
             if r is None:
                 return 0.
-            return _np.where(r < rA, mu*(r-rA)*(2*(r-s)+r-rA), 0.)
+            close_cells = r[r < rA]
+            res = _np.zeros(shape=r.shape)
+            res[r < rA] = mu*(close_cells-rA)*(2*(close_cells-s)+close_cells-rA)
+            return res
+            #return _np.where(r < rA, mu*(r-rA)*(2*(r-s)+r-rA), 0.)
 
         return fp
 
@@ -167,15 +206,27 @@ class PiecewisePolynomial:
         """
         if r is None:
             return 0.
-        return _np.where(r <= rR, muA*(1-r/rA)**(n+1)-muR*(1-r/rR)**(p+1),
-                        _np.where(r < rA, muA*(1-r/rA)**(n+1), 0.))
+        repulsing_cells = r[r <= rR]
+        adhering_cells = r[(rR < r) & (r < rA)]
+        res = _np.zeros(shape=r.shape)
+        res[r <= rR] = -muA/rA*(n+1)*(1-repulsing_cells/rA)**n+muR/rR*(p+1)*(1-repulsing_cells/rR)**p
+        res[(rR < r) & (r < rA)] = muA*(1-adhering_cells/rA)**(n+1)
+        return res
+        #return _np.where(r <= rR, muA*(1-r/rA)**(n+1)-muR*(1-r/rR)**(p+1),
+        #                _np.where(r < rA, muA*(1-r/rA)**(n+1), 0.))
 
     def derive(self):
         def fp(r, muA=40.0, muR=160.0, rA=1.5, rR=1.2, n=1.0, p=1.0):
             if r is None:
                 return 0.
-            return _np.where(r <= rR, -muA/rA*(n+1)*(1-r/rA)**n+muR/rR*(p+1)*(1-r/rR)**p,
-                    _np.where(r < rA, -muA/rA*(n+1)*(1-r/rA)**n, 0.))
+            repulsing_cells = r[r <= rR]
+            adhering_cells = r[(rR < r) & (r < rA)]
+            res = _np.zeros(shape=r.shape)
+            res[r <= rR] = -muA/rA*(n+1)*(1-repulsing_cells/rA)**n+muR/rR*(p+1)*(1-repulsing_cells/rR)**p
+            res[(rR < r) & (r < rA)] = -muA/rA*(n+1)*(1-adhering_cells/rA)**n
+            return res
+            #return _np.where(r <= rR, -muA/rA*(n+1)*(1-r/rA)**n+muR/rR*(p+1)*(1-r/rR)**p,
+            #        _np.where(r < rA, -muA/rA*(n+1)*(1-r/rA)**n, 0.))
 
         return fp
 
@@ -196,15 +247,23 @@ class Logarithmic:
         """
         if r is None:
             return 0.
-        r[r==0] = 0.0001  # get away from zero - this is an awful hack!
-        return _np.where(r < s, mu*_np.log(1+(r-s)), 0.)
+        close_cells = r[(0 < r) & (r < s)]
+        res = _np.zeros(shape=r.shape)
+        res[(0 < r) & (r < s)] = mu*_np.log(1+(close_cells-s))
+        return res
+        #r[r==0] = 0.0001  # get away from zero - this is an awful hack!
+        #return _np.where(r < s, mu*_np.log(1+(r-s)), 0.)
 
     def derive(self):
         def fp(r, mu=1.0, s=1.0):
             if r is None:
                 return 0.
-            r[r==0] = 0.0001  # get away from zero - this is an awful hack!
-            return _np.where(r < s, mu/(1+(r-s)), 0.)
+            close_cells = r[(0 < r) & (r < s)]
+            res = _np.zeros(shape=r.shape)
+            res[(0 < r) & (r < s)] = mu*_np.log(1+(close_cells-s))
+            return res
+            #r[r==0] = 0.0001  # get away from zero - this is an awful hack!
+            #return _np.where(r < s, mu/(1+(r-s)), 0.)
         return fp
 
 # linear-logarithmic
@@ -223,15 +282,23 @@ class LinearLogarithmic:
         """
         if r is None:
             return 0.
-        r[r==0] = 0.0001  # get away from zero - this is an awful hack!
-        return _np.where(r < s, -mu*(r-s)*_np.log(1+(r-s)), 0.)
+        close_cells = r[(0 < r) & (r < s)]
+        res = _np.zeros(shape=r.shape)
+        res[(0 < r) & (r < s)] = -mu*(close_cells-s)*_np.log(1+(close_cells-s))
+        return res
+        #r[r==0] = 0.0001  # get away from zero - this is an awful hack!
+        #return _np.where(r < s, -mu*(r-s)*_np.log(1+(r-s)), 0.)
 
     def derive(self):
         def fp(r, mu=1.0, s=1.0):
             if r is None:
                 return 0.
-            r[r==0] = 0.0001  # get away from zero - this is an awful hack!
-            return _np.where(r < s, -mu*_np.log(1+(r-s))-mu*(r-s)/(1+(r-s)), 0.)
+            close_cells = r[(0 < r) & (r < s)]
+            res = _np.zeros(shape=r.shape)
+            res[(0 < r) & (r < s)] = -mu*_np.log(1+(close_cells-s))-mu*(close_cells-s)/(1+(close_cells-s))
+            return res
+            #r[r==0] = 0.0001  # get away from zero - this is an awful hack!
+            #return _np.where(r < s, -mu*_np.log(1+(r-s))-mu*(r-s)/(1+(r-s)), 0.)
         return fp
 
 
@@ -295,15 +362,27 @@ class Gls:
         """
         if r is None:
             return 0.
-        r[r==0] = 0.0001  # get away from zero - this is an awful hack! Plus it does not allow for single value evaluation
-        return _np.where(r < s, mu*_np.log(1+(r-s)), _np.where(r < rA, mu*(r-s)*_np.exp(-a*(r-s)), 0))
+        repulsing_cells = r[(0 < r) & (r <= s)]
+        adhering_cells = r[(s < r) & (r < rA)]
+        res = _np.zeros(shape=r.shape)
+        res[(0 < r) & (r <= s)] = mu*_np.log(1+(repulsing_cells-s))
+        res[(s < r) & (r < rA)] = mu*(adhering_cells-s)*_np.exp(-a*(adhering_cells-s))
+        return res
+        #r[r==0] = 0.0001  # get away from zero - this is an awful hack! Plus it does not allow for single value evaluation
+        #return _np.where(r < s, mu*_np.log(1+(r-s)), _np.where(r < rA, mu*(r-s)*_np.exp(-a*(r-s)), 0))
 
     def derive(self):
         def fp(r, mu=1.0, s=1.0, a=5.0, rA=1.5):
             if r is None:
                 return 0.
-            r[r==0] = 0.0001  # get away from zero - this is an awful hack! Plus it does not allow for single value evaluation
-            return _np.where(r < s, mu/(1+(r-s)), _np.where(r < rA, mu*(1-a*(r-s))*_np.exp(-a*(r-s)), 0))
+            repulsing_cells = r[(0 < r) & (r <= s)]
+            adhering_cells = r[(s < r) & (r < rA)]
+            res = _np.zeros(shape=r.shape)
+            res[(0 < r) & (r <= s)] = mu/(1+(repulsing_cells-s))
+            res[(s < r) & (r < rA)] = mu*(1-a*(adhering_cells-s))*_np.exp(-a*(adhering_cells-s))
+            return res
+            #r[r==0] = 0.0001  # get away from zero - this is an awful hack! Plus it does not allow for single value evaluation
+            #return _np.where(r < s, mu/(1+(r-s)), _np.where(r < rA, mu*(1-a*(r-s))*_np.exp(-a*(r-s)), 0))
         return fp
 
 
