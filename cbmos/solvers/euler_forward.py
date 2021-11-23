@@ -24,6 +24,9 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
     fixed time stepping is done.
     """
 
+    n_av = 9
+    av_tol = 0.01
+
     adaptive_dt = True if dt is None else False
 
     if len(y0) > 1 and local_adaptivity:
@@ -33,6 +36,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
                                                jacobian, force_args,
                                                calculate_eigenvalues,
                                                always_calculate_Jacobian,
+                                               n_av, av_tol,
                                                switch,
                                                K)
 
@@ -50,6 +54,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
                                                                    force_args,
                                                                    calculate_eigenvalues,
                                                                    always_calculate_Jacobian,
+                                                                   n_av, av_tol,
                                                                    fix_eqs)
     else:
         # do regular fixed time stepping
@@ -167,6 +172,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
                                                     force_args,
                                                     calculate_eigenvalues,
                                                     always_calculate_Jacobian,
+                                                    n_av, av_tol,
                                                     fix_eqs):
 
     _logging.debug("Using EF, global adaptive time stepping with Jacobian and eps={}".format(
@@ -183,8 +189,6 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
     dt_as = []
     dt_ss = []
 
-    n_av = 10
-    av_tol = 0.0001
     do_not_update_dt_s = False
 
     while t < tf:
@@ -198,12 +202,13 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
 
             if _np.abs(old_av_dts - new_av_dts) < av_tol*_np.abs(new_av_dts):
                 do_not_update_dt_s = True
-                _logging.debug("Stopped updating Jacobian at t={}. Using dt_s={}".format(t, dt_ss[-1]))
+                dt_s = new_av_dts
+                _logging.debug("Stopped updating Jacobian at t={}. Using dt_s={}".format(t, dt_s))
 
-        if do_not_update_dt_s:
-            dt_s = dt_ss[-1]
-
-        else:
+#        if do_not_update_dt_s:
+##            dt_s = dt_ss[-1]
+#            print('Do not update dt s')
+        if not do_not_update_dt_s:
             # calculate stability bound
             A = jacobian(y, force_args)
 
@@ -278,6 +283,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                     m0, m1, jacobian, force_args,
                                     calculate_eigenvalues,
                                     always_calculate_Jacobian,
+                                    n_av, av_tol,
                                     switch, K):
     _logging.debug("Using EF, local adaptive time stepping with eps={}, eta={}, m0={} and m1={}".format(
             eps, eta, m0, m1))
@@ -319,6 +325,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                       force_args, calculate_eigenvalues,
                                       always_calculate_Jacobian,
                                       do_not_update_dt_s, dt_ss,
+                                      n_av, av_tol,
                                       K, switch)
 
         if EB_beneficial:
@@ -424,6 +431,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
                 jacobian, force_args, calculate_eigenvalues,
                 always_calculate_Jacobian, do_not_update_dt_s, dt_ss,
+                n_av, av_tol,
                 K, switch):
 
     EB_beneficial = False
@@ -445,18 +453,20 @@ def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
         Xi_1 = Xi_0/m0
         Xi_2 = Xi_1/m1
 
-    else:
+        dt_s = None
 
-        n_av = 10
-        av_tol = 0.0001
+    else:
 
         # check if dt_s average has converged
         if not always_calculate_Jacobian and len(dt_ss) >= n_av and not do_not_update_dt_s:
             old_av_dts = _np.mean(dt_ss[-n_av:-1])
             new_av_dts = _np.mean(dt_ss[-n_av + 1:])
+#            _logging.debug("old_av_dts={}".format(old_av_dts))
+#            _logging.debug("new_av_dts={}".format(new_av_dts))
 
             if _np.abs(old_av_dts - new_av_dts) < av_tol*_np.abs(new_av_dts):
                 do_not_update_dt_s = True
+                dt_ss.append(new_av_dts)
                 _logging.debug("Stopped updating Jacobian at t={}. Using dt_s={}".format(t, dt_ss[-1]))
 
         if do_not_update_dt_s:
