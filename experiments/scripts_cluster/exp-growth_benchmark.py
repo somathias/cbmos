@@ -67,7 +67,7 @@ n_target_cell_counts = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 data = {}
 
 for i in range(n_run):
-    ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta}, seed=seed, n_target_cells=n_target_cell_counts)
+    ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta}, seed=seed, n_target_cells=n_target_cell_counts, throw_away_history=True)
     data[i] = cbmodel.target_cell_count_checkpoints
 
 with open(sys.argv[1]+'_glob_adap_acc.json', 'w') as f:
@@ -76,7 +76,7 @@ with open(sys.argv[1]+'_glob_adap_acc.json', 'w') as f:
 # global adaptivity
 data = {}
 for i in range(n_run):
-    ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic}, seed=seed, n_target_cells=n_target_cell_counts)
+    ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic}, seed=seed, n_target_cells=n_target_cell_counts,  throw_away_history=True)
     data[i] = cbmodel.target_cell_count_checkpoints
 
 with open(sys.argv[1]+'_glob_adap_stab.json', 'w') as f:
@@ -85,7 +85,7 @@ with open(sys.argv[1]+'_glob_adap_stab.json', 'w') as f:
 # local adaptivity
 data = {}
 for i in range(n_run):
-    ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic, "local_adaptivity": True}, seed=seed, n_target_cells=n_target_cell_counts)
+    ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"eps": eps, "eta": eta, "jacobian": cbmodel.jacobian, "force_args": params_cubic, "local_adaptivity": True}, seed=seed, n_target_cells=n_target_cell_counts,  throw_away_history=True)
     data[i] = cbmodel.target_cell_count_checkpoints
 
 with open(sys.argv[1]+'_local_adap.json', 'w') as f:
@@ -94,7 +94,7 @@ with open(sys.argv[1]+'_local_adap.json', 'w') as f:
 # fixed time stepping
 data = {}
 for i in range(n_run):
-    ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"dt": DT}, seed=seed, n_target_cells=n_target_cell_counts)
+    ts, history = cbmodel.simulate(cell_list, t_data, params_cubic, {"dt": DT}, seed=seed, n_target_cells=n_target_cell_counts, throw_away_history=True)
     data[i] =  cbmodel.target_cell_count_checkpoints
 
 with open(sys.argv[1]+'_fixed_dt.json', 'w') as f:
