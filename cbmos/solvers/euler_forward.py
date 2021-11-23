@@ -25,7 +25,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
     """
 
     n_av = 9
-    av_tol = 0.01
+    av_tol = 0.001
 
     adaptive_dt = True if dt is None else False
 
