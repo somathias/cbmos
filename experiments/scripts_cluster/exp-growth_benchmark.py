@@ -59,7 +59,8 @@ cell_list = [
         proliferating=True, division_time_generator=lambda t: npr.exponential(rate*(t+1.0)) + t)
     ]
 
-n_target_cell_counts = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+#n_target_cell_counts = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+n_target_cell_counts = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 #n_target_cell_counts = [10, 20]
 
 # global adaptivity (accuracy only)
