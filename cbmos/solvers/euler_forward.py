@@ -6,7 +6,6 @@ from scipy.integrate._ivp.ivp import OdeResult
 import copy
 import logging as _logging
 
-import cbmos.solvers.geshgorin as gg
 import cbmos.solvers.euler_backward as eb
 
 import matplotlib.pyplot as plt
@@ -18,12 +17,12 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
               out='', write_to_file=False,
               local_adaptivity=False, m0=2, m1=2,
               jacobian=None, force_args={}, calculate_eigenvalues=False,
+              always_calculate_Jacobian=False,
               fix_eqs=0, switch=False, K=5):
     """
     Note: t_eval can only be taken into account when dt is provided and thus
     fixed time stepping is done.
     """
-
 
     adaptive_dt = True if dt is None else False
 
@@ -32,7 +31,9 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
         return _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                                out, write_to_file, m0, m1,
                                                jacobian, force_args,
-                                               calculate_eigenvalues, switch,
+                                               calculate_eigenvalues,
+                                               always_calculate_Jacobian,
+                                               switch,
                                                K)
 
     elif adaptive_dt:
@@ -48,6 +49,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
                                                                    jacobian,
                                                                    force_args,
                                                                    calculate_eigenvalues,
+                                                                   always_calculate_Jacobian,
                                                                    fix_eqs)
     else:
         # do regular fixed time stepping
@@ -164,6 +166,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
                                                     jacobian,
                                                     force_args,
                                                     calculate_eigenvalues,
+                                                    always_calculate_Jacobian,
                                                     fix_eqs):
 
     _logging.debug("Using EF, global adaptive time stepping with Jacobian and eps={}".format(
@@ -180,38 +183,54 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
     dt_as = []
     dt_ss = []
 
+    n_av = 10
+    av_tol = 0.0001
+    do_not_update_dt_s = False
 
     while t < tf:
         _logging.debug("t={}".format(t))
         y = copy.deepcopy(y)
 
-        # calculate stability bound
-        A = jacobian(y, force_args)
+        # check if dt_s average has converged
+        if not always_calculate_Jacobian and len(dt_ss) >= n_av and not do_not_update_dt_s:
+            old_av_dts = _np.mean(dt_ss[-n_av:-1])
+            new_av_dts = _np.mean(dt_ss[-n_av + 1:])
 
-        if calculate_eigenvalues:
-        #w = _np.linalg.eigvalsh(A)
-            w, v = _np.linalg.eigh(A[fix_eqs:, fix_eqs:])  # adjust dimensions if equations are fixed
-            _logging.debug("Eigenvalues w={}".format(w))
-            _logging.debug("Eigenvectors v={}".format(v))
+            if _np.abs(old_av_dts - new_av_dts) < av_tol*_np.abs(new_av_dts):
+                do_not_update_dt_s = True
+                _logging.debug("Stopped updating Jacobian at t={}. Using dt_s={}".format(t, dt_ss[-1]))
 
-            if write_to_file:
-                with open('eigenvalues'+out+'.txt', 'ab') as f:
-                    _np.savetxt(f, w.reshape((1, -1)))
-            w = w[0]
+        if do_not_update_dt_s:
+            dt_s = dt_ss[-1]
+
         else:
+            # calculate stability bound
+            A = jacobian(y, force_args)
 
-            #use gershgorin estimate
-            xi = _np.diag(A)
-            rho = _np.sum(_np.abs(A), axis=1) - _np.abs(xi)
+            if calculate_eigenvalues:
+            #w = _np.linalg.eigvalsh(A)
+                w, v = _np.linalg.eigh(A[fix_eqs:, fix_eqs:])  # adjust dimensions if equations are fixed
+                _logging.debug("Eigenvalues w={}".format(w))
+                _logging.debug("Eigenvectors v={}".format(v))
 
-            w = _np.amin(xi-rho)
+                if write_to_file:
+                    with open('eigenvalues'+out+'.txt', 'ab') as f:
+                        _np.savetxt(f, w.reshape((1, -1)))
+                w = w[0]
+            else:
 
-            if write_to_file:
-                with open('gershgorin'+out+'.txt', 'ab') as f:
-                    _np.savetxt(f, [w])
+                #use gershgorin estimate
+                xi = _np.diag(A)
+                rho = _np.sum(_np.abs(A), axis=1) - _np.abs(xi)
 
-        # the eigenvalues are sorted in ascending order
-        dt_s = 2.0/abs(w)
+                w = _np.amin(xi-rho)
+
+                if write_to_file:
+                    with open('gershgorin'+out+'.txt', 'ab') as f:
+                        _np.savetxt(f, [w])
+
+            # the eigenvalues are sorted in ascending order
+            dt_s = 2.0/abs(w)
 
         F = fun(t, y)
         F[:fix_eqs] = 0.0 # do not move fixed cells (by default fix_eqs=0)
@@ -257,7 +276,9 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
 def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                     out, write_to_file,
                                     m0, m1, jacobian, force_args,
-                                    calculate_eigenvalues, switch, K):
+                                    calculate_eigenvalues,
+                                    always_calculate_Jacobian,
+                                    switch, K):
     _logging.debug("Using EF, local adaptive time stepping with eps={}, eta={}, m0={} and m1={}".format(
             eps, eta, m0, m1))
 
@@ -273,8 +294,11 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
     dt_0s = []
     dt_1s = []
     dt_2s = []
+    dt_ss = []
     levels = []
     n_eq_per_level = []
+
+    do_not_update_dt_s = False
 
     while t < tf:
         _logging.debug("t={}".format(t))
@@ -286,12 +310,16 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
         # choose time step adaptively locally (if we have a system of eqs)
         (dt_0, dt_1, dt_2,
          dt_a,
+         dt_s,
          inds, af,
          Xi_1, Xi_2,
+         do_not_update_dt_s,
          EB_beneficial) = _choose_dts(fun, t, y, tf, F, eps, eta, out,
                                       write_to_file, m0, m1, jacobian,
-                                      force_args, calculate_eigenvalues, K,
-                                      switch)
+                                      force_args, calculate_eigenvalues,
+                                      always_calculate_Jacobian,
+                                      do_not_update_dt_s, dt_ss,
+                                      K, switch)
 
         if EB_beneficial:
             n_eqs = _np.array([0, 0, len(y)])
@@ -360,6 +388,8 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
         dt_1s.append(dt_1)
         dt_2s.append(dt_2)
 
+        dt_ss.append(dt_s)
+
         n_eq_per_level.append(n_eqs)
         levels.append(_np.sum(n_eqs > 0))
 
@@ -392,7 +422,9 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
 
 def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
-                jacobian, force_args, calculate_eigenvalues, K, switch):
+                jacobian, force_args, calculate_eigenvalues,
+                always_calculate_Jacobian, do_not_update_dt_s, dt_ss,
+                K, switch):
 
     EB_beneficial = False
 
@@ -414,36 +446,55 @@ def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
         Xi_2 = Xi_1/m1
 
     else:
-        # calculate stability bound
-        A = jacobian(y, force_args)
 
-        if calculate_eigenvalues:
-            #w = _np.linalg.eigvalsh(A)
-            w, v = _np.linalg.eigh(A)
-            _logging.debug("Eigenvalues w={}".format(w))
-            _logging.debug("Eigenvectors v={}".format(v))
+        n_av = 10
+        av_tol = 0.0001
 
-            if write_to_file:
-                with open('eigenvalues'+out+'.txt', 'ab') as f:
-                    _np.savetxt(f, w.reshape((1, -1)))
-            w = w[0]
+        # check if dt_s average has converged
+        if not always_calculate_Jacobian and len(dt_ss) >= n_av and not do_not_update_dt_s:
+            old_av_dts = _np.mean(dt_ss[-n_av:-1])
+            new_av_dts = _np.mean(dt_ss[-n_av + 1:])
+
+            if _np.abs(old_av_dts - new_av_dts) < av_tol*_np.abs(new_av_dts):
+                do_not_update_dt_s = True
+                _logging.debug("Stopped updating Jacobian at t={}. Using dt_s={}".format(t, dt_ss[-1]))
+
+        if do_not_update_dt_s:
+            dt_s = dt_ss[-1]
+            af = 1/eta*(fun(t, y + eta * F) - F)
+
         else:
+            # calculate stability bound
+            A = jacobian(y, force_args)
 
-            # use gershgorin estimate
-            xi = _np.diag(A)
-            rho = _np.sum(_np.abs(A), axis=1) - _np.abs(xi)
+            if calculate_eigenvalues:
+                #w = _np.linalg.eigvalsh(A)
+                w, v = _np.linalg.eigh(A)
+                _logging.debug("Eigenvalues w={}".format(w))
+                _logging.debug("Eigenvectors v={}".format(v))
 
-            w = _np.amin(xi-rho)
+                if write_to_file:
+                    with open('eigenvalues'+out+'.txt', 'ab') as f:
+                        _np.savetxt(f, w.reshape((1, -1)))
+                w = w[0]
+            else:
 
-            if write_to_file:
-                with open('gershgorin'+out+'.txt', 'ab') as f:
-                    _np.savetxt(f, [w])
+                # use gershgorin estimate
+                xi = _np.diag(A)
+                rho = _np.sum(_np.abs(A), axis=1) - _np.abs(xi)
 
-        # the eigenvalues are sorted in ascending order
-        dt_s = 2.0/abs(w)
+                w = _np.amin(xi-rho)
 
-        # calculate the accuracy bound
-        af = A @ F
+                if write_to_file:
+                    with open('gershgorin'+out+'.txt', 'ab') as f:
+                        _np.savetxt(f, [w])
+
+            # the eigenvalues are sorted in ascending order
+            dt_s = 2.0/abs(w)
+
+            # calculate the accuracy bound
+            af = A @ F
+
         # sort the indices such that abs(AF(inds)) is decreasing
         inds = _np.argsort(-abs(af))
         # find largest eta_k
@@ -483,7 +534,9 @@ def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
         with open('AFs'+out+'.txt', 'ab') as f:
             _np.savetxt(f, _np.abs(af).reshape((1, -1)))
 
-    return (dt_0, dt_1, dt_2, dt_a, inds, af, Xi_1, Xi_2, EB_beneficial)
+    return (dt_0, dt_1, dt_2, dt_a, dt_s, inds, af, Xi_1, Xi_2,
+            do_not_update_dt_s,
+            EB_beneficial)
 
 
 def _do_single_level(t, y, tf, F, dt_0, dts_local):
@@ -531,8 +584,8 @@ def _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2, inds, min_ind_1,
 
 if __name__ == "__main__":
 
-    logger = _logging.getLogger()
-    logger.setLevel(_logging.DEBUG)
+#    logger = _logging.getLogger()
+#    logger.setLevel(_logging.DEBUG)
 
     # stability region for Euler forward for this problem is h<2/50=0.04
     #@_np.vectorize
@@ -592,7 +645,9 @@ if __name__ == "__main__":
 #
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
                      eps=0.0001, eta = 0.00001, local_adaptivity=True,
-                     write_to_file=True, jacobian=jacobian, switch=True, K=3)
+                     write_to_file=True, jacobian=jacobian,
+#                     always_calculate_Jacobian=True,
+                     switch=True, K=3)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
