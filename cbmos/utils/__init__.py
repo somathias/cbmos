@@ -1,6 +1,6 @@
 import numpy as _np
 import numpy.random as _npr
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as _plt
 
 
 from .. import cell as _cl
@@ -99,10 +99,10 @@ def setup_locally_compressed_monolayer(n_x, n_y, scaling=1.0, separation=0.3):
 def plot_2d_population(cell_list, color='blue'):
     """Plot a two dimensional population provided as a list of Cell objects."""
 
-    fig = plt.figure()
+    fig = _plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     for cell in cell_list:
-        ax.add_patch(plt.Circle(cell.position, 0.5, color=color, alpha=0.4))
-        plt.plot(cell.position[0], cell.position[1], '.', color=color)
+        ax.add_patch(_plt.Circle(cell.position, 0.5, color=color, alpha=0.4))
+        _plt.plot(cell.position[0], cell.position[1], '.', color=color)
     ax.set_aspect('equal')
-    plt.show()
+    _plt.show()
