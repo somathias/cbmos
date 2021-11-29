@@ -5,6 +5,8 @@ import numpy as _np
 from scipy.integrate._ivp.ivp import OdeResult
 import copy
 import logging as _logging
+import time
+
 
 import cbmos.solvers.euler_backward as eb
 
@@ -18,7 +20,8 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
               local_adaptivity=False, m0=2, m1=2,
               jacobian=None, force_args={}, calculate_eigenvalues=False,
               always_calculate_Jacobian=False,
-              fix_eqs=0, switch=False, K=5):
+              fix_eqs=0, switch=False, K=5,
+              measure_wall_time=False):
     """
     Note: t_eval can only be taken into account when dt is provided and thus
     fixed time stepping is done.
@@ -37,14 +40,15 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
                                                calculate_eigenvalues,
                                                always_calculate_Jacobian,
                                                n_av, av_tol,
-                                               switch,
-                                               K)
+                                               switch, K,
+                                               measure_wall_time)
 
     elif adaptive_dt:
         # choose time step adaptively globally
         if jacobian is None:
             return _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
-                                                    out, write_to_file)
+                                                    out, write_to_file,
+                                                    measure_wall_time)
         else:
             return _do_global_adaptive_timestepping_with_stability(fun, t_span,
                                                                    y0, eps,
@@ -55,16 +59,23 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
                                                                    calculate_eigenvalues,
                                                                    always_calculate_Jacobian,
                                                                    n_av, av_tol,
-                                                                   fix_eqs)
+                                                                   fix_eqs,
+                                                                   measure_wall_time)
     else:
         # do regular fixed time stepping
-        return _do_fixed_timestepping(fun, t_span, y0, t_eval, dt)
+        return _do_fixed_timestepping(fun, t_span, y0, t_eval, dt, out,
+                                      measure_wall_time)
 
 
-def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt):
+def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt, out,
+                           measure_wall_time):
 
     _logging.debug("Using EF, fixed time stepping with dt={}".format(
             dt))
+
+    if measure_wall_time:
+        exec_time_start = time.time()
+        exec_times = []
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -84,6 +95,10 @@ def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt):
     ys = [y]
 
     while t < tf:
+
+        if measure_wall_time:
+            exec_time = time.time() - exec_time_start
+            exec_times.append((t, exec_time))
 
         # take minimum of dt and tf-t in order to not overstep
         dt = _np.minimum(dt, tf-t)
@@ -113,14 +128,23 @@ def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt):
     ts = _np.hstack(ts)
     ys = _np.vstack(ys).T
 
+    if measure_wall_time:
+        with open('exec_times'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, exec_times)
+
     return OdeResult(t=ts, y=ys)
 
 
 def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
-                                     out, write_to_file):
+                                     out, write_to_file,
+                                     measure_wall_time):
 
     _logging.debug("Using EF, global adaptive time stepping with eps={}, eta={}".format(
             eps, eta))
+
+    if measure_wall_time:
+        exec_time_start = time.time()
+        exec_times = []
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -133,6 +157,11 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
 
     while t < tf:
+
+        if measure_wall_time:
+            exec_time = time.time() - exec_time_start
+            exec_times.append((t, exec_time))
+
         y = copy.deepcopy(y)
         F = fun(t, y)
         AF = 1/eta*(fun(t, y + eta * F) - F)
@@ -158,10 +187,14 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
     ys = _np.vstack(ys).T
     dts = _np.hstack(dts)
 
+    if measure_wall_time:
+        with open('exec_times'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, exec_times)
 
     if write_to_file:
         with open('step_sizes'+out+'.txt', 'ab') as f:
             _np.savetxt(f, dts)
+
 
     return OdeResult(t=ts, y=ys)
 
@@ -173,10 +206,15 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
                                                     calculate_eigenvalues,
                                                     always_calculate_Jacobian,
                                                     n_av, av_tol,
-                                                    fix_eqs):
+                                                    fix_eqs,
+                                                    measure_wall_time):
 
     _logging.debug("Using EF, global adaptive time stepping with Jacobian and eps={}".format(
             eps))
+
+    if measure_wall_time:
+        exec_time_start = time.time()
+        exec_times = []
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -192,6 +230,10 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
     do_not_update_dt_s = False
 
     while t < tf:
+        if measure_wall_time:
+            exec_time = time.time() - exec_time_start
+            exec_times.append((t, exec_time))
+
         _logging.debug("t={}".format(t))
         y = copy.deepcopy(y)
 
@@ -270,6 +312,9 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
     dts = _np.hstack(dts)
     #dts = _np.vstack([dts, dt_as, dt_ss]).T
 
+    if measure_wall_time:
+        with open('exec_times'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, exec_times)
 
     if write_to_file:
         with open('step_sizes'+out+'.txt', 'ab') as f:
@@ -284,9 +329,14 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                     calculate_eigenvalues,
                                     always_calculate_Jacobian,
                                     n_av, av_tol,
-                                    switch, K):
+                                    switch, K,
+                                    measure_wall_time):
     _logging.debug("Using EF, local adaptive time stepping with eps={}, eta={}, m0={} and m1={}".format(
             eps, eta, m0, m1))
+
+    if measure_wall_time:
+        exec_time_start = time.time()
+        exec_times = []
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -307,6 +357,9 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
     do_not_update_dt_s = False
 
     while t < tf:
+        if measure_wall_time:
+            exec_time = time.time() - exec_time_start
+            exec_times.append((t, exec_time))
         _logging.debug("t={}".format(t))
 
         y = copy.deepcopy(y)
@@ -408,6 +461,10 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
     dt_1s = _np.hstack(dt_1s)
     dt_2s = _np.hstack(dt_2s)
     n_eq_per_level = _np.vstack(n_eq_per_level).T
+
+    if measure_wall_time:
+        with open('exec_times'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, exec_times)
 
     if write_to_file:
         with open('step_sizes'+out+'.txt', 'ab') as f:
