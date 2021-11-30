@@ -1,6 +1,6 @@
 import numpy as _np
 import numpy.random as _npr
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as _plt
 
 
 from .. import cell as _cl
@@ -41,6 +41,29 @@ def generate_honeycomb_coordinates(n_x, n_y, scaling=1.0):
     return [((2 * i_x + (i_y % 2)) * 0.5 * scaling,
              _np.sqrt(3) * i_y * 0.5 * scaling)
             for i_x in range(n_x) for i_y in range(n_y)
+            ]
+
+
+def generate_hcp_coordinates(n_x, n_y, n_z, scaling=1.0):
+    """
+    Generate coordinates from a HCP (hexagonal close-packed) grid which can be
+    used to set up a cell population.
+
+    Parameters
+    ----------
+    n_x: int
+        number of columns
+    n_y: int
+        number of rows
+    n_z: int
+        number of layers
+    scaling: float
+        distance between the cells, in cell diameters
+    """
+    return [((2 * i_x + ((i_y + i_z) % 2)) * 0.5 * scaling,
+             _np.sqrt(3) * (i_y + (i_z % 2) / 3.0) * 0.5 * scaling,
+             _np.sqrt(6) * i_z / 3.0 * scaling)
+            for i_x in range(n_x) for i_y in range(n_y) for i_z in range(n_z)
             ]
 
 
@@ -99,10 +122,10 @@ def setup_locally_compressed_monolayer(n_x, n_y, scaling=1.0, separation=0.3):
 def plot_2d_population(cell_list, color='blue'):
     """Plot a two dimensional population provided as a list of Cell objects."""
 
-    fig = plt.figure()
+    fig = _plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     for cell in cell_list:
-        ax.add_patch(plt.Circle(cell.position, 0.5, color=color, alpha=0.4))
-        plt.plot(cell.position[0], cell.position[1], '.', color=color)
+        ax.add_patch(_plt.Circle(cell.position, 0.5, color=color, alpha=0.4))
+        _plt.plot(cell.position[0], cell.position[1], '.', color=color)
     ax.set_aspect('equal')
-    plt.show()
+    _plt.show()
