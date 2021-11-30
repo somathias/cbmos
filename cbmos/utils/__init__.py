@@ -44,6 +44,29 @@ def generate_honeycomb_coordinates(n_x, n_y, scaling=1.0):
             ]
 
 
+def generate_hcp_coordinates(n_x, n_y, n_z, scaling=1.0):
+    """
+    Generate coordinates from a HCP (hexagonal close-packed) grid which can be
+    used to set up a cell population.
+
+    Parameters
+    ----------
+    n_x: int
+        number of columns
+    n_y: int
+        number of rows
+    n_z: int
+        number of layers
+    scaling: float
+        distance between the cells, in cell diameters
+    """
+    return [((2 * i_x + ((i_y + i_z) % 2)) * 0.5 * scaling,
+             _np.sqrt(3) * (i_y + (i_z % 2) / 3.0) * 0.5 * scaling,
+             _np.sqrt(6) * i_z / 3.0 * scaling)
+            for i_x in range(n_x) for i_y in range(n_y) for i_z in range(n_z)
+            ]
+
+
 def setup_locally_compressed_monolayer(n_x, n_y, scaling=1.0, separation=0.3):
     """
     Set up a locally compressed monolayer where the middle cell has just
