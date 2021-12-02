@@ -17,7 +17,7 @@ plt.style.use('seaborn')
 
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
               out='', write_to_file=False,
-              local_adaptivity=False, m0=2, m1=2,
+              local_adaptivity=False, m0=2, m1=2, update_F=False,
               jacobian=None, force_args={}, calculate_eigenvalues=False,
               always_calculate_Jacobian=False,
               fix_eqs=0, switch=False, K=5,
@@ -36,6 +36,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
             # choose time step adaptively locally (if we have a system of eqs)
         return _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                                out, write_to_file, m0, m1,
+                                               update_F,
                                                jacobian, force_args,
                                                calculate_eigenvalues,
                                                always_calculate_Jacobian,
@@ -325,7 +326,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
 
 def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                     out, write_to_file,
-                                    m0, m1, jacobian, force_args,
+                                    m0, m1, update_F, jacobian, force_args,
                                     calculate_eigenvalues,
                                     always_calculate_Jacobian,
                                     n_av, av_tol,
@@ -405,7 +406,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                   len(y) - min_ind_2])
                 (y, dt) = _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2,
                                            inds, min_ind_1, min_ind_2, m0, m1,
-                                           dts_local)
+                                           dts_local, update_F)
 
             elif (min_ind_1 > 0 and min_ind_1 < min_ind_2 and min_ind_2 == len(y0)):
                 _logging.debug("Two levels, K_2 empty. i_min^1={}, i_min^2={}, dt_0={}, dt_1={}".format(min_ind_1, min_ind_2, dt_0, dt_1))
@@ -413,7 +414,8 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                 # K_2 empty, use m1=1 to ensure correct number of small time steps
                 n_eqs = _np.array([min_ind_1, len(y) - min_ind_1, 0])
                 (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                                min_ind_1, m0, 1, dts_local)
+                                                min_ind_1, m0, 1, dts_local,
+                                                update_F)
 
             elif (min_ind_1 > 0 and min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
                 _logging.debug("Two levels, K_1 empty. i_min^1={}, i_min^2={}, dt_0={}, dt_2={}".format(min_ind_1, min_ind_2, dt_0, dt_2))
@@ -421,7 +423,8 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                 # K_1 empty, however we shift the levels down, because else things don't seem to work
                 n_eqs = _np.array([min_ind_2, 0, len(y) - min_ind_2])
                 (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_2, inds,
-                                                min_ind_1, m0, m1, dts_local)
+                                                min_ind_1, m0, m1, dts_local,
+                                                update_F)
 
             elif (min_ind_1 == 0 and min_ind_1 < min_ind_2 and min_ind_2 < len(y0)):
                 _logging.debug("Two levels, K_0 empty. i_min^1={}, i_min^2={}, dt_1={}, dt_2={}".format(min_ind_1, min_ind_2, dt_1, dt_2))
@@ -429,7 +432,8 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                 # K_0 empty, however we shift the levels down, because else things don't seem to work
                 n_eqs = _np.array([0, min_ind_2, len(y) - min_ind_2])
                 (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_1, dt_2, inds,
-                                                min_ind_2, 1, m1, dts_local)
+                                                min_ind_2, 1, m1, dts_local,
+                                                update_F)
             else:
                 # single level
                 _logging.debug("Single level, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
@@ -615,36 +619,46 @@ def _do_single_level(t, y, tf, F, dt_0, dts_local):
 
 
 def _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0, m1,
-                   dts_local):
+                   dts_local, update_F):
 
     dt_0 = _np.minimum(dt_0, (tf-t)/m0)
     for j in range(m0*m1):
-        y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
-        #F = fun(t, y)
+        #y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+        y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
+        if update_F:
+            F = fun(t, y)
         dts_local.append(dt_0)
 
     dt_1 = _np.minimum(dt_1, (tf-t))
 
-    y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
+    #y[inds[min_ind_1:]] = y[inds[min_ind_1:]] + dt_1*F[inds[min_ind_1:]]
+    y[inds[min_ind_1:]] += dt_1*F[inds[min_ind_1:]]
+
     return (y, dt_1)
 
 
 def _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2, inds, min_ind_1,
-                     min_ind_2, m0, m1, dts_local):
+                     min_ind_2, m0, m1, dts_local, update_F):
 
     dt_1 = _np.minimum(dt_1, (tf-t)/m1)  # avoid overstepping at end of time interval
     for i in range(m1):
         dt_0 = _np.minimum(dt_0, (tf-t)/m0)  # avoid overstepping at end of time interval
         for j in range(m0):
-            y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
-            #F = fun(t, y)
+            #y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
+            y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
+
+            if update_F:
+                F = fun(t, y)
             dts_local.append(dt_0)
 
-        y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
-        #F = fun(t, y)
+        #y[inds[min_ind_1:min_ind_2]] = y[inds[min_ind_1:min_ind_2]] + dt_1*F[inds[min_ind_1:min_ind_2]]
+        y[inds[min_ind_1:min_ind_2]] += dt_1*F[inds[min_ind_1:min_ind_2]]
+        if update_F:
+            F = fun(t, y)
 
     dt_2 = _np.minimum(dt_2, tf-t)
-    y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
+    #y[inds[min_ind_2:]] = y[inds[min_ind_2:]] + dt_2*F[inds[min_ind_2:]]
+    y[inds[min_ind_2:]] += dt_2*F[inds[min_ind_2:]]
 
     return (y, dt_2)
 
