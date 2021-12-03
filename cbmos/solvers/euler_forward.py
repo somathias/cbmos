@@ -439,7 +439,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                 _logging.debug("Single level, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
                 n_eqs = _np.array([0, 0, len(y)])
                 _logging.debug("Using EF with with dt_a={}, dt_s={}, K={}".format(dt_a, dt_2, K))
-                (y, dt) = _do_single_level(t, y, tf, F, dt_2, dts_local)
+                (y, dt ) = _do_single_level(t, y, tf, F, dt_2, dts_local)
 
         _logging.debug("y={}".format(y))
         t = t + dt
@@ -504,15 +504,21 @@ def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
         inds = _np.argsort(-abs(af))
         # find largest and smallest eta_k
         Xi_0 = abs(af[inds[0]])
-        dt_a = _np.sqrt(2*eps / (m0*m1*Xi_0)) if Xi_0 > 0.0 else tf - t
+#        dt_a = _np.sqrt(2*eps / (m0*m1*Xi_0)) if Xi_0 > 0.0 else tf - t
+#        dt_0 = dt_a
+#        dt_1 = m0*dt_0
+#        dt_2 = m1*dt_1
+#
+#        # calculate corresponding maximum eta for each level
+#        Xi_1 = Xi_0/m0
+#        Xi_2 = Xi_1/m1
 
-        dt_0 = dt_a
-        dt_1 = m0*dt_0
-        dt_2 = m1*dt_1
-
-        # calculate corresponding maximum eta for each level
+        dt_a = _np.sqrt(2*eps*m0*m1/Xi_0) if Xi_0 > 0.0 else tf - t
+        dt_2 = dt_a
         Xi_1 = Xi_0/m0
         Xi_2 = Xi_1/m1
+        dt_1 = dt_2/m1
+        dt_0 = dt_1/m0
 
         dt_s = None
 
@@ -646,7 +652,6 @@ def _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2, inds, min_ind_1,
         for j in range(m0):
             #y[inds[:min_ind_1]] = y[inds[:min_ind_1]] + dt_0*F[inds[:min_ind_1]]
             y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
-
             if update_F:
                 F = fun(t, y)
             dts_local.append(dt_0)
