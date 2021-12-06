@@ -154,8 +154,9 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
     if measure_wall_time:
         exec_time_start = time.time()
         exec_times = []
-        n_F_evaluations = 0
         F_evaluations = []
+        n_F_evaluations = 0
+
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -172,13 +173,13 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, eps, eta,
         if measure_wall_time:
             exec_time = time.time() - exec_time_start
             exec_times.append((t, exec_time))
+            n_F_evaluations += 2
             F_evaluations.append((t, n_F_evaluations))
 
         y = copy.deepcopy(y)
         F = fun(t, y)
         AF = 1/eta*(fun(t, y + eta * F) - F)
-        if measure_wall_time:
-            n_F_evaluations += 2
+
 
         if write_to_file:
             with open('AFs'+out+'.txt', 'ab') as f:
@@ -254,8 +255,8 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
         if measure_wall_time:
             exec_time = time.time() - exec_time_start
             exec_times.append((t, exec_time))
+            n_F_evaluations +=1
             F_evaluations.append((t, n_F_evaluations))
-            A_evaluations.append((t, n_A_evaluations))
 
 
         _logging.debug("t={}".format(t))
@@ -279,6 +280,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
             A = jacobian(y, force_args)
             if measure_wall_time:
                 n_A_evaluations += 1
+                A_evaluations.append((t, n_A_evaluations))
 
             if calculate_eigenvalues:
             #w = _np.linalg.eigvalsh(A)
@@ -306,8 +308,6 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
             dt_s = 2.0/abs(w)
 
         F = fun(t, y)
-        if measure_wall_time:
-            n_F_evaluations +=1
         F[:fix_eqs] = 0.0 # do not move fixed cells (by default fix_eqs=0)
 
         AF = A @ F
@@ -397,15 +397,12 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
         if measure_wall_time:
             exec_time = time.time() - exec_time_start
             exec_times.append((t, exec_time))
-            F_evaluations.append((t, n_F_evaluations))
-            A_evaluations.append((t, n_A_evaluations))
 
         _logging.debug("t={}".format(t))
 
         y = copy.deepcopy(y)
         F = fun(t, y)
         n_F_evaluations += 1
-
         #_logging.debug("F={}".format(F))
 
         # choose time step adaptively locally (if we have a system of eqs)
@@ -500,6 +497,10 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
 
         n_eq_per_level.append(n_eqs)
         levels.append(_np.sum(n_eqs > 0))
+
+        if measure_wall_time:
+            F_evaluations.append((t, n_F_evaluations))
+            A_evaluations.append((t, n_A_evaluations))
 
     ts = _np.hstack(ts)
     ys = _np.vstack(ys).T
