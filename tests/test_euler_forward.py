@@ -137,6 +137,10 @@ def test_measure_wall_time_fixed_timestepping():
         os.remove('exec_times.txt')
     except FileNotFoundError:
         print('Nothing to delete.')
+    try:
+        os.remove('F_evaluations.txt')
+    except FileNotFoundError:
+        print('Nothing to delete.')
 
     t_span = [0, 1]
     y0 = np.array([1, 1])
@@ -145,8 +149,11 @@ def test_measure_wall_time_fixed_timestepping():
 
     with open('exec_times.txt', 'r') as f:
         exec_times = np.loadtxt(f)
+    with open('F_evaluations.txt', 'r') as f:
+        F_evaluations = np.loadtxt(f)
 
     assert len(exec_times) == 100
+    assert F_evaluations[-1][1] == 100
 
 
 def test_measure_wall_time_global_adaptivity():
@@ -155,17 +162,24 @@ def test_measure_wall_time_global_adaptivity():
         os.remove('exec_times.txt')
     except FileNotFoundError:
         print('Nothing to delete.')
+    try:
+        os.remove('F_evaluations.txt')
+    except FileNotFoundError:
+        print('Nothing to delete.')
 
     t_span = [0, 1]
     y0 = np.array([1, 1])
 
-    _ = ef.solve_ivp(func, t_span, y0, measure_wall_time=True)
+    sol = ef.solve_ivp(func, t_span, y0, measure_wall_time=True)
 
     with open('exec_times.txt', 'r') as f:
         exec_times = np.loadtxt(f)
+    with open('F_evaluations.txt', 'r') as f:
+        F_evaluations = np.loadtxt(f)
 
     # crude check that list exists and is written to the file
     assert exec_times[0][0] == 0.0
+    assert F_evaluations[-1][1] == 2*(len(sol.t)-1)
 
 
 def test_measure_wall_time_global_adaptivity_with_stab():
@@ -174,29 +188,12 @@ def test_measure_wall_time_global_adaptivity_with_stab():
         os.remove('exec_times.txt')
     except FileNotFoundError:
         print('Nothing to delete.')
-
-    def func(t, y):
-        return -50*np.eye(len(y))@y
-
-    def jacobian(y, fa):
-        return -50*np.eye(len(y))
-
-    t_span = [0, 1]
-    y0 = np.array([1, 1])
-
-    _ = ef.solve_ivp(func, t_span, y0, jacobian=jacobian, measure_wall_time=True)
-
-    with open('exec_times.txt', 'r') as f:
-        exec_times = np.loadtxt(f)
-
-    # crude check that list exists and is written to the file
-    assert exec_times[0][0] == 0.0
-
-
-def test_measure_wall_time_local_adaptivity():
-
     try:
-        os.remove('exec_times.txt')
+        os.remove('F_evaluations.txt')
+    except FileNotFoundError:
+        print('Nothing to delete.')
+    try:
+        os.remove('A_evaluations.txt')
     except FileNotFoundError:
         print('Nothing to delete.')
 
@@ -209,12 +206,62 @@ def test_measure_wall_time_local_adaptivity():
     t_span = [0, 1]
     y0 = np.array([1, 1])
 
-    _ = ef.solve_ivp(func, t_span, y0, jacobian=jacobian,
+    sol = ef.solve_ivp(func, t_span, y0, jacobian=jacobian, measure_wall_time=True, always_calculate_Jacobian=True)
+
+    with open('exec_times.txt', 'r') as f:
+        exec_times = np.loadtxt(f)
+    with open('F_evaluations.txt', 'r') as f:
+        F_evaluations = np.loadtxt(f)
+    with open('A_evaluations.txt', 'r') as f:
+        A_evaluations = np.loadtxt(f)
+
+
+    # crude check that list exists and is written to the file
+    assert exec_times[0][0] == 0.0
+    assert F_evaluations[-1][1] == (len(sol.t)-1)
+    assert A_evaluations[-1][1] == (len(sol.t)-1)
+
+
+
+def test_measure_wall_time_local_adaptivity():
+
+    try:
+        os.remove('exec_times.txt')
+    except FileNotFoundError:
+        print('Nothing to delete.')
+    try:
+        os.remove('F_evaluations.txt')
+    except FileNotFoundError:
+        print('Nothing to delete.')
+    try:
+        os.remove('A_evaluations.txt')
+    except FileNotFoundError:
+        print('Nothing to delete.')
+
+    def func(t, y):
+        return -50*np.eye(len(y))@y
+
+    def jacobian(y, fa):
+        return -50*np.eye(len(y))
+
+    t_span = [0, 1]
+    y0 = np.array([1, 1])
+
+    sol = ef.solve_ivp(func, t_span, y0, jacobian=jacobian,
                      local_adaptivity=True,
+                     always_calculate_Jacobian=True,
                      measure_wall_time=True)
 
     with open('exec_times.txt', 'r') as f:
         exec_times = np.loadtxt(f)
+    with open('F_evaluations.txt', 'r') as f:
+        F_evaluations = np.loadtxt(f)
+    with open('A_evaluations.txt', 'r') as f:
+        A_evaluations = np.loadtxt(f)
 
     # crude check that list exists and is written to the file
     assert exec_times[0][0] == 0.0
+    assert F_evaluations[-1][1] == (len(sol.t)-1)
+    assert A_evaluations[-1][1] == (len(sol.t)-1)
+
+
