@@ -20,7 +20,7 @@ help:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 api:
-	sphinx-apidoc -o source/ ../cbmos/
+	sphinx-apidoc -f -o source/ ../cbmos/
 
 notebooks:
 	rm -rf source/basic_example.rst source/basic_example_files/
