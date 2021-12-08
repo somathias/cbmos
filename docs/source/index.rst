@@ -21,6 +21,8 @@ can be performed with this package.
 
 .. include:: convergence_example.rst
 
+.. include:: generalized_events.rst
+
 .. include:: modules.rst
 
 Indices and tables
