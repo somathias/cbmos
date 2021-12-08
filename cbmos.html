@@ -71,8 +71,22 @@ is 24 hours (<a class="reference external" href="https://bionumbers.hms.harvard.
 mean=24h and sigma=1.0h.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.cell.Cell">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">cbmos.cell.</span></span><span class="sig-name descname"><span class="pre">Cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">ID</span></em>, <em class="sig-param"><span class="pre">position</span></em>, <em class="sig-param"><span class="pre">birthtime=0.0</span></em>, <em class="sig-param"><span class="pre">proliferating=False</span></em>, <em class="sig-param"><span class="pre">division_time_generator=&lt;function</span> <span class="pre">Cell.&lt;lambda&gt;&gt;</span></em>, <em class="sig-param"><span class="pre">division_time=None</span></em>, <em class="sig-param"><span class="pre">parent_ID=None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cell.Cell" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.cell.</span></span><span class="sig-name descname"><span class="pre">Cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ID</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cell.Cell" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ID</strong> (<em>int</em>) – Unique number used to identify the cell</p></li>
+<li><p><strong>position</strong> (<em>numpy array</em>) – The position of this cell (1, 2, or 3d)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="cbmos.cell.ProliferatingCell">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.cell.</span></span><span class="sig-name descname"><span class="pre">ProliferatingCell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ID</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">birthtime=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proliferating=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">division_time_generator=&lt;function</span> <span class="pre">ProliferatingCell.&lt;lambda&gt;&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">division_time=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent_ID=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cell.ProliferatingCell" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cbmos.cell.Cell" title="cbmos.cell.Cell"><code class="xref py py-class docutils literal notranslate"><span class="pre">cbmos.cell.Cell</span></code></a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -99,11 +113,51 @@ would not be updated in that case.</p>
 </dd></dl>
 
 </section>
+<section id="module-cbmos.events">
+<span id="cbmos-events-module"></span><h2>cbmos.events module<a class="headerlink" href="#module-cbmos.events" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="cbmos.events.CellDivisionEvent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.events.</span></span><span class="sig-name descname"><span class="pre">CellDivisionEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_cell</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.events.CellDivisionEvent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cbmos.events.Event" title="cbmos.events.Event"><code class="xref py py-class docutils literal notranslate"><span class="pre">cbmos.events.Event</span></code></a></p>
+<p>Divide <cite>target_cell</cite> into parent cell and child cell, placed <cite>separation</cite>
+cell diameters apart.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="cbmos.events.CellDivisionEvent.apply">
+<span class="sig-name descname"><span class="pre">apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cbmodel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.events.CellDivisionEvent.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply event to cell population</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cbmodel</strong> (<a class="reference internal" href="cbmos.cbmodel.html#cbmos.cbmodel.CBModel" title="cbmos.cbmodel.CBModel"><em>CBModel</em></a>) – model to which the event is applied</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="cbmos.events.Event">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.events.</span></span><span class="sig-name descname"><span class="pre">Event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.events.Event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Abstract class for implementing events (e.g. cell division, cell death).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="cbmos.events.Event.apply">
+<span class="sig-name descname"><span class="pre">apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cbmodel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.events.Event.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply event to cell population</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cbmodel</strong> (<a class="reference internal" href="cbmos.cbmodel.html#cbmos.cbmodel.CBModel" title="cbmos.cbmodel.CBModel"><em>CBModel</em></a>) – model to which the event is applied</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
 <section id="module-cbmos.force_functions">
 <span id="cbmos-force-functions-module"></span><h2>cbmos.force_functions module<a class="headerlink" href="#module-cbmos.force_functions" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.force_functions.Cubic">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">Cubic</span></span><a class="headerlink" href="#cbmos.force_functions.Cubic" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">Cubic</span></span><a class="headerlink" href="#cbmos.force_functions.Cubic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cbmos.force_functions.Cubic.derive">
@@ -114,7 +168,7 @@ would not be updated in that case.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.force_functions.Gls">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">Gls</span></span><a class="headerlink" href="#cbmos.force_functions.Gls" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">Gls</span></span><a class="headerlink" href="#cbmos.force_functions.Gls" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cbmos.force_functions.Gls.derive">
@@ -125,7 +179,7 @@ would not be updated in that case.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.force_functions.HardCore">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">HardCore</span></span><a class="headerlink" href="#cbmos.force_functions.HardCore" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">HardCore</span></span><a class="headerlink" href="#cbmos.force_functions.HardCore" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cbmos.force_functions.HardCore.derive">
@@ -136,7 +190,7 @@ would not be updated in that case.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.force_functions.Hertz">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">Hertz</span></span><a class="headerlink" href="#cbmos.force_functions.Hertz" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">Hertz</span></span><a class="headerlink" href="#cbmos.force_functions.Hertz" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cbmos.force_functions.Hertz.derive">
@@ -147,7 +201,7 @@ would not be updated in that case.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.force_functions.LennardJones">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">LennardJones</span></span><a class="headerlink" href="#cbmos.force_functions.LennardJones" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">LennardJones</span></span><a class="headerlink" href="#cbmos.force_functions.LennardJones" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cbmos.force_functions.LennardJones.derive">
@@ -158,7 +212,7 @@ would not be updated in that case.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.force_functions.Linear">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">Linear</span></span><a class="headerlink" href="#cbmos.force_functions.Linear" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">Linear</span></span><a class="headerlink" href="#cbmos.force_functions.Linear" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cbmos.force_functions.Linear.derive">
@@ -169,7 +223,7 @@ would not be updated in that case.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.force_functions.LinearExponential">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">LinearExponential</span></span><a class="headerlink" href="#cbmos.force_functions.LinearExponential" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">LinearExponential</span></span><a class="headerlink" href="#cbmos.force_functions.LinearExponential" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cbmos.force_functions.LinearExponential.derive">
@@ -180,7 +234,7 @@ would not be updated in that case.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.force_functions.LinearLogarithmic">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">LinearLogarithmic</span></span><a class="headerlink" href="#cbmos.force_functions.LinearLogarithmic" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">LinearLogarithmic</span></span><a class="headerlink" href="#cbmos.force_functions.LinearLogarithmic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cbmos.force_functions.LinearLogarithmic.derive">
@@ -191,7 +245,7 @@ would not be updated in that case.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.force_functions.Logarithmic">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">Logarithmic</span></span><a class="headerlink" href="#cbmos.force_functions.Logarithmic" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">Logarithmic</span></span><a class="headerlink" href="#cbmos.force_functions.Logarithmic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cbmos.force_functions.Logarithmic.derive">
@@ -202,7 +256,7 @@ would not be updated in that case.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.force_functions.Morse">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">Morse</span></span><a class="headerlink" href="#cbmos.force_functions.Morse" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">Morse</span></span><a class="headerlink" href="#cbmos.force_functions.Morse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cbmos.force_functions.Morse.derive">
@@ -213,7 +267,7 @@ would not be updated in that case.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.force_functions.PiecewisePolynomial">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">PiecewisePolynomial</span></span><a class="headerlink" href="#cbmos.force_functions.PiecewisePolynomial" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.force_functions.</span></span><span class="sig-name descname"><span class="pre">PiecewisePolynomial</span></span><a class="headerlink" href="#cbmos.force_functions.PiecewisePolynomial" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cbmos.force_functions.PiecewisePolynomial.derive">
@@ -241,6 +295,7 @@ would not be updated in that case.</p>
 <li><a class="reference internal" href="#subpackages">Subpackages</a></li>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
 <li><a class="reference internal" href="#module-cbmos.cell">cbmos.cell module</a></li>
+<li><a class="reference internal" href="#module-cbmos.events">cbmos.events module</a></li>
 <li><a class="reference internal" href="#module-cbmos.force_functions">cbmos.force_functions module</a></li>
 <li><a class="reference internal" href="#module-cbmos">Module contents</a></li>
 </ul>
@@ -265,7 +320,7 @@ would not be updated in that case.</p>
       &copy;2021, Sonja Mathias, Adrien Coulier, Andreas Hellander.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

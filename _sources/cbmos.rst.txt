@@ -22,6 +22,14 @@ cbmos.cell module
    :undoc-members:
    :show-inheritance:
 
+cbmos.events module
+-------------------
+
+.. automodule:: cbmos.events
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 cbmos.force\_functions module
 -----------------------------
 

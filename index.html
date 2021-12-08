@@ -51,8 +51,10 @@ can be performed with this package.</p>
 <p>Setting up the initial condition of a simulation is very simple, all you
 need is create a list of cell objects. In this example we set up a
 Cartesian grid of 25 cells. Each cell will immediately divides after the
-simulation starts. We then define a simple plotting function to show the
-current cell configuration.</p>
+simulation starts. This behavior is defined by the list of
+<code class="docutils literal notranslate"><span class="pre">CellDivisionEvent</span></code> objects. We then plot the current cell
+configuration using the basic plotting function provided in the
+<code class="docutils literal notranslate"><span class="pre">utils</span></code> module.</p>
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
@@ -61,6 +63,7 @@ current cell configuration.</p>
 <span class="kn">import</span> <span class="nn">cbmos.solvers.euler_forward</span> <span class="k">as</span> <span class="nn">ef</span>
 <span class="kn">import</span> <span class="nn">cbmos.cell</span> <span class="k">as</span> <span class="nn">cl</span>
 <span class="kn">import</span> <span class="nn">cbmos.utils</span> <span class="k">as</span> <span class="nn">utils</span>
+<span class="kn">import</span> <span class="nn">cbmos.events</span> <span class="k">as</span> <span class="nn">events</span>
 </pre></div>
 </div>
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n_x</span> <span class="o">=</span> <span class="mi">5</span>
@@ -68,7 +71,7 @@ current cell configuration.</p>
 <span class="n">coordinates</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">generate_cartesian_coordinates</span><span class="p">(</span><span class="n">n_x</span><span class="p">,</span> <span class="n">n_y</span><span class="p">)</span>
 
 <span class="n">sheet</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">cl</span><span class="o">.</span><span class="n">Cell</span><span class="p">(</span>
+    <span class="n">cl</span><span class="o">.</span><span class="n">ProliferatingCell</span><span class="p">(</span>
         <span class="n">i</span><span class="p">,</span> <span class="c1"># Cell ID, must be unique to each cell</span>
         <span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">],</span> <span class="c1"># Initial coordinates</span>
         <span class="o">-</span><span class="mf">6.0</span><span class="p">,</span> <span class="c1"># Birthtime, in this case 6 hours before the simulation starts</span>
@@ -76,6 +79,11 @@ current cell configuration.</p>
         <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="mi">6</span> <span class="o">+</span> <span class="n">t</span> <span class="c1"># Function generating the next division time</span>
     <span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coordinates</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="n">event_list</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">events</span><span class="o">.</span><span class="n">CellDivisionEvent</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">sheet</span>
 <span class="p">]</span>
 </pre></div>
 </div>
@@ -105,6 +113,7 @@ level</a> to <code class="docutils literal notranslate"><span class="pre">debug<
     <span class="n">t_data</span><span class="p">,</span> <span class="c1"># Times at which the history is saved</span>
     <span class="p">{</span><span class="s2">&quot;mu&quot;</span><span class="p">:</span> <span class="mf">5.70</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;rA&quot;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span> <span class="c1"># Force parameters</span>
     <span class="p">{</span><span class="s1">&#39;dt&#39;</span><span class="p">:</span> <span class="n">dt</span><span class="p">},</span> <span class="c1"># Solver parameters</span>
+    <span class="n">event_list</span><span class="o">=</span><span class="n">event_list</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -392,6 +401,154 @@ centre-based models. Bulletin of Mathematical Biology, 82(10), 1-43.</p></li>
 </ol>
 </section>
 </section>
+<section id="implementing-your-own-events">
+<h1>Implementing your own events<a class="headerlink" href="#implementing-your-own-events" title="Permalink to this headline">¶</a></h1>
+<p>Although the events we provide in this package are relatively limited,
+CBMOS is designed to be flexible enough to use any event you wish to
+implement.</p>
+<p>New event can easily be implemented by deriving the abstract <code class="docutils literal notranslate"><span class="pre">Event</span></code>
+class and overriding the <code class="docutils literal notranslate"><span class="pre">__init__</span></code> and <code class="docutils literal notranslate"><span class="pre">apply</span></code> methods. As
+mentionned in <code class="docutils literal notranslate"><span class="pre">Event</span></code> class’ documentation, the only requirement is
+that the new subclass possesses an attribute <code class="docutils literal notranslate"><span class="pre">tau</span></code>, which represents
+the time at which the event is triggered. The <code class="docutils literal notranslate"><span class="pre">apply</span></code> method takes an
+object of type <code class="docutils literal notranslate"><span class="pre">CBModel</span></code> as unique parameter. This object contains all
+the information about the current simulation and can be used to add,
+modify and remove cells.</p>
+<p>In this example, we implement two simple events: - <code class="docutils literal notranslate"><span class="pre">GlobalDeathEvent</span></code>
+selects one cell at random and removes it from the simulation. -
+<code class="docutils literal notranslate"><span class="pre">GlobalDivisionEvent</span></code> selects one cell at random and duplicates it.</p>
+<p>Here, we set the simulation so that these events are triggered at
+regular intervals. This mimics other cell-based software, where the
+simulation is stopped at regular intervals to check if events have taken
+place.</p>
+<p>Although cell division and cell death can be implemented in many
+different ways, depending of the complexity of the biological model. We
+hope these examples illustrate how CBMOS can handle such a variety of
+possibilities.</p>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.random</span> <span class="k">as</span> <span class="nn">npr</span>
+
+<span class="n">npr</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">cbmos.events</span> <span class="kn">import</span> <span class="n">Event</span>
+<span class="kn">from</span> <span class="nn">cbmos.cell</span> <span class="kn">import</span> <span class="n">Cell</span>
+
+<span class="k">class</span> <span class="nc">GlobalDeathEvent</span><span class="p">(</span><span class="n">Event</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tau</span> <span class="o">=</span> <span class="n">tau</span>
+
+    <span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cbmodel</span><span class="p">):</span>
+        <span class="n">target_cell</span> <span class="o">=</span> <span class="n">npr</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">cbmodel</span><span class="o">.</span><span class="n">cell_list</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">cbmodel</span><span class="o">.</span><span class="n">cell_list</span><span class="p">[</span><span class="n">npr</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cbmodel</span><span class="o">.</span><span class="n">cell_list</span><span class="p">))]</span>
+
+<span class="k">class</span> <span class="nc">GlobalDivisionEvent</span><span class="p">(</span><span class="n">Event</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tau</span> <span class="o">=</span> <span class="n">tau</span>
+
+    <span class="k">def</span> <span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cbmodel</span><span class="p">):</span>
+        <span class="n">target_cell</span> <span class="o">=</span> <span class="n">npr</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">cbmodel</span><span class="o">.</span><span class="n">cell_list</span><span class="p">)</span>
+
+        <span class="n">division_direction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_division_direction</span><span class="p">(</span><span class="n">cbmodel</span><span class="p">)</span>
+        <span class="n">updated_position_parent</span> <span class="o">=</span> <span class="n">target_cell</span><span class="o">.</span><span class="n">position</span> \
+            <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">cbmodel</span><span class="o">.</span><span class="n">separation</span> <span class="o">*</span> <span class="n">division_direction</span>
+        <span class="n">position_daughter</span> <span class="o">=</span> <span class="n">target_cell</span><span class="o">.</span><span class="n">position</span> \
+            <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">cbmodel</span><span class="o">.</span><span class="n">separation</span> <span class="o">*</span> <span class="n">division_direction</span>
+
+        <span class="n">daughter_cell</span> <span class="o">=</span> <span class="n">Cell</span><span class="p">(</span><span class="n">cbmodel</span><span class="o">.</span><span class="n">next_cell_index</span><span class="p">,</span> <span class="n">position_daughter</span><span class="p">)</span>
+        <span class="n">cbmodel</span><span class="o">.</span><span class="n">next_cell_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">cbmodel</span><span class="o">.</span><span class="n">cell_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">daughter_cell</span><span class="p">)</span>
+
+        <span class="n">target_cell</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">updated_position_parent</span>
+
+    <span class="k">def</span> <span class="nf">get_division_direction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cbmodel</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cbmodel</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">division_direction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">1.0</span> <span class="o">+</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">npr</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">2</span><span class="p">)])</span>
+
+        <span class="k">elif</span> <span class="n">cbmodel</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">random_angle</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">npr</span><span class="o">.</span><span class="n">rand</span><span class="p">()</span>
+            <span class="n">division_direction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">random_angle</span><span class="p">),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">random_angle</span><span class="p">)])</span>
+
+        <span class="k">elif</span> <span class="n">cbmodel</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">npr</span><span class="o">.</span><span class="n">rand</span><span class="p">()</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">npr</span><span class="o">.</span><span class="n">rand</span><span class="p">()</span>
+            <span class="n">random_azimuth_angle</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">u</span>
+            <span class="n">random_zenith_angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">v</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">division_direction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">random_azimuth_angle</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">random_zenith_angle</span><span class="p">),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">random_azimuth_angle</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">random_zenith_angle</span><span class="p">),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">random_zenith_angle</span><span class="p">)])</span>
+
+        <span class="k">return</span> <span class="n">division_direction</span>
+</pre></div>
+</div>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">cbmos.cell</span> <span class="k">as</span> <span class="nn">cl</span>
+<span class="kn">import</span> <span class="nn">cbmos.utils</span> <span class="k">as</span> <span class="nn">utils</span>
+
+<span class="n">T</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">t_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+
+<span class="n">n_x</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">n_y</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">coordinates</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">generate_cartesian_coordinates</span><span class="p">(</span><span class="n">n_x</span><span class="p">,</span> <span class="n">n_y</span><span class="p">)</span>
+
+<span class="n">sheet</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">cl</span><span class="o">.</span><span class="n">Cell</span><span class="p">(</span>
+        <span class="n">i</span><span class="p">,</span> <span class="c1"># Cell ID, must be unique to each cell</span>
+        <span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">],</span> <span class="c1"># Initial coordinates</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coordinates</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="n">event_list</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">GlobalDivisionEvent</span><span class="p">(</span><span class="n">tau</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">tau</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="p">]</span> <span class="o">+</span> <span class="p">[</span>
+    <span class="n">GlobalDeathEvent</span><span class="p">(</span><span class="n">tau</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">tau</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">25</span><span class="p">)</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cbmos</span>
+<span class="kn">import</span> <span class="nn">cbmos.force_functions</span> <span class="k">as</span> <span class="nn">ff</span>
+<span class="kn">import</span> <span class="nn">cbmos.solvers.euler_forward</span> <span class="k">as</span> <span class="nn">ef</span>
+
+<span class="c1"># Initialize model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">cbmos</span><span class="o">.</span><span class="n">CBModel</span><span class="p">(</span><span class="n">ff</span><span class="o">.</span><span class="n">Gls</span><span class="p">(),</span> <span class="n">ef</span><span class="o">.</span><span class="n">solve_ivp</span><span class="p">,</span> <span class="n">dimension</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">t_data</span><span class="p">,</span> <span class="n">history</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
+    <span class="n">sheet</span><span class="p">,</span> <span class="c1"># Initial cell configuration</span>
+    <span class="n">t_data</span><span class="p">,</span> <span class="c1"># Times at which the history is saved</span>
+    <span class="p">{</span><span class="s2">&quot;mu&quot;</span><span class="p">:</span> <span class="mf">5.70</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;rA&quot;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span> <span class="c1"># Force parameters</span>
+    <span class="p">{</span><span class="s1">&#39;dt&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">},</span> <span class="c1"># Solver parameters</span>
+    <span class="n">event_list</span><span class="o">=</span><span class="n">event_list</span><span class="p">,</span>
+    <span class="n">raw_t</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;blue&#39;</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cells</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">history</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">:</span>
+        <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="o">//</span><span class="mi">3</span><span class="p">,</span> <span class="n">i</span><span class="o">%</span><span class="k">3</span>].add_patch(plt.Circle(cell.position, 0.5, color=color, alpha=0.4))
+        <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="o">//</span><span class="mi">3</span><span class="p">,</span> <span class="n">i</span><span class="o">%</span><span class="k">3</span>].plot(cell.position[0], cell.position[1], &#39;.&#39;, color=color)
+        <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="o">//</span><span class="mi">3</span><span class="p">,</span> <span class="n">i</span><span class="o">%</span><span class="k">3</span>].set_aspect(&#39;equal&#39;)
+        <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="o">//</span><span class="mi">3</span><span class="p">,</span> <span class="n">i</span><span class="o">%</span><span class="k">3</span>].set_xlim(-2, 6.5)
+        <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="o">//</span><span class="mi">3</span><span class="p">,</span> <span class="n">i</span><span class="o">%</span><span class="k">3</span>].set_ylim(-2.5, 7)
+        <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="o">//</span><span class="mi">3</span><span class="p">,</span> <span class="n">i</span><span class="o">%</span><span class="k">3</span>].set_title(f&quot;t = {t_data[i]:.1f}&quot;)
+
+<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+<img alt="_images/generalized_events_6_0.png" src="_images/generalized_events_6_0.png" />
+</section>
 <section id="cbmos">
 <h1>cbmos<a class="headerlink" href="#cbmos" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
@@ -420,6 +577,7 @@ centre-based models. Bulletin of Mathematical Biology, 82(10), 1-43.</p></li>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="cbmos.html#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cbmos.html#module-cbmos.cell">cbmos.cell module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cbmos.html#module-cbmos.events">cbmos.events module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cbmos.html#module-cbmos.force_functions">cbmos.force_functions module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cbmos.html#module-cbmos">Module contents</a></li>
 </ul>
@@ -461,6 +619,7 @@ centre-based models. Bulletin of Mathematical Biology, 82(10), 1-43.</p></li>
 <li><a class="reference internal" href="#references">References</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#implementing-your-own-events">Implementing your own events</a></li>
 <li><a class="reference internal" href="#cbmos">cbmos</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
@@ -483,7 +642,7 @@ centre-based models. Bulletin of Mathematical Biology, 82(10), 1-43.</p></li>
       &copy;2021, Sonja Mathias, Adrien Coulier, Andreas Hellander.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
