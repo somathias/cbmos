@@ -51,6 +51,9 @@ class CellDivisionEvent(Event):
                 self.target_cell_ID)
         target_cell = cbmodel.cell_list[target_cell_index]
 
+        if target_cell.ID != self.target_cell_ID:
+            raise ValueError("The target cell does not exist anymore")
+
         # Check that the parent cell has set its proliferating flag to True
         assert target_cell.proliferating
 
