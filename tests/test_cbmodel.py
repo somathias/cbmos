@@ -139,7 +139,7 @@ def test_two_events_at_once():
     t_data = np.linspace(0, 10, 100)
     _, history = cbm_solver.simulate(
             cell_list, t_data, {}, {},
-            raw_t=False, event_list=event_list)
+            raw_t=False, event_list=[])
 
     assert len(history) == 100
 
@@ -580,48 +580,4 @@ def test_queue_event():
     cbm_solver = cbmos.CBModel(ff.Cubic(), scpi.solve_ivp, dim)
 
     with pytest.raises(AttributeError):
-        cbm_solver.queue(ev.CellDivisionEvent(cl.ProliferatingCell(0, [0])))
-
-
-def test_n_cells_independent_dimension():
-
-    rate = 1.5
-    tf = 10.0
-    t_data = [0.0, tf]
-    seed = 1
-
-    # first do 2d
-    dimension = 2
-    cbmodel_2d = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dimension)
-
-    npr.seed(seed)
-    cell_list = [
-        cl.ProliferatingCell(
-            0, np.zeros(dimension),
-            proliferating=True,
-            division_time_generator=lambda t: npr.exponential(rate*(t+1.0)) + t)
-        ]
-    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
-    _, history = cbmodel_2d.simulate(cell_list, t_data, {"mu": 5.70},
-                                     {'dt': 0.1}, seed=seed,
-                                     event_list=event_list)
-    n_cells_2d = len(history[-1])
-
-    # then compare to 3d
-    dimension = 3
-    cbmodel_3d = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dimension)
-
-    npr.seed(seed)
-    cell_list = [
-        cl.ProliferatingCell(
-            0, np.zeros(dimension),
-            proliferating=True,
-            division_time_generator=lambda t: npr.exponential(rate*(t+1.0)) + t)
-        ]
-    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
-    _, history = cbmodel_3d.simulate(cell_list, t_data, {"mu": 5.70},
-                                     {'dt': 0.1}, seed=seed,
-                                     event_list=event_list)
-    n_cells_3d = len(history[-1])
-
-    assert n_cells_2d == n_cells_3d
+        cbm_solver.queue(CellDivisionEvent(cl.ProliferatingCell(0, [0])))
