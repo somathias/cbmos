@@ -97,7 +97,7 @@ class CBModel:
         ----
         - Cell ordering in the output can vary between timepoints.
         - Cell indices need to be unique for the whole duration of the
-        simulation.
+          simulation.
         - If `raw_t` is false, t_data is returned as is, with the history. If
           `raw_t` is true, aggregated t_data from the solver is returned.
 
