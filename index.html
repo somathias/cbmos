@@ -414,9 +414,12 @@ the time at which the event is triggered. The <code class="docutils literal notr
 object of type <code class="docutils literal notranslate"><span class="pre">CBModel</span></code> as unique parameter. This object contains all
 the information about the current simulation and can be used to add,
 modify and remove cells.</p>
-<p>In this example, we implement two simple events: - <code class="docutils literal notranslate"><span class="pre">GlobalDeathEvent</span></code>
-selects one cell at random and removes it from the simulation. -
-<code class="docutils literal notranslate"><span class="pre">GlobalDivisionEvent</span></code> selects one cell at random and duplicates it.</p>
+<p>In this example, we implement two simple events:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GlobalDeathEvent</span></code> selects one cell at random and removes it from
+the simulation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GlobalDivisionEvent</span></code> selects one cell at random and duplicates it.</p></li>
+</ul>
 <p>Here, we set the simulation so that these events are triggered at
 regular intervals. This mimics other cell-based software, where the
 simulation is stopped at regular intervals to check if events have taken
