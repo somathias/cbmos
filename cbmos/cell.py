@@ -60,7 +60,7 @@ class ProliferatingCell(Cell):
     def __init__(
             self, ID, position,
             birthtime=0.0,
-            proliferating=False,
+            proliferating=True,
             division_time_generator=lambda t: _npr.normal(24 + t),
             division_time=None,
             parent_ID=None
