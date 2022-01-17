@@ -9,7 +9,7 @@ import cbmos
 import cbmos.force_functions as ff
 import cbmos.solvers.euler_forward as ef
 import cbmos.cell as cl
-
+import cbmos.events as ev
 
 @np.vectorize
 def func(t, y):
@@ -104,15 +104,17 @@ def test_ordering_ts_when_using_global_adaptivity():
     npr.seed(seed)
 
     cell_list = [
-            cl.Cell(
+            cl.ProliferatingCell(
                 0, [0., 0.],
                 proliferating=True,
                 division_time_generator=lambda t: npr.exponential(4.0) + t)
             ]
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
 
     ts, history = model.simulate(cell_list, t_data, params,
                                  {"eps": 0.05, "eta": 0.0001,
-                                  'write_to_file': True}, seed=seed)
+                                  'write_to_file': True}, seed=seed,
+                                  event_list=event_list)
     assert(np.all(np.diff(ts) >= 0))
 
 

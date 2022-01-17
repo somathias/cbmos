@@ -20,7 +20,7 @@ help:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 api:
-	sphinx-apidoc -o source/ ../cbmos/
+	sphinx-apidoc -f -o source/ ../cbmos/
 
 notebooks:
 	rm -rf source/basic_example.rst source/basic_example_files/
@@ -29,3 +29,6 @@ notebooks:
 	rm -rf source/convergence_example.rst source/convergence_example_files/
 	jupyter nbconvert --to rst ../examples/convergence_example.ipynb
 	mv -f ../examples/convergence_example.rst ../examples/convergence_example_files/ source/
+	rm -rf source/generalized_events.rst source/generalized_events_files/
+	jupyter nbconvert --to rst ../examples/generalized_events.ipynb
+	mv -f ../examples/generalized_events.rst ../examples/generalized_events_files/ source/

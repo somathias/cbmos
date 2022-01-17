@@ -42,7 +42,8 @@ def test_cubic_derivative():
 
 def test_hertz():
     assert ff.Hertz()(1.0) == 0.
-    assert ff.Hertz()(5/9) ==-8/27
+    assert ff.Hertz()(5/9) == -8/27
+
 
 
 def test_gls():
@@ -51,10 +52,12 @@ def test_gls():
     assert (ff.Gls()(x) == y).all()
 
 
+
 def test_linearexponential():
     x = np.array([1.0, 1.5, 0.5, 1.25])
     y = np.array([0., 0., - 7.5*np.exp(2.5), 15.0*0.25*np.exp(-5.0*0.25)])
     assert (ff.LinearExponential()(x) == y).all()
+
 
 def test_linearexponential_derivative():
     x = np.array([1.0, 1.5, 0.5, 1.25])
