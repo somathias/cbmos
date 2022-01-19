@@ -30,3 +30,16 @@ def test_hcp_grid():
     assert coords_last[0] == pytest.approx(scaling*2)
     assert coords_last[1] == pytest.approx(scaling*1.7320, 1e-4)
     assert coords_last[2] == pytest.approx(scaling*1.6329, 1e-4)
+
+
+def test_setup_locally_compressed_monolayer():
+
+    sheet = ut.setup_locally_compressed_monolayer(2, 2)
+
+    assert len(sheet) == 2*2+1
+
+def test_setup_locally_compressed_spheroid():
+
+    sheet = ut.setup_locally_compressed_spheroid(2, 2, 2)
+
+    assert len(sheet) == 2*2*2+1
