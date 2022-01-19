@@ -79,10 +79,11 @@ for i in range(n):
             exec_times[out] += np.array(np.loadtxt(f))[:, 1]
     if i==0:
         with open('F_evaluations'+out+'.txt', 'r') as f:
-            F_evaluations[out] = np.array(np.loadtxt(f))
-exec_times[out] = exec_times[out]/n
+            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
+exec_times[out] = list(exec_times[out]/n)
+F_evaluations[out] = list(F_evaluations[out])
 ts_s[out] = ts
-A_evaluations[out] = np.vstack([ts, np.zeros(len(ts))]).T
+A_evaluations[out] = list(np.zeros(len(ts)))
 
 out = 'glob_adap_stab'
 for i in range(n):
@@ -107,10 +108,12 @@ for i in range(n):
             exec_times[out] += np.array(np.loadtxt(f))[:, 1]
     if i==0:
         with open('F_evaluations'+out+'.txt', 'r') as f:
-            F_evaluations[out] = np.array(np.loadtxt(f))
+            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
         with open('A_evaluations'+out+'.txt', 'r') as f:
-            A_evaluations[out] = np.array(np.loadtxt(f))
-exec_times[out] = exec_times[out]/n
+            A_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
+exec_times[out] = list(exec_times[out]/n)
+F_evaluations[out] = list(F_evaluations[out])
+A_evaluations[out] = list(A_evaluations[out])
 ts_s[out] = ts
 
 out = 'glob_adap_stab_stop_Jac_update'
@@ -136,10 +139,12 @@ for i in range(n):
             exec_times[out] += np.array(np.loadtxt(f))[:, 1]
     if i==0:
         with open('F_evaluations'+out+'.txt', 'r') as f:
-            F_evaluations[out] = np.array(np.loadtxt(f))
+            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
         with open('A_evaluations'+out+'.txt', 'r') as f:
-            A_evaluations[out] = np.array(np.loadtxt(f))
-exec_times[out] = exec_times[out]/n
+            A_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
+exec_times[out] = list(exec_times[out]/n)
+F_evaluations[out] = list(F_evaluations[out])
+A_evaluations[out] = list(A_evaluations[out])
 ts_s[out] = ts
 
 # local adaptivity
@@ -166,10 +171,12 @@ for i in range(n):
             exec_times[out] += np.array(np.loadtxt(f))[:, 1]
     if i==0:
         with open('F_evaluations'+out+'.txt', 'r') as f:
-            F_evaluations[out] = np.array(np.loadtxt(f))
+            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
         with open('A_evaluations'+out+'.txt', 'r') as f:
-            A_evaluations[out] = np.array(np.loadtxt(f))
-exec_times[out] = exec_times[out]/n
+            A_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
+exec_times[out] = list(exec_times[out]/n)
+F_evaluations[out] = list(F_evaluations[out])
+A_evaluations[out] = list(A_evaluations[out])
 ts_s[out] = ts
 
 out = 'local_adap_stop_Jac_update'
@@ -195,10 +202,12 @@ for i in range(n):
             exec_times[out] += np.array(np.loadtxt(f))[:, 1]
     if i==0:
         with open('F_evaluations'+out+'.txt', 'r') as f:
-            F_evaluations[out] = np.array(np.loadtxt(f))
+            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
         with open('A_evaluations'+out+'.txt', 'r') as f:
-            A_evaluations[out] = np.array(np.loadtxt(f))
-exec_times[out] = exec_times[out]/n
+            A_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
+exec_times[out] = list(exec_times[out]/n)
+F_evaluations[out] = list(F_evaluations[out])
+A_evaluations[out] = list(A_evaluations[out])
 ts_s[out] = ts
 
 # fixed time stepping
@@ -225,10 +234,13 @@ for i in range(n):
             exec_times[out] += np.array(np.loadtxt(f))[:, 1]
     if i==0:
         with open('F_evaluations'+out+'.txt', 'r') as f:
-            F_evaluations[out] = np.array(np.loadtxt(f))
-exec_times[out] = exec_times[out]/n
+            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
+exec_times[out] = list(exec_times[out]/n)
 ts_s[out] = ts
-A_evaluations[out] = np.vstack([ts, np.zeros(len(ts))]).T
+F_evaluations[out] = list(F_evaluations[out])
+A_evaluations[out] = list(np.zeros(len(ts)))
+
+
 
 data['exec_times'] = exec_times
 data['ts_s'] = ts_s
