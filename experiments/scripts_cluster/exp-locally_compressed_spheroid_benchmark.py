@@ -45,7 +45,50 @@ force = 'cubic'
 params_cubic = {"mu": 5.70, "s": s, "rA": rA}
 
 
-sheet = ut.setup_locally_compressed_spheroid(6,6,6)
+#sheet = ut.setup_locally_compressed_spheroid(6,6,6)
+
+def make_hcp_mesh(n_x, n_y, n_z, scaling=1.0):
+# 3D honeycomb mesh
+
+    coords = [((2 * i_x + ((i_y + i_z) % 2)) * 0.5 * scaling,
+             np.sqrt(3) * (i_y + (i_z % 2) / 3.0) * 0.5 * scaling,
+             np.sqrt(6) * i_z / 3.0 * scaling)
+            for i_x in range(n_x) for i_y in range(n_y) for i_z in range(n_z)
+            ]
+
+
+    # make cell_list for the sheet
+    sheet = [cl.Cell(i, [x,y,z]) for i, (x, y, z) in enumerate(coords)]
+
+
+    # find middle index, move cell there and add second daughter cells
+    m = (n_x*n_y)*(n_z//2)+n_x*(n_y//2)+n_x//2
+    coords = list(sheet[m].position)
+
+    # get division direction
+    u = npr.rand()
+    v = npr.rand()
+    random_azimuth_angle = 2 * np.pi * u
+    random_zenith_angle = np.arccos(2 * v - 1)
+    division_direction = np.array([
+                np.cos(random_azimuth_angle) * np.sin(random_zenith_angle),
+                np.sin(random_azimuth_angle) * np.sin(random_zenith_angle),
+                np.cos(random_zenith_angle)])
+
+    # update positions
+    updated_position_parent = coords - 0.5 * separation * division_direction
+    sheet[m].position = updated_position_parent
+
+    position_daughter = coords + 0.5 * separation * division_direction
+
+    # add daughter cell
+    next_cell_index = len(sheet)
+    daughter_cell = cl.Cell(next_cell_index, position_daughter)
+    sheet.append(daughter_cell)
+
+    return sheet
+
+sheet = make_hcp_mesh(6,6,6)
 
 data = {}
 
