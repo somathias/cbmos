@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH -A snic2021-22-607 -t 2:00:00 -p core -n 4    
+#SBATCH -A snic2021-22-607 -t 2:00:00 -p core -n 2    
   
 pip3 install ../../.
 
