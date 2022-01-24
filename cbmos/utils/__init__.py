@@ -5,6 +5,7 @@ import matplotlib.pyplot as _plt
 
 from .. import cell as _cl
 
+
 def generate_cartesian_coordinates(n_x, n_y, scaling=1.0):
     """
     Generate cartesian coordinates which can be used to set up a cell
@@ -116,7 +117,9 @@ def setup_locally_compressed_monolayer(n_x, n_y, scaling=1.0, separation=0.3):
     sheet.append(daughter_cell)
     return sheet
 
-def setup_locally_compressed_spheroid(n_x, n_y, n_z, scaling=1.0, separation=0.3):
+
+def setup_locally_compressed_spheroid(n_x, n_y, n_z, scaling=1.0,
+                                      separation=0.3):
     """
     Set up a locally compressed spheroid where the middle cell has just
     divided.
@@ -140,16 +143,10 @@ def setup_locally_compressed_spheroid(n_x, n_y, n_z, scaling=1.0, separation=0.3
 
     """
 
-    coords = [((2 * i_x + ((i_y + i_z) % 2)) * 0.5 * scaling,
-             _np.sqrt(3) * (i_y + (i_z % 2) / 3.0) * 0.5 * scaling,
-             _np.sqrt(6) * i_z / 3.0 * scaling)
-            for i_x in range(n_x) for i_y in range(n_y) for i_z in range(n_z)
-            ]
-
+    coords = generate_hcp_coordinates(n_x, n_y, n_z, scaling=scaling)
 
     # make cell_list for the sheet
-    sheet = [_cl.Cell(i, [x,y,z]) for i, (x, y, z) in enumerate(coords)]
-
+    sheet = [_cl.Cell(i, [x, y, z]) for i, (x, y, z) in enumerate(coords)]
 
     # find middle index, move cell there and add second daughter cells
     m = (n_x*n_y)*(n_z//2)+n_x*(n_y//2)+n_x//2
@@ -175,9 +172,7 @@ def setup_locally_compressed_spheroid(n_x, n_y, n_z, scaling=1.0, separation=0.3
     next_cell_index = len(sheet)
     daughter_cell = _cl.Cell(next_cell_index, position_daughter)
     sheet.append(daughter_cell)
-
     return sheet
-
 
 
 def plot_2d_population(cell_list, color='blue'):
