@@ -17,8 +17,8 @@ import os
 plt.style.use('seaborn')
 
 
-def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, eps=0.01, eta=0.001,
-              n_newton=20, eps_newton=None, eps_max =1e-3, xi=0.001,
+def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
+              n_newton=5, eps_newton=None, eps_max =1e-3, xi=0.001,
               jacobian=None, force_args={}, tol=None, atol=None,
               out='', write_to_file=False):
     """
@@ -33,28 +33,12 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=0.1, eps=0.01, eta=0.001,
 
     if adaptive_dt:
         # choose time step adaptively globally
-        if jacobian is not None:
-            return _do_global_adaptive_timestepping_with_stability(fun, t_span,
-                                                                   y0, t_eval,
-                                                                   dt, eps,
-                                                                   eta,
-                                                                   n_newton,
-                                                                   eps_newton,
-                                                                   xi,
-                                                                   jacobian,
-                                                                   force_args,
-
-                                                                   eps_max,
-                                                                   tol, atol,
-                                                                   out,
-                                                                   write_to_file)
-        else:
-            return _do_global_adaptive_timestepping(fun, t_span, y0, t_eval,
-                                                    dt, eps, eta, n_newton,
-                                                    eps_newton, xi, jacobian,
-                                                    force_args,
-                                                    eps_max, tol,
-                                                    atol, out, write_to_file)
+        return _do_global_adaptive_timestepping(fun, t_span, y0, t_eval,
+                                                dt, eps, eta, n_newton,
+                                                eps_newton, xi, jacobian,
+                                                force_args,
+                                                eps_max, tol,
+                                                atol, out, write_to_file)
 
     else:
         # do regular fixed time stepping
@@ -135,11 +119,11 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
         y = copy.deepcopy(y)
 
         F = fun(t, y)
-        if jacobian is not None:
-            A = jacobian(y, force_args)
-            AF = A@F
-        else:
-            AF = 1/eta*(fun(t, y + eta * F) - F)
+#        if jacobian is not None:
+#            A = jacobian(y, force_args)
+#            AF = A@F
+#        else:
+        AF = 1/eta*(fun(t, y + eta * F) - F)
 
         if write_to_file:
             with open('AFs'+out+'.txt', 'ab') as f:
@@ -160,7 +144,7 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
 
         y = _do_newton_iterations(fun, t, y, dt, n_newton, jacobian,
                                   force_args, xi, tol, atol,
-                                  eps_newton)
+                                  eps_newton, F)
         t = t + dt
 
         ts.append(t)
@@ -260,7 +244,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, t_eval,
 
 
 def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
-                          tol, atol, eps_newton):
+                          tol, atol, eps_newton, F=None):
 
     class gmres_counter(object):
         def __init__(self, disp=False):
@@ -275,12 +259,17 @@ def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
 
     # do Newton iterations
     y_next = copy.deepcopy(y)  # initialize with current y
-    #y_next = y + dt*fun(t, y) # initialize with EF step
+    if F is None:
+        F = fun(t, y_next)
+#    else:
+##        y_next = copy.deepcopy(y) + dt*F # initialize with EF step
+#        y_next = copy.deepcopy(y)
+
     n = 0
     for j in np.arange(n_newton):
-        n = n+1
+        n += 1
 
-        F_curly = y_next - y - dt*fun(t, y_next)
+        F_curly = y_next - y - dt*F
 
         if jacobian is not None:
             A = jacobian(y_next, force_args)
@@ -308,6 +297,8 @@ def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
             _logging.debug("Relative error tolerance of {} achieved with {} Newton iterations.".format(eps_newton, n))
             break
 
+        F = fun(t, y_next)
+
     return copy.deepcopy(y_next)
 
 
@@ -328,7 +319,7 @@ if __name__ == "__main__":
 #    plt.figure()
 #    plt.plot(sol.t, sol.y)
 
-    t_eval = np.linspace(0,1,10)
+    t_eval = np.linspace(0,10,10)
     y0 = np.array([1.0, 2.0])
     #y0 = np.array([0.5, 0.7, 1.0, 3.0])
     #y0 = np.array([0.0, 0.0, 0.0])
@@ -338,7 +329,7 @@ if __name__ == "__main__":
     except FileNotFoundError:
         print('Nothing to delete.')
 
-    sol = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, dt=None, n_newton = 2,
+    sol = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, dt=None,
                      write_to_file=True, jacobian=jac)
     plt.figure()
     plt.plot(sol.t, sol.y.T, '*')
