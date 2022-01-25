@@ -68,7 +68,7 @@ def generate_hcp_coordinates(n_x, n_y, n_z, scaling=1.0):
             ]
 
 
-def setup_locally_compressed_monolayer(n_x, n_y, scaling=1.0, separation=0.3):
+def setup_locally_compressed_monolayer(n_x, n_y, scaling=1.0, separation=0.3, seed=None):
     """
     Set up a locally compressed monolayer where the middle cell has just
     divided.
@@ -89,6 +89,9 @@ def setup_locally_compressed_monolayer(n_x, n_y, scaling=1.0, separation=0.3):
         list of cells
 
     """
+
+    if seed is not None:
+        _npr.seed(seed)
 
     coords = generate_honeycomb_coordinates(n_x, n_y, scaling=scaling)
     sheet = [
@@ -119,7 +122,7 @@ def setup_locally_compressed_monolayer(n_x, n_y, scaling=1.0, separation=0.3):
 
 
 def setup_locally_compressed_spheroid(n_x, n_y, n_z, scaling=1.0,
-                                      separation=0.3):
+                                      separation=0.3, seed=None):
     """
     Set up a locally compressed spheroid where the middle cell has just
     divided.
@@ -142,6 +145,9 @@ def setup_locally_compressed_spheroid(n_x, n_y, n_z, scaling=1.0,
         list of cells
 
     """
+
+    if seed is not None:
+        _npr.seed(seed)
 
     coords = generate_hcp_coordinates(n_x, n_y, n_z, scaling=scaling)
 

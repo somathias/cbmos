@@ -338,7 +338,7 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
     ts = _np.hstack(ts)
     ys = _np.vstack(ys).T
     dts = _np.hstack(dts)
-    #dts = _np.vstack([dts, dt_as, dt_ss]).T
+    dts = _np.vstack([dts, dt_as, dt_ss]).T
 
     if measure_wall_time:
         with open('exec_times'+out+'.txt', 'ab') as f:
