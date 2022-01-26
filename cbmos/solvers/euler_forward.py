@@ -461,7 +461,7 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
             elif (min_ind_1 > 0 and min_ind_1 == min_ind_2 and min_ind_2 < len(y0)):
                 _logging.debug("Two levels, K_1 empty. i_min^1={}, i_min^2={}, dt_0={}, dt_2={}".format(min_ind_1, min_ind_2, dt_0, dt_2))
                 # two levels
-                # K_1 empty, however we shift the levels down, because else things don't seem to work
+                # K_1 empty,
                 n_eqs = _np.array([min_ind_2, 0, len(y) - min_ind_2])
                 (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_2, inds,
                                                 min_ind_1, m0, m1, dts_local,
@@ -470,17 +470,29 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
             elif (min_ind_1 == 0 and min_ind_1 < min_ind_2 and min_ind_2 < len(y0)):
                 _logging.debug("Two levels, K_0 empty. i_min^1={}, i_min^2={}, dt_1={}, dt_2={}".format(min_ind_1, min_ind_2, dt_1, dt_2))
                 # two levels
-                # K_0 empty, however we shift the levels down, because else things don't seem to work
+                # K_0 empty, use m0=1 to ensure correct number of small time steps
                 n_eqs = _np.array([0, min_ind_2, len(y) - min_ind_2])
                 (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_1, dt_2, inds,
                                                 min_ind_2, 1, m1, dts_local,
                                                 update_F)
-            else:
-                # single level
-                _logging.debug("Single level, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
-                n_eqs = _np.array([0, 0, len(y)])
-                _logging.debug("Using EF with with dt_a={}, dt_s={}, K={}".format(dt_a, dt_2, K))
+            elif (0 == min_ind_1 == min_ind_2):
+                # single level, K_0 and K_1 empty
+                _logging.debug("Single level, K_0 and K_1 empty, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+                n_eqs = _np.array([len(y), 0, 0])
+                _logging.debug("Using EF with with dt_2={}, dt_a={}, dt_s={}, K={}".format(dt_2, dt_a, dt_s, K))
                 (y, dt ) = _do_single_level(t, y, tf, F, dt_2, dts_local)
+            elif (0 == min_ind_1 and min_ind_2 == len(y0)):
+                # single level, K_0 and K_2 empty
+                _logging.debug("Single level, K_0 and K_2 empty, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+                n_eqs = _np.array([len(y), 0, 0])
+                _logging.debug("Using EF with with dt_1={}, dt_a={} dt_s={}, K={}".format(dt_1, dt_a, dt_s, K))
+                (y, dt ) = _do_single_level(t, y, tf, F, dt_1, dts_local)
+            else:
+                # single level, K_1 and K_2 empty
+                _logging.debug("Single level, K_1 and K_2 empty, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
+                n_eqs = _np.array([len(y), 0, 0])
+                _logging.debug("Using EF with with dt_0={}, dt_a={} dt_s={}, K={}".format(dt_1, dt_a, dt_s, K))
+                (y, dt ) = _do_single_level(t, y, tf, F, dt_0, dts_local)
 
         _logging.debug("y={}".format(y))
         t = t + dt
@@ -657,8 +669,8 @@ def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
 
             #Xi_1 = Xi_0/m0
             #Xi_2 = Xi_1/m1
-            dt_1 = dt_2/m1
-            dt_0 = dt_1/m0
+            dt_1 = dt_2/_np.sqrt(m1)
+            dt_0 = dt_1/_np.sqrt(m0)
 
     if write_to_file:
         with open('AFs'+out+'.txt', 'ab') as f:
@@ -723,8 +735,8 @@ def _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2, inds, min_ind_1,
 
 if __name__ == "__main__":
 
-#    logger = _logging.getLogger()
-#    logger.setLevel(_logging.DEBUG)
+    logger = _logging.getLogger()
+    logger.setLevel(_logging.DEBUG)
 
     # stability region for Euler forward for this problem is h<2/50=0.04
     #@_np.vectorize
@@ -786,7 +798,7 @@ if __name__ == "__main__":
                      eps=0.0001, eta = 0.00001, local_adaptivity=True,
                      write_to_file=True, jacobian=jacobian,
 #                     always_calculate_Jacobian=True,
-                     switch=True, K=3)
+                     switch=False, K=3)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
