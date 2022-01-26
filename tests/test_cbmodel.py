@@ -139,7 +139,7 @@ def test_two_events_at_once():
     t_data = np.linspace(0, 10, 100)
     _, history = cbm_solver.simulate(
             cell_list, t_data, {}, {},
-            raw_t=False, event_list=[])
+            raw_t=False, event_list=event_list)
 
     assert len(history) == 100
 
