@@ -20,13 +20,11 @@ plt.style.use('seaborn')
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
               n_newton=5, eps_newton=None, eps_max =1e-3, xi=0.001,
               jacobian=None, force_args={}, tol=None, atol=None,
-              out='', write_to_file=False):
+              out='', write_to_file=False, measure_wall_time=False):
     """
     Note:
     -----
-    Currently if dt is None, (globally) adaptive timestepping is used. If the
-    Jacobian is provided, both the stability and the accuracy estimate are
-    taken into account. If not, only the accuracy estimate is used.
+    If dt is None, (globally) adaptive timestepping is used.
     """
 
     adaptive_dt = True if dt is None else False
@@ -38,7 +36,8 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
                                                 eps_newton, xi, jacobian,
                                                 force_args,
                                                 eps_max, tol,
-                                                atol, out, write_to_file)
+                                                atol, out, write_to_file,
+                                                measure_wall_time)
 
     else:
         # do regular fixed time stepping
@@ -51,12 +50,14 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
         return _do_fixed_timestepping(fun, t_span, y0, t_eval, dt,
                                       n_newton, eps_newton, xi, jacobian,
                                       force_args, tol, atol, out,
-                                      write_to_file)
+                                      write_to_file,
+                                      measure_wall_time)
 
 
 def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt, n_newton,
                            eps_newton, xi, jacobian, force_args,
-                           tol, atol, out, write_to_file):
+                           tol, atol, out, write_to_file,
+                           measure_wall_time):
     _logging.debug("Using EB, fixed time stepping with dt={}".format(
             dt))
 
@@ -100,8 +101,19 @@ def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt, n_newton,
 def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
                                      n_newton, eps_newton, xi, jacobian,
                                      force_args, eps_max, tol, atol,
-                                     out, write_to_file):
+                                     out, write_to_file,
+                                     measure_wall_time):
     _logging.debug("Using EB, adaptive time stepping.")
+
+    if measure_wall_time:
+        exec_time_start = time.time()
+        exec_times = []
+        n_F_evals = 0
+        F_evals = []
+        if jacobian is not None:
+            n_A_evals = 0
+            A_evals = []
+
 
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -145,87 +157,6 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
         y = _do_newton_iterations(fun, t, y, dt, n_newton, jacobian,
                                   force_args, xi, tol, atol,
                                   eps_newton, F)
-        t = t + dt
-
-        ts.append(t)
-        ys.append(y)
-        dts.append(dt)
-
-    ts = np.hstack(ts)
-    ys = np.vstack(ys).T
-    dts = np.hstack(dts)
-
-    if write_to_file:
-        with open('step_sizes'+out+'.txt', 'ab') as f:
-            np.savetxt(f, dts)
-
-    return OdeResult(t=ts, y=ys)
-
-
-def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, t_eval,
-                                                    dt, eps, eta, n_newton,
-                                                    eps_newton, xi, jacobian,
-                                                    force_args,
-                                                    eps_max, tol,
-                                                    atol, out, write_to_file):
-
-    _logging.debug("Using EB, adaptive time stepping with stability estimate.")
-
-    t0, tf = float(t_span[0]), float(t_span[-1])
-
-    t = t0
-    y = y0
-
-    ts = [t]
-    ys = [y]
-    dts = []
-
-    while t < tf:
-
-        _logging.debug("t={}".format(t))
-
-        y = copy.deepcopy(y)
-
-        F = fun(t, y)
-        A = jacobian(y, force_args)
-
-        w, v = np.linalg.eigh(A)
-        _logging.debug("Eigenvalues w={}".format(w))
-        _logging.debug("Eigenvectors v={}".format(v))
-
-        if write_to_file:
-            with open('eigenvalues'+out+'.txt', 'ab') as f:
-                np.savetxt(f, w.reshape((1, -1)))
-            with open('eigenvectors'+out+'.txt', 'ab') as f:
-                np.savetxt(f, v.reshape((1, -1), order='F'))
-
-        dt_s = 2.0/abs(w[0])
-
-        AF = A@F
-
-        if write_to_file:
-            with open('AFs'+out+'.txt', 'ab') as f:
-                np.savetxt(f, np.abs(AF).reshape((1, -1)))
-
-        norm_AF = np.linalg.norm(AF, np.inf)
-        dt_a = np.sqrt(2*eps/norm_AF) if norm_AF > 0.0 else tf - t
-
-        # take minimum of stability and accuracy bound
-        dt = np.minimum(dt_s, dt_a)
-
-        # take minimum of dt and tf-t in order to not overstep
-        dt = np.minimum(dt, tf-t)
-
-        if eps_newton is None:
-            eps_newton = min(eps_max, dt)
-        if tol is None:
-            tol = min(eps_max, dt)
-        if atol is None:
-            atol = min(eps_max, dt)
-
-        y = _do_newton_iterations(fun, t, y, dt, n_newton, jacobian,
-                                  force_args, xi, tol, atol,
-                                  eps_newton)
         t = t + dt
 
         ts.append(t)
