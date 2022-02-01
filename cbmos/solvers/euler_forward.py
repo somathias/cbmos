@@ -34,6 +34,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
 
     if len(y0) > 1 and local_adaptivity:
             # choose time step adaptively locally (if we have a system of eqs)
+#        eps = eps*m0*m1 #scale local epsilon with level ratios
         return _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
                                                out, write_to_file, m0, m1,
                                                update_F,
@@ -478,20 +479,20 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
             elif (0 == min_ind_1 == min_ind_2):
                 # single level, K_0 and K_1 empty
                 _logging.debug("Single level, K_0 and K_1 empty, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
-                n_eqs = _np.array([len(y), 0, 0])
+                n_eqs = _np.array([0, 0, len(y)])
                 _logging.debug("Using EF with with dt_2={}, dt_a={}, dt_s={}, K={}".format(dt_2, dt_a, dt_s, K))
                 (y, dt ) = _do_single_level(t, y, tf, F, dt_2, dts_local)
             elif (0 == min_ind_1 and min_ind_2 == len(y0)):
                 # single level, K_0 and K_2 empty
                 _logging.debug("Single level, K_0 and K_2 empty, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
-                n_eqs = _np.array([len(y), 0, 0])
+                n_eqs = _np.array([0, len(y), 0])
                 _logging.debug("Using EF with with dt_1={}, dt_a={} dt_s={}, K={}".format(dt_1, dt_a, dt_s, K))
                 (y, dt ) = _do_single_level(t, y, tf, F, dt_1, dts_local)
             else:
                 # single level, K_1 and K_2 empty
                 _logging.debug("Single level, K_1 and K_2 empty, i_min^1={}, i_min^2={}".format(min_ind_1, min_ind_2))
                 n_eqs = _np.array([len(y), 0, 0])
-                _logging.debug("Using EF with with dt_0={}, dt_a={} dt_s={}, K={}".format(dt_1, dt_a, dt_s, K))
+                _logging.debug("Using EF with with dt_0={}, dt_a={} dt_s={}, K={}".format(dt_0, dt_a, dt_s, K))
                 (y, dt ) = _do_single_level(t, y, tf, F, dt_0, dts_local)
 
         _logging.debug("y={}".format(y))
@@ -669,8 +670,8 @@ def _choose_dts(fun, t, y, tf, F, eps, eta, out, write_to_file, m0, m1,
 
             #Xi_1 = Xi_0/m0
             #Xi_2 = Xi_1/m1
-            dt_1 = dt_2/_np.sqrt(m1)
-            dt_0 = dt_1/_np.sqrt(m0)
+            dt_1 = dt_2/m1
+            dt_0 = dt_1/m0
 
     if write_to_file:
         with open('AFs'+out+'.txt', 'ab') as f:
