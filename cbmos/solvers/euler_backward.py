@@ -18,7 +18,7 @@ plt.style.use('seaborn')
 
 
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
-              n_newton=5, eps_newton=None, eps_max =1e-3, xi=0.001,
+              n_newton=10, eps_newton=None, eps_max =1e-3, xi=0.00001,
               jacobian=None, force_args={}, tol=None, atol=None,
               out='', write_to_file=False, measure_wall_time=False):
     """
@@ -131,11 +131,12 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
         y = copy.deepcopy(y)
 
         F = fun(t, y)
-#        if jacobian is not None:
-#            A = jacobian(y, force_args)
-#            AF = A@F
-#        else:
-        AF = 1/eta*(fun(t, y + eta * F) - F)
+        if jacobian is not None:
+            _logging.debug("Using the Jacobian to calculate AF")
+            A = jacobian(y, force_args)
+            AF = A@F
+        else:
+            AF = 1/eta*(fun(t, y + eta * F) - F)
 
         if write_to_file:
             with open('AFs'+out+'.txt', 'ab') as f:
@@ -148,15 +149,21 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
         dt = np.minimum(dt, tf-t)
 
         if eps_newton is None:
-            eps_newton = min(eps_max, dt)
+#            eps_newton = min(eps_max, dt)
+            eps_newton = 0.001*eps
         if tol is None:
-            tol = min(eps_max, dt)
+#            tol = min(eps_max, dt)
+            tol = 0.001*eps
         if atol is None:
-            atol = min(eps_max, dt)
+#            atol = min(eps_max, dt)
+            atol = 0.001*eps
 
         y = _do_newton_iterations(fun, t, y, dt, n_newton, jacobian,
                                   force_args, xi, tol, atol,
-                                  eps_newton, F)
+                                  eps_newton, F, A)
+#        def newton_fun(x, y, fun, t, dt):
+#            return x - y - dt*fun(t, x)
+#        y = scpi.optimize.fsolve(newton_fun, y, args=(y, fun, t, dt))
         t = t + dt
 
         ts.append(t)
@@ -175,7 +182,7 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
 
 
 def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
-                          tol, atol, eps_newton, F=None):
+                          tol, atol, eps_newton, F, A):
 
     class gmres_counter(object):
         def __init__(self, disp=False):
@@ -186,24 +193,23 @@ def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
             if self._disp:
                 print('iter %3i\trk = %s' % (self.niter, str(rk)))
 
-    counter = gmres_counter()
 
     # do Newton iterations
     y_next = copy.deepcopy(y)  # initialize with current y
-    if F is None:
-        F = fun(t, y_next)
 #    else:
 ##        y_next = copy.deepcopy(y) + dt*F # initialize with EF step
 #        y_next = copy.deepcopy(y)
 
     n = 0
+    dy = None
     for j in np.arange(n_newton):
         n += 1
 
         F_curly = y_next - y - dt*F
+#        F_curly = y_next - y - dt*fun(t, y_next)
 
         if jacobian is not None:
-            A = jacobian(y_next, force_args)
+            _logging.debug("Using the jacobian to calculate J.")
             J = np.eye(A.shape[0]) - dt*A
         else:
             # approximate matrix vector product Jv where J = I-dt*A
@@ -213,22 +219,34 @@ def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
                               - F_curly)
             J = LinearOperator((len(y_next), len(y_next)), matvec=Jv)
 
-        # solve linear system J*dy = F_curly for dy
+        # solve linear system J*dy = -F_curly for dy
+#        if len(y) == 2:
+#            _logging.debug("Direct inversion possible")
+#            a = J[0, 0]
+#            b = J[0, 1]
+#            c = J[1, 0]
+#            d = J[1, 1]
+#            J_inv = 1.0/(a*d-b*c)*np.array([[d, -b],[-c, a]])
+#            dy = - J_inv@F_curly
+#        else:
+        counter = gmres_counter()
         dy, exitCode = gmres(J, -F_curly, callback=counter, tol=tol,
-                             atol=atol, restart=5, maxiter=1,
+                             atol=atol, restart=10, maxiter=5,
                              callback_type='x') # maxiter= number of outer iterations/restarts, restart= number of inner iterations (between restarts)
-        _logging.debug("Number of GMRes iterations = {}".format(counter.niter))
-        #dy, exitCode = lgmres(J, -F_curly, callback=counter)
+        _logging.debug("Number of GMRes iterations = {}, exitCode={}".format(counter.niter, exitCode))
+#        dy, exitCode = lgmres(J, -F_curly, x0=dy, callback=counter, tol=tol, atol=atol)
+#        _logging.debug("Number of LGMRes iterations = {}, exitCode={}".format(counter.niter, exitCode))
         #dy, exitCode = cg(J, -F_curly)
-        # dy = scpi.linalg.solve(J, -F_curly)
-        #print('ExitCode='+str(exitCode))
+        #dy = scpi.linalg.solve(J, -F_curly)
         y_next = y_next + dy
 
-        if np.linalg.norm(dy)/np.linalg.norm(y_next) < eps_newton:
-            _logging.debug("Relative error tolerance of {} achieved with {} Newton iterations.".format(eps_newton, n))
+        if np.linalg.norm(dy) < eps_newton*(np.linalg.norm(y_next) + 1):
+#        if np.linalg.norm(dy) <= eps_newton:
+            _logging.debug("Relative error tolerance of {} achieved with {} Newton iterations, dy={}.".format(eps_newton, n, dy))
             break
 
         F = fun(t, y_next)
+        A = jacobian(y_next, force_args)
 
     return copy.deepcopy(y_next)
 
