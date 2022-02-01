@@ -35,15 +35,24 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
     if len(y0) > 1 and local_adaptivity:
             # choose time step adaptively locally (if we have a system of eqs)
 #        eps = eps*m0*m1 #scale local epsilon with level ratios
-        return _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
-                                               out, write_to_file, m0, m1,
-                                               update_F,
-                                               jacobian, force_args,
-                                               calculate_eigenvalues,
-                                               always_calculate_Jacobian,
-                                               n_av, av_tol,
-                                               switch, K,
-                                               measure_wall_time)
+#        return _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
+#                                               out, write_to_file, m0, m1,
+#                                               update_F,
+#                                               jacobian, force_args,
+#                                               calculate_eigenvalues,
+#                                               always_calculate_Jacobian,
+#                                               n_av, av_tol,
+#                                               switch, K,
+#                                               measure_wall_time)
+        return _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
+                                                out, write_to_file, m0,
+                                                update_F,
+                                                jacobian, force_args,
+                                                calculate_eigenvalues,
+                                                always_calculate_Jacobian,
+                                                n_av, av_tol,
+                                                switch, K,
+                                                measure_wall_time)
 
     elif adaptive_dt:
         # choose time step adaptively globally
@@ -732,6 +741,268 @@ def _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2, inds, min_ind_1,
     y[inds[min_ind_2:]] += dt_2*F[inds[min_ind_2:]]
 
     return (y, dt_2)
+
+def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
+                                     out, write_to_file,
+                                     m0, update_F, jacobian, force_args,
+                                     calculate_eigenvalues,
+                                     always_calculate_Jacobian,
+                                     n_av, av_tol,
+                                     switch, K,
+                                     measure_wall_time):
+    _logging.debug("Using EF, local adaptive time stepping with eps={}, eta={}, m={}".format(
+            eps, eta, m0))
+    n_F_evaluations = 0
+    n_A_evaluations = 0
+
+
+    if measure_wall_time:
+        exec_time_start = time.time()
+        exec_times = []
+        F_evaluations = []
+        A_evaluations = []
+
+    t0, tf = float(t_span[0]), float(t_span[-1])
+
+    t = t0
+    y = y0
+
+    ts = [t]
+    ys = [y]
+    dts = []
+    dts_local = []
+    dt_0s = []
+    dt_1s = []
+    dt_ss = []
+    n_eq_per_level = []
+
+    do_not_update_dt_s = False
+
+    while t < tf:
+        if measure_wall_time:
+            exec_time = time.time() - exec_time_start
+            exec_times.append((t, exec_time))
+
+        _logging.debug("t={}".format(t))
+
+        y = copy.deepcopy(y)
+        F = fun(t, y)
+        n_F_evaluations += 1
+        #_logging.debug("F={}".format(F))
+
+        # choose time step adaptively locally (if we have a system of eqs)
+        (dt_0, dt_1,
+         dt_a,
+         dt_s,
+         inds, af,
+         Xi_1,
+         do_not_update_dt_s,
+         EB_beneficial,
+         n_F_evaluations,
+         n_A_evaluations) = _choose_dts2(fun, t, y, tf, F, eps, eta, out,
+                                         write_to_file, m0, jacobian,
+                                         force_args, calculate_eigenvalues,
+                                         always_calculate_Jacobian,
+                                         do_not_update_dt_s, dt_ss,
+                                         n_av, av_tol,
+                                         K, switch,
+                                         n_F_evaluations, n_A_evaluations)
+
+        if EB_beneficial:
+            n_eqs = _np.array([0, 0, len(y)])
+            dt = _np.minimum(dt_a, tf-t)
+            dts_local.append(dt)
+            _logging.debug("Switching to EB with dt_a={}, K={}".format(dt, K))
+            y = eb._do_newton_iterations(fun, t, y, dt, 4, jacobian,
+                                         force_args, 0.001,
+                                         min(1e-4, dt), min(1e-4, dt),
+                                         min(1e-4, dt))
+        else:
+
+            # find corresponding indices
+            min_ind_1 = len(y0) - _np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
+
+            if (0 < min_ind_1 < len(y0)):
+                _logging.debug("Two levels. i_min^1={}, dt_0={}, dt_1={}".format(min_ind_1, dt_0, dt_1))
+                # three levels
+                n_eqs = _np.array([min_ind_1, len(y) - min_ind_1])
+                (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
+                                         min_ind_1, m0, 1, dts_local, update_F)
+            elif (0 == min_ind_1):
+                # single level, K_0 empty
+                _logging.debug("Single level, K_0 empty, i_min^1={}".format(min_ind_1))
+                n_eqs = _np.array([0, len(y)])
+                _logging.debug("Using EF with with dt_1={}, dt_a={}, dt_s={}, K={}".format(dt_1, dt_a, dt_s, K))
+                (y, dt ) = _do_single_level(t, y, tf, F, dt_1, dts_local)
+            else:
+                # single level, K_1 empty
+                _logging.debug("Single level, K_1 empty, i_min^1={}".format(min_ind_1))
+                n_eqs = _np.array([len(y), 0])
+                _logging.debug("Using EF with with dt_0={}, dt_a={} dt_s={}, K={}".format(dt_0, dt_a, dt_s, K))
+                (y, dt ) = _do_single_level(t, y, tf, F, dt_0, dts_local)
+
+        _logging.debug("y={}".format(y))
+        t = t + dt
+
+        ts.append(t)
+        ys.append(y)
+        dts.append(dt)
+
+        dt_0s.append(dt_0)
+        dt_1s.append(dt_1)
+
+        dt_ss.append(dt_s)
+
+        n_eq_per_level.append(n_eqs)
+
+        if measure_wall_time:
+            F_evaluations.append((t, n_F_evaluations))
+            A_evaluations.append((t, n_A_evaluations))
+
+    ts = _np.hstack(ts)
+    ys = _np.vstack(ys).T
+    dts = _np.hstack(dts)
+    dts_local = _np.hstack(dts_local)
+    dt_0s = _np.hstack(dt_0s)
+    dt_1s = _np.hstack(dt_1s)
+    n_eq_per_level = _np.vstack(n_eq_per_level).T
+
+    if measure_wall_time:
+        with open('exec_times'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, exec_times)
+        with open('F_evaluations'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, F_evaluations)
+        with open('A_evaluations'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, A_evaluations)
+
+    if write_to_file:
+        with open('step_sizes'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, dts)
+        with open('step_sizes_dt_0'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, dt_0s)
+        with open('step_sizes_dt_1'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, dt_1s)
+        with open('step_sizes_local'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, dts_local)
+        with open('n_eq_per_level'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, n_eq_per_level)
+
+    return OdeResult(t=ts, y=ys)
+
+
+def _choose_dts2(fun, t, y, tf, F, eps, eta, out, write_to_file, m0,
+                 jacobian, force_args, calculate_eigenvalues,
+                 always_calculate_Jacobian, do_not_update_dt_s, dt_ss,
+                 n_av, av_tol,
+                 K, switch,
+                 n_F_evaluations, n_A_evaluations):
+
+    EB_beneficial = False
+
+    if jacobian is None:
+        # accuracy limit based only
+        af = 1/eta*(fun(t, y + eta * F) - F)
+        n_F_evaluations += 1
+        # sort the indices such that abs(AF(inds)) is decreasing
+        inds = _np.argsort(-abs(af))
+        # find largest and smallest eta_k
+        Xi_0 = abs(af[inds[0]])
+
+        dt_a = _np.sqrt(2*eps*m0/Xi_0) if Xi_0 > 0.0 else tf - t
+        dt_1 = dt_a
+        Xi_1 = Xi_0/m0
+        dt_0 = dt_1/m0
+
+        dt_s = None
+
+    else:
+
+        # check if dt_s average has converged
+        if not always_calculate_Jacobian and len(dt_ss) >= n_av and not do_not_update_dt_s:
+            old_av_dts = _np.mean(dt_ss[-n_av:-1])
+            new_av_dts = _np.mean(dt_ss[-n_av + 1:])
+#            _logging.debug("old_av_dts={}".format(old_av_dts))
+#            _logging.debug("new_av_dts={}".format(new_av_dts))
+
+            if _np.abs(old_av_dts - new_av_dts) < av_tol*_np.abs(new_av_dts):
+                do_not_update_dt_s = True
+                dt_ss.append(new_av_dts)
+                _logging.debug("Stopped updating Jacobian at t={}. Using dt_s={}".format(t, dt_ss[-1]))
+
+        if do_not_update_dt_s:
+            dt_s = dt_ss[-1]
+            af = 1/eta*(fun(t, y + eta * F) - F)
+            n_F_evaluations += 1
+
+        else:
+            # calculate stability bound
+            A = jacobian(y, force_args)
+            n_A_evaluations += 1
+
+            if calculate_eigenvalues:
+                #w = _np.linalg.eigvalsh(A)
+                w, v = _np.linalg.eigh(A)
+                _logging.debug("Eigenvalues w={}".format(w))
+                _logging.debug("Eigenvectors v={}".format(v))
+
+                if write_to_file:
+                    with open('eigenvalues'+out+'.txt', 'ab') as f:
+                        _np.savetxt(f, w.reshape((1, -1)))
+                w = w[0]
+            else:
+
+                # use gershgorin estimate
+                xi = _np.diag(A)
+                rho = _np.sum(_np.abs(A), axis=1) - _np.abs(xi)
+
+                w = _np.amin(xi-rho)
+
+                if write_to_file:
+                    with open('gershgorin'+out+'.txt', 'ab') as f:
+                        _np.savetxt(f, [w])
+
+            # the eigenvalues are sorted in ascending order
+            dt_s = 2.0/abs(w)
+
+            # calculate the accuracy bound
+            af = A @ F
+
+        # sort the indices such that abs(AF(inds)) is decreasing
+        inds = _np.argsort(-abs(af))
+        # find largest eta_k
+        Xi_0 = abs(af[inds[0]])
+
+        dt_a = _np.sqrt(2*eps*m0/Xi_0) if Xi_0 > 0.0 else tf - t
+        # do not overshoot the final time
+#        dt_a = _np.minimum(dt_a, tf - t)
+
+        if dt_a > K * dt_s and switch:
+            EB_beneficial = True
+            dt_0 = dt_a
+            dt_1 = dt_a
+            Xi_1 = None
+        else:
+            # stick with Euler forward
+            if dt_a > dt_s:
+                # stability bounded time step
+                dt_1 = dt_s
+                Xi_1 = 2.0*eps/(dt_s**2)
+
+            else:
+                # accuracy bounded time step
+                dt_1 = dt_a
+                Xi_1 = Xi_0/m0
+
+            dt_0 = dt_1/m0
+
+    if write_to_file:
+        with open('AFs'+out+'.txt', 'ab') as f:
+            _np.savetxt(f, _np.abs(af).reshape((1, -1)))
+
+    return (dt_0, dt_1, dt_a, dt_s, inds, af, Xi_1,
+            do_not_update_dt_s,
+            EB_beneficial, n_F_evaluations, n_A_evaluations)
+
 
 
 if __name__ == "__main__":
