@@ -10,6 +10,7 @@ import scipy as scpi
 import copy
 from scipy.sparse.linalg import LinearOperator
 import logging as _logging
+import time
 
 
 import matplotlib.pyplot as plt
@@ -105,14 +106,13 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
                                      measure_wall_time):
     _logging.debug("Using EB, adaptive time stepping.")
 
+    n_F_evals = 0
+    n_A_evals = 0
     if measure_wall_time:
         exec_time_start = time.time()
         exec_times = []
-        n_F_evals = 0
         F_evals = []
-        if jacobian is not None:
-            n_A_evals = 0
-            A_evals = []
+        A_evals = []
 
 
     t0, tf = float(t_span[0]), float(t_span[-1])
@@ -128,15 +128,23 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
 
         _logging.debug("t={}".format(t))
 
+        if measure_wall_time:
+            exec_time = time.time() - exec_time_start
+            exec_times.append((t, exec_time))
+
         y = copy.deepcopy(y)
 
         F = fun(t, y)
+        n_F_evals += 1
         if jacobian is not None:
             _logging.debug("Using the Jacobian to calculate AF")
             A = jacobian(y, force_args)
+            n_A_evals += 1
             AF = A@F
         else:
+            A = None
             AF = 1/eta*(fun(t, y + eta * F) - F)
+            n_F_evals += 1
 
         if write_to_file:
             with open('AFs'+out+'.txt', 'ab') as f:
@@ -158,9 +166,17 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
 #            atol = min(eps_max, dt)
             atol = 0.001*eps
 
-        y = _do_newton_iterations(fun, t, y, dt, n_newton, jacobian,
-                                  force_args, xi, tol, atol,
-                                  eps_newton, F, A)
+        (y, n_F_evals, n_A_evals) = _do_newton_iterations(fun, t, y, dt,
+                                                          n_newton, jacobian,
+                                                          force_args, xi, tol,
+                                                          atol, eps_newton, F,
+                                                          A, n_F_evals,
+                                                          n_A_evals)
+
+        if measure_wall_time:
+            F_evals.append((t, n_F_evals))
+            A_evals.append((t, n_A_evals))
+
 #        def newton_fun(x, y, fun, t, dt):
 #            return x - y - dt*fun(t, x)
 #        y = scpi.optimize.fsolve(newton_fun, y, args=(y, fun, t, dt))
@@ -178,11 +194,19 @@ def _do_global_adaptive_timestepping(fun, t_span, y0, t_eval, dt, eps, eta,
         with open('step_sizes'+out+'.txt', 'ab') as f:
             np.savetxt(f, dts)
 
+    if measure_wall_time:
+        with open('exec_times'+out+'.txt', 'ab') as f:
+            np.savetxt(f, exec_times)
+        with open('F_evaluations'+out+'.txt', 'ab') as f:
+            np.savetxt(f, F_evals)
+        with open('A_evaluations'+out+'.txt', 'ab') as f:
+            np.savetxt(f, A_evals)
+
     return OdeResult(t=ts, y=ys)
 
 
 def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
-                          tol, atol, eps_newton, F, A):
+                          tol, atol, eps_newton, F, A, n_F_evals, n_A_evals):
 
     class gmres_counter(object):
         def __init__(self, disp=False):
@@ -234,6 +258,10 @@ def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
                              atol=atol, restart=10, maxiter=5,
                              callback_type='x') # maxiter= number of outer iterations/restarts, restart= number of inner iterations (between restarts)
         _logging.debug("Number of GMRes iterations = {}, exitCode={}".format(counter.niter, exitCode))
+
+        if jacobian is None:
+            n_F_evals += counter.niter # add function evals from GMRes
+
 #        dy, exitCode = lgmres(J, -F_curly, x0=dy, callback=counter, tol=tol, atol=atol)
 #        _logging.debug("Number of LGMRes iterations = {}, exitCode={}".format(counter.niter, exitCode))
         #dy, exitCode = cg(J, -F_curly)
@@ -246,9 +274,12 @@ def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
             break
 
         F = fun(t, y_next)
-        A = jacobian(y_next, force_args)
+        n_F_evals += 1
+        if jacobian is not None:
+            A = jacobian(y_next, force_args)
+            n_A_evals += 1
 
-    return copy.deepcopy(y_next)
+    return (copy.deepcopy(y_next), n_F_evals, n_A_evals)
 
 
 if __name__ == "__main__":
