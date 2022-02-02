@@ -809,8 +809,8 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
                                          n_F_evaluations, n_A_evaluations)
 
         if EB_beneficial:
-            n_eqs = _np.array([0, 0, len(y)])
-            dt = _np.minimum(dt_a, tf-t)
+            n_eqs = _np.array([0, len(y)])
+            dt = _np.minimum(dt_0, tf-t)
             dts_local.append(dt)
             _logging.debug("Switching to EB with dt_a={}, K={}".format(dt, K))
             y = eb._do_newton_iterations(fun, t, y, dt, 4, jacobian,
@@ -866,6 +866,9 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
     dt_0s = _np.hstack(dt_0s)
     dt_1s = _np.hstack(dt_1s)
     n_eq_per_level = _np.vstack(n_eq_per_level).T
+
+    dt_0s[n_eq_per_level[0, :] == 0] = 0
+    dt_1s[n_eq_per_level[1, :] == 0] = 0
 
     if measure_wall_time:
         with open('exec_times'+out+'.txt', 'ab') as f:
@@ -973,6 +976,7 @@ def _choose_dts2(fun, t, y, tf, F, eps, eta, out, write_to_file, m0,
         Xi_0 = abs(af[inds[0]])
 
         dt_a = _np.sqrt(2*eps*m0/Xi_0) if Xi_0 > 0.0 else tf - t
+
         # do not overshoot the final time
 #        dt_a = _np.minimum(dt_a, tf - t)
 
