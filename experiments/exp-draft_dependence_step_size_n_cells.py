@@ -79,15 +79,6 @@ params = {'EF_glob_adap_acc': {'eta': eta},
           'EB_global_adap': {'eta': eta}
          }
 
-
-labels = {'EF_glob_adap_acc': 'Glob. adap. EF',
-          'EF_glob_adap_stab': 'Glob. adap. EF\n(with stab. bound)' ,
-          'EF_local_adap': 'Loc. adap. EF',
-          'EB_global_adap': 'Glob. adap. EB'
-         }
-
-
-
 # ##  Dependence of initial step dt_0 and dt at steady state on spheroid size
 #
 # Can I run this locally, or should I run this on rackham? Can I maybe run up to 1000 as a script locally? If necessary if I allocate more RAM to the VM?
