@@ -47,273 +47,80 @@ params_cubic = {"mu": 5.70, "s": s, "rA": rA}
 
 
 sheet = ut.setup_locally_compressed_spheroid(10, 10, 10, seed=seed)
-#sheet = ut.setup_locally_compressed_spheroid(3, 3, 3, seed=seed)
 
+algorithms = ['EF_glob_adap_acc', 'EF_glob_adap_stab' ,  'EF_local_adap', 'EB_global_adap', 'fixed_dt' ]
 
-data = {}
+models = {'EF_glob_adap_acc': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim),
+          'EF_glob_adap_stab': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim),
+          'EF_local_adap': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim),
+          'EB_global_adap': cbmos.CBModel(ff.Cubic(), eb.solve_ivp, dim),
+          'fixed_dt': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim) }
 
 eps = 0.01
-eta = 0.0001
-cbmodel = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim, separation)
-cbmodel_eb = cbmos.CBModel(ff.Cubic(), eb.solve_ivp, dim, separation)
-#algorithms = ['glob_adap_acc', 'glob_adap_stab' ,  'local_adap', 'fixed_dt' ]
-exec_times = {}
-F_evaluations = {}
-A_evaluations = {}
-ts_s = {}
+eta = 1e-4
 
-n = 25
+params = {'EF_glob_adap_acc': {'eps':eps, 'eta': eta},
+          'EF_glob_adap_stab': {'eps':eps, 'eta': eta, 'jacobian': models['EF_glob_adap_stab'].jacobian, 'force_args': params_cubic, 'always_calculate_Jacobian': True},
+          'EF_local_adap': {'eps':eps, 'eta': eta, 'jacobian': models['EF_local_adap'].jacobian, 'force_args': params_cubic, 'always_calculate_Jacobian': True, 'local_adaptivity': True, 'm0': 4},
+          'EB_global_adap': {'eps':eps, 'eta': eta, 'jacobian': models['EB_global_adap'].jacobian, 'force_args': params_cubic},
+          'fixed_dt': {'dt': 0.011758452836496444}
+         }
 
-out = 'EF_glob_adap_acc'
-for i in range(n):
-    try:
-        os.remove('exec_times'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    try:
-        os.remove('F_evaluations'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    ts, history = cbmodel.simulate(sheet, t_data, params_cubic, {"eps": eps, 'eta': eta, "out": out, "measure_wall_time": True}, seed=seed)
-
-    with open('exec_times'+out+'.txt', 'r') as f:
-        if i==0:
-            exec_times[out] = np.array(np.loadtxt(f))[:, 1]
-        else:
-            exec_times[out] += np.array(np.loadtxt(f))[:, 1]
-    if i==0:
-        with open('F_evaluations'+out+'.txt', 'r') as f:
-            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-exec_times[out] = list(exec_times[out]/n)
-F_evaluations[out] = list(F_evaluations[out])
-ts_s[out] = ts
-A_evaluations[out] = list(np.zeros(len(ts)))
-
-out = 'EF_glob_adap_stab'
-for i in range(n):
-    try:
-        os.remove('exec_times'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    try:
-        os.remove('F_evaluations'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    try:
-        os.remove('A_evaluations'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    ts, history = cbmodel.simulate(sheet, t_data, params_cubic, {"eps": eps, 'eta': eta, "out": out,"jacobian": cbmodel.jacobian, "force_args": params_cubic, "always_calculate_Jacobian": True, "measure_wall_time": True}, seed=seed)
-
-    with open('exec_times'+out+'.txt', 'r') as f:
-        if i==0:
-            exec_times[out] = np.array(np.loadtxt(f))[:, 1]
-        else:
-            exec_times[out] += np.array(np.loadtxt(f))[:, 1]
-    if i==0:
-        with open('F_evaluations'+out+'.txt', 'r') as f:
-            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-        with open('A_evaluations'+out+'.txt', 'r') as f:
-            A_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-exec_times[out] = list(exec_times[out]/n)
-F_evaluations[out] = list(F_evaluations[out])
-A_evaluations[out] = list(A_evaluations[out])
-ts_s[out] = ts
-
-#out = 'glob_adap_stab_stop_Jac_update'
-#for i in range(n):
-#    try:
-#        os.remove('exec_times'+out+'.txt')
-#    except FileNotFoundError:
-#        print('Nothing to delete.')
-#    try:
-#        os.remove('F_evaluations'+out+'.txt')
-#    except FileNotFoundError:
-#        print('Nothing to delete.')
-#    try:
-#        os.remove('A_evaluations'+out+'.txt')
-#    except FileNotFoundError:
-#        print('Nothing to delete.')
-#    ts, history = cbmodel.simulate(sheet, t_data, params_cubic, {"eps": eps, 'eta': eta, "out": out,"jacobian": cbmodel.jacobian, "force_args": params_cubic, "measure_wall_time": True}, seed=seed)
-#
-#    with open('exec_times'+out+'.txt', 'r') as f:
-#        if i==0:
-#            exec_times[out] = np.array(np.loadtxt(f))[:, 1]
-#        else:
-#            exec_times[out] += np.array(np.loadtxt(f))[:, 1]
-#    if i==0:
-#        with open('F_evaluations'+out+'.txt', 'r') as f:
-#            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-#        with open('A_evaluations'+out+'.txt', 'r') as f:
-#            A_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-#exec_times[out] = list(exec_times[out]/n)
-#F_evaluations[out] = list(F_evaluations[out])
-#A_evaluations[out] = list(A_evaluations[out])
-#ts_s[out] = ts
-
-# local adaptivity
-out = 'EF_local_adap'
-for i in range(n):
-    try:
-        os.remove('exec_times'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    try:
-        os.remove('F_evaluations'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    try:
-        os.remove('A_evaluations'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    ts, history = cbmodel.simulate(sheet, t_data, params_cubic, {"eps": eps, 'eta': eta,  "out": out, "jacobian": cbmodel.jacobian, "force_args": params_cubic, "always_calculate_Jacobian": True, "local_adaptivity": True, "measure_wall_time": True}, seed=seed)
-
-    with open('exec_times'+out+'.txt', 'r') as f:
-        if i==0:
-            exec_times[out] = np.array(np.loadtxt(f))[:, 1]
-        else:
-            exec_times[out] += np.array(np.loadtxt(f))[:, 1]
-    if i==0:
-        with open('F_evaluations'+out+'.txt', 'r') as f:
-            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-        with open('A_evaluations'+out+'.txt', 'r') as f:
-            A_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-exec_times[out] = list(exec_times[out]/n)
-F_evaluations[out] = list(F_evaluations[out])
-A_evaluations[out] = list(A_evaluations[out])
-ts_s[out] = ts
-
-#out = 'local_adap_stop_Jac_update'
-#for i in range(n):
-#    try:
-#        os.remove('exec_times'+out+'.txt')
-#    except FileNotFoundError:
-#        print('Nothing to delete.')
-#    try:
-#        os.remove('F_evaluations'+out+'.txt')
-#    except FileNotFoundError:
-#        print('Nothing to delete.')
-#    try:
-#        os.remove('A_evaluations'+out+'.txt')
-#    except FileNotFoundError:
-#        print('Nothing to delete.')
-#    ts, history = cbmodel.simulate(sheet, t_data, params_cubic, {"eps": eps, 'eta': eta, "out": out, "jacobian": cbmodel.jacobian, "force_args": params_cubic, "local_adaptivity": True, "measure_wall_time": True}, seed=seed)
-#
-#    with open('exec_times'+out+'.txt', 'r') as f:
-#        if i==0:
-#            exec_times[out] = np.array(np.loadtxt(f))[:, 1]
-#        else:
-#            exec_times[out] += np.array(np.loadtxt(f))[:, 1]
-#    if i==0:
-#        with open('F_evaluations'+out+'.txt', 'r') as f:
-#            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-#        with open('A_evaluations'+out+'.txt', 'r') as f:
-#            A_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-#exec_times[out] = list(exec_times[out]/n)
-#F_evaluations[out] = list(F_evaluations[out])
-#A_evaluations[out] = list(A_evaluations[out])
-#ts_s[out] = ts
-
-out = 'EB_global_adap'
-for i in range(n):
-    try:
-        os.remove('exec_times'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    try:
-        os.remove('F_evaluations'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    try:
-        os.remove('A_evaluations'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    ts, history = cbmodel_eb.simulate(sheet, t_data, params_cubic, {"eps": eps, 'eta': eta, "out": out, "measure_wall_time": True}, seed=seed)
-
-    with open('exec_times'+out+'.txt', 'r') as f:
-        if i==0:
-            exec_times[out] = np.array(np.loadtxt(f))[:, 1]
-        else:
-            exec_times[out] += np.array(np.loadtxt(f))[:, 1]
-    if i==0:
-        with open('F_evaluations'+out+'.txt', 'r') as f:
-            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-        with open('A_evaluations'+out+'.txt', 'r') as f:
-            A_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-exec_times[out] = list(exec_times[out]/n)
-F_evaluations[out] = list(F_evaluations[out])
-A_evaluations[out] = list(A_evaluations[out])
-ts_s[out] = ts
-
-out = 'EB_global_adap_jac'
-for i in range(n):
-    try:
-        os.remove('exec_times'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    try:
-        os.remove('F_evaluations'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    try:
-        os.remove('A_evaluations'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    ts, history = cbmodel_eb.simulate(sheet, t_data, params_cubic, {"eps": eps, 'eta': eta, 'jacobian': cbmodel_eb.jacobian, 'force_args': params_cubic, "out": out, "measure_wall_time": True}, seed=seed)
-
-    with open('exec_times'+out+'.txt', 'r') as f:
-        if i==0:
-            exec_times[out] = np.array(np.loadtxt(f))[:, 1]
-        else:
-            exec_times[out] += np.array(np.loadtxt(f))[:, 1]
-    if i==0:
-        with open('F_evaluations'+out+'.txt', 'r') as f:
-            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-        with open('A_evaluations'+out+'.txt', 'r') as f:
-            A_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-exec_times[out] = list(exec_times[out]/n)
-F_evaluations[out] = list(F_evaluations[out])
-A_evaluations[out] = list(A_evaluations[out])
-ts_s[out] = ts
-
-# fixed time stepping
-out = 'fixed_dt'
-#DT = 0.01 #I can make this more specific to this set up
-DT = ts_s['EF_glob_adap_acc'][1] - ts_s['EF_glob_adap_acc'][0]
-print('DT='+str(DT))
-for i in range(n):
-
-    try:
-        os.remove('exec_times'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    try:
-        os.remove('F_evaluations'+out+'.txt')
-    except FileNotFoundError:
-        print('Nothing to delete.')
-    ts, history = cbmodel.simulate(sheet, t_data, params_cubic, {"dt": DT, "out": out, "measure_wall_time": True}, seed=seed)
-
-    with open('exec_times'+out+'.txt', 'r') as f:
-        if i==0:
-            exec_times[out] = np.array(np.loadtxt(f))[:, 1]
-        else:
-            exec_times[out] += np.array(np.loadtxt(f))[:, 1]
-    if i==0:
-        with open('F_evaluations'+out+'.txt', 'r') as f:
-            F_evaluations[out] = np.array(np.loadtxt(f))[:, 1]
-exec_times[out] = list(exec_times[out]/n)
-ts_s[out] = ts
-F_evaluations[out] = list(F_evaluations[out])
-A_evaluations[out] = list(np.zeros(len(ts)))
+for alg in algorithms:
+    params[alg]['out'] = alg
+    params[alg]['measure_wall_time'] = True
 
 
+n = 100
 
-data['exec_times'] = exec_times
-data['ts_s'] = ts_s
-data['F_evals'] = F_evaluations
-data['A_evals'] = A_evaluations
+for alg in algorithms:
+    data = {}
+    for i in range(n):
+        try:
+            os.remove('exec_times'+alg+'.txt')
+        except FileNotFoundError:
+            pass
+            #print('Nothing to delete.')
+        try:
+            os.remove('F_evaluations'+alg+'.txt')
+        except FileNotFoundError:
+            pass
+            #print('Nothing to delete.')
+        try:
+            os.remove('A_evaluations'+alg+'.txt')
+        except FileNotFoundError:
+            pass
+            #print('Nothing to delete.')
 
-with open(sys.argv[1]+'.json', 'w') as f:
-    json.dump(data, f)
+        ts, history = models[alg].simulate(sheet, t_data, params_cubic, params[alg], seed=seed)
+
+        with open('exec_times'+alg+'.txt', 'r') as f:
+            exec_times = np.array(np.loadtxt(f))[:, 1]
+            if i==0:
+                data['exec_times'] = exec_times
+                data['min_exec_times'] =  exec_times
+                data['max_exec_times'] =  exec_times
+            else:
+                data['exec_times'] += exec_times
+                data['min_exec_times'] =  np.minimum(data['min_exec_times'], exec_times)
+                data['max_exec_times'] =  np.maximum(data['max_exec_times'], exec_times)
+
+    data['exec_times'] = list(data['exec_times']/n)
+    data['min_exec_times'] = list(data['min_exec_times'])
+    data['max_exec_times'] = list(data['max_exec_times'])
 
 
+    with open('F_evaluations'+alg+'.txt', 'r') as f:
+        data['F_evals'] = list(np.array(np.loadtxt(f))[:, 1])
+    if alg in ['EF_glob_adap_stab', 'EF_local_adap', 'EB_global_adap']:
+        with open('A_evaluations'+alg+'.txt', 'r') as f:
+            data['A_evals'] = list(np.array(np.loadtxt(f))[:, 1])
+    else:
+        data['A_evals'] = list(np.zeros(len(ts)))
+
+    data['ts'] = ts
+
+    with open(sys.argv[1]+'_'+alg+'.json', 'w') as f:
+        json.dump(data, f)
+
+    print('Done with '+alg)
