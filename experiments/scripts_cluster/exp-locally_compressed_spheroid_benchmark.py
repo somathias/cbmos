@@ -46,7 +46,7 @@ force = 'cubic'
 params_cubic = {"mu": 5.70, "s": s, "rA": rA}
 
 
-sheet = ut.setup_locally_compressed_spheroid(10, 10, 10, seed=seed)
+sheet = ut.setup_locally_compressed_spheroid(11, 11, 11, seed=seed)
 
 algorithms = ['EF_glob_adap_acc', 'EF_glob_adap_stab' ,  'EF_local_adap', 'EB_global_adap', 'fixed_dt' ]
 
