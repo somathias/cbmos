@@ -46,7 +46,7 @@ force = 'cubic'
 params_cubic = {"mu": 5.70, "s": s, "rA": rA}
 
 
-sheet = ut.setup_locally_compressed_spheroid(11, 11, 11, seed=seed)
+sheet = ut.setup_locally_compressed_spheroid(10, 10, 10, seed=seed)
 
 algorithms = ['EF_glob_adap_acc', 'EF_glob_adap_stab' ,  'EF_local_adap', 'EB_global_adap', 'fixed_dt' ]
 
@@ -74,6 +74,25 @@ for alg in algorithms:
 n = 100
 
 for alg in algorithms:
+    # burn in
+    try:
+        os.remove('exec_times'+alg+'.txt')
+    except FileNotFoundError:
+        pass
+        #print('Nothing to delete.')
+    try:
+        os.remove('F_evaluations'+alg+'.txt')
+    except FileNotFoundError:
+        pass
+        #print('Nothing to delete.')
+    try:
+        os.remove('A_evaluations'+alg+'.txt')
+    except FileNotFoundError:
+        pass
+        #print('Nothing to delete.')
+
+    ts, history = models[alg].simulate(sheet, t_data, params_cubic, params[alg], seed=seed)
+
     data = {}
     for i in range(n):
         try:
