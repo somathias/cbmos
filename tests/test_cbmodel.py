@@ -532,7 +532,7 @@ def test_jacobian_2DN3():
 
 def test_jacobian_3DN3():
 
-    g = ff.Linear()
+    g = ff.Cubic()
     g_prime = g.derive()
 
     y = np.array([[0., 0., 0.], [0.7, 0.1, -0.6], [0.3, -1., -2.0]])
