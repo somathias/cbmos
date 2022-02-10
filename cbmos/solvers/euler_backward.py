@@ -62,6 +62,9 @@ def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt, n_newton,
     _logging.debug("Using EB, fixed time stepping with dt={}".format(
             dt))
 
+    n_F_evals = 0
+    n_A_evals = 0
+
     # do regular fixed time stepping
     t0, tf = float(t_span[0]), float(t_span[-1])
 
@@ -79,9 +82,20 @@ def _do_fixed_timestepping(fun, t_span, y0, t_eval, dt, n_newton,
 
         _logging.debug("t={}".format(t))
 
-        y = _do_newton_iterations(fun, t, y, dt, n_newton, jacobian,
-                                  force_args, xi, tol, atol,
-                                  eps_newton)
+        F = fun(t, y)
+        n_F_evals +=1
+        if jacobian is not None:
+            A = jacobian(y, force_args)
+            n_A_evals += 1
+        else:
+            A = None
+
+        (y, n_F_evals, n_A_evals) = _do_newton_iterations(fun, t, y, dt,
+                                                          n_newton, jacobian,
+                                                          force_args, xi, tol,
+                                                          atol, eps_newton,
+                                                          F, A, n_F_evals,
+                                                          n_A_evals)
         t = t + dt
 
         ts.append(t)
