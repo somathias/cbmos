@@ -824,25 +824,30 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
 
             # find corresponding indices
             min_ind_1 = len(y0) - _np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
+            n_eqs = _np.array([min_ind_1, len(y) - min_ind_1])
+            _logging.debug("i_min^1={}, dt_0={}, dt_1={}".format(min_ind_1, dt_0, dt_1))
+            (y, dt) = _do_levels2(fun, t, y, tf, F, dt_0, dt_1, inds,
+                                  min_ind_1, m0, dts_local, update_F)
 
-            if (0 < min_ind_1 < len(y0)):
-                _logging.debug("Two levels. i_min^1={}, dt_0={}, dt_1={}".format(min_ind_1, dt_0, dt_1))
-                # three levels
-                n_eqs = _np.array([min_ind_1, len(y) - min_ind_1])
-                (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                         min_ind_1, m0, 1, dts_local, update_F)
-            elif (0 == min_ind_1):
-                # single level, K_0 empty
-                _logging.debug("Single level, K_0 empty, i_min^1={}".format(min_ind_1))
-                n_eqs = _np.array([0, len(y)])
-                _logging.debug("Using EF with with dt_1={}, dt_a={}, dt_s={}, K={}".format(dt_1, dt_a, dt_s, K))
-                (y, dt ) = _do_single_level(t, y, tf, F, dt_1, dts_local)
-            else:
-                # single level, K_1 empty
-                _logging.debug("Single level, K_1 empty, i_min^1={}".format(min_ind_1))
-                n_eqs = _np.array([len(y), 0])
-                _logging.debug("Using EF with with dt_0={}, dt_a={} dt_s={}, K={}".format(dt_0, dt_a, dt_s, K))
-                (y, dt ) = _do_single_level(t, y, tf, F, dt_0, dts_local)
+
+#            if (0 < min_ind_1 < len(y0)):
+#                _logging.debug("Two levels. i_min^1={}, dt_0={}, dt_1={}".format(min_ind_1, dt_0, dt_1))
+#                # three levels
+#                n_eqs = _np.array([min_ind_1, len(y) - min_ind_1])
+#                (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
+#                                         min_ind_1, m0, 1, dts_local, update_F)
+#            elif (0 == min_ind_1):
+#                # single level, K_0 empty
+#                _logging.debug("Single level, K_0 empty, i_min^1={}".format(min_ind_1))
+#                n_eqs = _np.array([0, len(y)])
+#                _logging.debug("Using EF with with dt_1={}, dt_a={}, dt_s={}, K={}".format(dt_1, dt_a, dt_s, K))
+#                (y, dt ) = _do_single_level(t, y, tf, F, dt_1, dts_local)
+#            else:
+#                # single level, K_1 empty
+#                _logging.debug("Single level, K_1 empty, i_min^1={}".format(min_ind_1))
+#                n_eqs = _np.array([len(y), 0])
+#                _logging.debug("Using EF with with dt_0={}, dt_a={} dt_s={}, K={}".format(dt_0, dt_a, dt_s, K))
+#                (y, dt ) = _do_single_level(t, y, tf, F, dt_0, dts_local)
 
         _logging.debug("y={}".format(y))
         t = t + dt
@@ -992,17 +997,9 @@ def _choose_dts2(fun, t, y, tf, F, eps, eta, out, write_to_file, m0,
             dt_1 = dt_a
             Xi_1 = None
         else:
-            # stick with Euler forward
-            if dt_a > dt_s:
-                # stability bounded time step
-                dt_1 = dt_s
-                Xi_1 = 2.0*eps/(dt_s**2)
-
-            else:
-                # accuracy bounded time step
-                dt_1 = dt_a
-                Xi_1 = Xi_0/m0
-
+            # stick with EF
+            dt_1 = _np.minimum(dt_a, dt_s)
+            Xi_1 = 2.0*eps/(dt_1**2)
             dt_0 = dt_1/m0
 
     if write_to_file:
@@ -1013,6 +1010,21 @@ def _choose_dts2(fun, t, y, tf, F, eps, eta, out, write_to_file, m0,
             do_not_update_dt_s,
             EB_beneficial, n_F_evaluations, n_A_evaluations)
 
+
+def _do_levels2(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0,
+                   dts_local, update_F):
+
+    dt_0 = _np.minimum(dt_0, (tf-t)/m0)
+    for j in range(m0):
+        y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
+        if update_F:
+            F = fun(t, y)
+        dts_local.append(dt_0)
+
+    dt_1 = _np.minimum(dt_1, (tf-t))
+    y[inds[min_ind_1:]] += dt_1*F[inds[min_ind_1:]]
+
+    return (y, dt_1)
 
 
 if __name__ == "__main__":
@@ -1098,7 +1110,7 @@ if __name__ == "__main__":
 
     plt.figure()
     dt  = _np.loadtxt('step_sizes.txt')
-    plt.plot(sol2.t[:-1], dt)
+    plt.plot(sol2.t[:-1], dt[:, 0])
     plt.plot(sol2.t, 0.04*_np.ones(len(sol2.t)))
     plt.xlabel('time')
     plt.ylabel('Global step size')
