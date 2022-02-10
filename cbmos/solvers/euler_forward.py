@@ -527,6 +527,8 @@ def _do_local_adaptive_timestepping(fun, t_span, y0, eps, eta,
     ts = _np.hstack(ts)
     ys = _np.vstack(ys).T
     dts = _np.hstack(dts)
+    #dts = _np.vstack([dts, dt_as, dt_ss]).T
+
     dts_local = _np.hstack(dts_local)
     dt_0s = _np.hstack(dt_0s)
     dt_1s = _np.hstack(dt_1s)
@@ -774,6 +776,7 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
     dt_0s = []
     dt_1s = []
     dt_ss = []
+    dt_as = []
     n_eq_per_level = []
 
     do_not_update_dt_s = False
@@ -852,6 +855,7 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
         dt_1s.append(dt_1)
 
         dt_ss.append(dt_s)
+        dt_as.append(dt_a)
 
         n_eq_per_level.append(n_eqs)
 
@@ -862,6 +866,8 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
     ts = _np.hstack(ts)
     ys = _np.vstack(ys).T
     dts = _np.hstack(dts)
+    dts = _np.vstack([dts, dt_as, dt_ss]).T
+
     dts_local = _np.hstack(dts_local)
     dt_0s = _np.hstack(dt_0s)
     dt_1s = _np.hstack(dt_1s)
