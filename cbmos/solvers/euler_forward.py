@@ -865,7 +865,7 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
 
     ts = _np.hstack(ts)
     ys = _np.vstack(ys).T
-    dts = _np.hstack(dts)
+#    dts = _np.hstack(dts)
     dts = _np.vstack([dts, dt_as, dt_ss]).T
 
     dts_local = _np.hstack(dts_local)
@@ -935,7 +935,7 @@ def _choose_dts2(fun, t, y, tf, F, eps, eta, out, write_to_file, m0,
 
             if _np.abs(old_av_dts - new_av_dts) < av_tol*_np.abs(new_av_dts):
                 do_not_update_dt_s = True
-                dt_ss.append(new_av_dts)
+#                dt_ss.append(new_av_dts)
                 _logging.debug("Stopped updating Jacobian at t={}. Using dt_s={}".format(t, dt_ss[-1]))
 
         if do_not_update_dt_s:
@@ -1035,7 +1035,7 @@ if __name__ == "__main__":
 #    plt.figure()
 #    plt.plot(sol.t, sol.y)
 
-    t_eval = _np.linspace(0, 1, 10)
+    t_eval = _np.linspace(0, 0.1, 10)
     #y0 = _np.array([0.7, 1.3, 3.0, 0.2])
     y0 = _np.array([3.0, 1.3, 0.7, 0.2])
 
