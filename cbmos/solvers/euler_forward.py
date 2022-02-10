@@ -20,7 +20,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
               local_adaptivity=False, m0=2, m1=2, update_F=False,
               jacobian=None, force_args={}, calculate_eigenvalues=False,
               always_calculate_Jacobian=False,
-              fix_eqs=0, switch=False, K=5,
+              fix_eqs=0, switch=False, K=5, dim=None, rA=1.5,
               measure_wall_time=False):
     """
     Note: t_eval can only be taken into account when dt is provided and thus
@@ -54,7 +54,7 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
                                                 calculate_eigenvalues,
                                                 always_calculate_Jacobian,
                                                 n_av, av_tol,
-                                                switch, K,
+                                                switch, K, dim, rA,
                                                 measure_wall_time)
 
     elif adaptive_dt:
@@ -753,7 +753,7 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
                                      calculate_eigenvalues,
                                      always_calculate_Jacobian,
                                      n_av, av_tol,
-                                     switch, K,
+                                     switch, K, dim, rA,
                                      measure_wall_time):
     _logging.debug("Using EF, local adaptive time stepping with eps={}, eta={}, m={}".format(
             eps, eta, m0))
@@ -830,27 +830,7 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
             n_eqs = _np.array([min_ind_1, len(y) - min_ind_1])
             _logging.debug("i_min^1={}, dt_0={}, dt_1={}".format(min_ind_1, dt_0, dt_1))
             (y, dt) = _do_levels2(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                  min_ind_1, m0, dts_local, update_F)
-
-
-#            if (0 < min_ind_1 < len(y0)):
-#                _logging.debug("Two levels. i_min^1={}, dt_0={}, dt_1={}".format(min_ind_1, dt_0, dt_1))
-#                # three levels
-#                n_eqs = _np.array([min_ind_1, len(y) - min_ind_1])
-#                (y, dt) = _do_two_levels(fun, t, y, tf, F, dt_0, dt_1, inds,
-#                                         min_ind_1, m0, 1, dts_local, update_F)
-#            elif (0 == min_ind_1):
-#                # single level, K_0 empty
-#                _logging.debug("Single level, K_0 empty, i_min^1={}".format(min_ind_1))
-#                n_eqs = _np.array([0, len(y)])
-#                _logging.debug("Using EF with with dt_1={}, dt_a={}, dt_s={}, K={}".format(dt_1, dt_a, dt_s, K))
-#                (y, dt ) = _do_single_level(t, y, tf, F, dt_1, dts_local)
-#            else:
-#                # single level, K_1 empty
-#                _logging.debug("Single level, K_1 empty, i_min^1={}".format(min_ind_1))
-#                n_eqs = _np.array([len(y), 0])
-#                _logging.debug("Using EF with with dt_0={}, dt_a={} dt_s={}, K={}".format(dt_0, dt_a, dt_s, K))
-#                (y, dt ) = _do_single_level(t, y, tf, F, dt_0, dts_local)
+                                  min_ind_1, m0, dts_local, update_F, dim, rA)
 
         _logging.debug("y={}".format(y))
         t = t + dt
@@ -1015,19 +995,47 @@ def _choose_dts2(fun, t, y, tf, F, eps, eta, out, write_to_file, m0,
 
 
 def _do_levels2(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0,
-                   dts_local, update_F):
+                   dts_local, update_F, dim, rA):
 
     dt_0 = _np.minimum(dt_0, (tf-t)/m0)
     for j in range(m0):
         y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
         if update_F:
             F = fun(t, y)
+        elif dim is not None:
+            # do partial update
+            pinds = _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
+            F[pinds] = fun(t, y[pinds])
         dts_local.append(dt_0)
 
     dt_1 = _np.minimum(dt_1, (tf-t))
     y[inds[min_ind_1:]] += dt_1*F[inds[min_ind_1:]]
 
     return (y, dt_1)
+
+def _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1):
+
+    # calculate distance matrix
+    y_r = _np.expand_dims(
+        _np.asarray(y).reshape((-1, dim)),
+        axis=-1,
+        )  # shape (n, d, 1)
+    cross_diff = y_r.transpose([2, 1, 0]) - y_r  # shape (n, d, n)
+    norm = _np.sqrt((cross_diff**2).sum(axis=1))  # shape (n, n)
+
+    # extract cell indices from equation indices
+    updated_cell_inds = _np.unique(inds[:min_ind_1] // dim)
+    # find other cells influenced by updated cells
+    tmp = _np.argwhere(norm[updated_cell_inds, :] < rA)[:, 1]
+
+    # convert back to equation indices
+    # for cell j equations j*dim, j*dim + 1, ... , j*dim + dim -1 are perturbed
+    tmp2 = _np.array([j*dim + d for d in range(dim) for j in tmp])
+
+    # make sure that updated equations are included (is this necessary?)
+    perturbed_indices = _np.union1d(inds[:min_ind_1], tmp2)
+
+    return perturbed_indices
 
 
 if __name__ == "__main__":

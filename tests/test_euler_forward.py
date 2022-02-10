@@ -267,3 +267,15 @@ def test_measure_wall_time_local_adaptivity():
     assert A_evaluations[-1][1] == (len(sol.t)-1)
 
 
+def test_calculate_perturbed_indices1D():
+
+    rA = 1.5
+    dim = 1
+    y = np.array([0.0, 0.75, 2.0])
+
+    inds = np.arange(len(y))
+    min_ind_1 = 1
+
+    pinds = ef._calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
+
+    assert np.all(pinds == [0, 1])
