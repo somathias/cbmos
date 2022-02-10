@@ -15,6 +15,7 @@ import cbmos.events as ev
 def func(t, y):
     return -50*y
 
+
 def jacobian(y, fa):
     return -50*np.eye(len(y))
 
@@ -32,14 +33,14 @@ def test_y_shape():
 
 def test_t_eval():
     t_eval = np.linspace(0, 1, 10)
-    y0 = np.array([1, -1])
+    y0 = np.array([1.0, -1.0])
 
     sol = ef.solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=t_eval,
                        dt=0.01)
     assert len(sol.t) == len(t_eval)
 
     t_eval = np.linspace(0, 1, 1000)
-    y0 = np.array([1, -1])
+    y0 = np.array([1.0, -1.0])
 
     sol = ef.solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=t_eval,
                        dt=0.01)
@@ -267,3 +268,91 @@ def test_measure_wall_time_local_adaptivity():
     assert A_evaluations[-1][1] == (len(sol.t)-1)
 
 
+def test_calculate_perturbed_indices1D():
+
+    rA = 1.5
+    dim = 1
+    y = np.array([0.0, 0.75, 2.0])
+
+    inds = np.arange(len(y))
+    min_ind_1 = 1
+
+    pinds = ef._calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
+
+    assert np.all(pinds == [0, 1])
+
+
+def test_calculate_perturbed_indices2D():
+
+    rA = 1.5
+    dim = 2
+    y = np.array([0.0, 0.0, 0.75, 0.0, 2.0, 0.0])
+
+    inds = np.arange(len(y))
+    min_ind_1 = 1
+
+    pinds = ef._calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
+
+    assert np.all(pinds == [0, 1, 2, 3])
+
+
+def test_calculate_perturbed_indices3D():
+
+    rA = 1.5
+    dim = 3
+    y = np.array([0.0, 0.0, 0.0, 0.75, 0.0, 0.0, 2.0, 0.0, 0.0])
+
+    inds = np.arange(len(y))
+    min_ind_1 = 1
+
+    pinds = ef._calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
+
+    assert np.all(pinds == [0, 1, 2, 3, 4, 5])
+
+
+def test_calculate_perturbed_indices_min_ind_1_is_zero():
+
+    rA = 1.5
+    dim = 3
+    y = np.array([0.0, 0.0, 0.0, 0.75, 0.0, 0.0, 2.0, 0.0, 0.0])
+
+    inds = np.arange(len(y))
+    min_ind_1 = 0
+
+    pinds = ef._calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
+
+    assert pinds.size == 0
+
+
+def test_calculate_perturbed_indices_min_ind_1_is_length_of_y():
+
+    rA = 1.5
+    dim = 3
+    y = np.array([0.0, 0.0, 0.0, 0.75, 0.0, 0.0, 2.0, 0.0, 0.0])
+
+    inds = np.arange(len(y))
+    min_ind_1 = len(y)
+
+    pinds = ef._calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
+
+    assert np.all(pinds == inds)
+
+
+def test_partial_update():
+
+    rA = 1.5
+    dim = 3
+    y0 = np.array([0.0, 0.0, 0.0, 0.75, 0.0, 0.0, 2.0, 0.0, 0.0])
+
+    sol_full_update = ef.solve_ivp(func, [0.0, 1.0], y0, jacobian=jacobian,
+                                   local_adaptivity=True,
+                                   always_calculate_Jacobian=True,
+                                   update_F=True)
+    sol_partial_update = ef.solve_ivp(np.vectorize(func, otypes=[float]), # make sure that test func works with empty list as argument
+                                      [0.0, 1.0], y0, jacobian=jacobian,
+                                      local_adaptivity=True,
+                                      always_calculate_Jacobian=True,
+                                      dim=dim, rA=rA)
+
+    assert(np.all(sol_full_update.t == sol_partial_update.t))
+    assert(np.all(sol_full_update.y == sol_partial_update.y))
