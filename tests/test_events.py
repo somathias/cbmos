@@ -51,3 +51,26 @@ def test_apply_division():
     assert np.isclose(
             np.linalg.norm(cell_list[0].position - cell_list[5].position),
             cbmodel.separation)
+
+
+def test_pick_random_cell_to_divide():
+    from cbmos.cbmodel._eventqueue import EventQueue
+    from cbmos.events import PickRandomCellToDivideEvent
+
+    dim = 3
+    cbmodel = cbmos.CBModel(ff.Linear(), ef.solve_ivp, dim)
+
+    cell_list = [ cl.Cell( i, [0, 0, i]) for i in range(5)]
+
+    cbmodel.cell_list = cell_list
+    cbmodel.next_cell_index = 5
+    cbmodel._queue = EventQueue([])
+
+    time = 0.0
+    event = PickRandomCellToDivideEvent(time)
+
+    event.apply(cbmodel)
+
+    assert len(cbmodel.cell_list) == 6
+    assert cbmodel.cell_list[5].ID == 5
+    assert cbmodel.next_cell_index == 6
