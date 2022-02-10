@@ -1013,6 +1013,7 @@ def _do_levels2(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0,
 
     return (y, dt_1)
 
+
 def _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1):
 
     # calculate distance matrix
@@ -1030,12 +1031,10 @@ def _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1):
 
     # convert back to equation indices
     # for cell j equations j*dim, j*dim + 1, ... , j*dim + dim -1 are perturbed
-    tmp2 = _np.array([j*dim + d for d in range(dim) for j in tmp])
+    tmp2 = _np.array([j*dim + d for d in range(dim) for j in tmp], dtype=int) # make sure that this stays int even if empty
 
     # make sure that updated equations are included (is this necessary?)
-    perturbed_indices = _np.union1d(inds[:min_ind_1], tmp2)
-
-    return perturbed_indices
+    return _np.union1d(inds[:min_ind_1], tmp2)
 
 
 if __name__ == "__main__":
@@ -1102,12 +1101,25 @@ if __name__ == "__main__":
     except FileNotFoundError:
         print('Nothing to delete.')
 
+    rA = 1.5
+    dim = 3
+    y0 = _np.array([0.0, 0.0, 0.0, 0.75, 0.0, 0.0, 2.0, 0.0, 0.0])
+
+    sol_full_update = solve_ivp(func, [0.0, 1.0], y0, jacobian=jacobian,
+                                   local_adaptivity=True,
+                                   always_calculate_Jacobian=True,
+                                   update_F=True)
+    sol_partial_update = solve_ivp(func, [0.0, 1.0], y0, jacobian=jacobian,
+                                      local_adaptivity=True,
+                                      always_calculate_Jacobian=True,
+                                      dim=dim, rA=rA)
+
 
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
                      eps=0.0001, eta = 0.00001, local_adaptivity=True,
                      write_to_file=True, jacobian=jacobian,
 #                     always_calculate_Jacobian=True,
-                     switch=False, K=3)
+                     switch=False, K=3, dim=1)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
