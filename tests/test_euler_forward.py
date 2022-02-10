@@ -32,14 +32,14 @@ def test_y_shape():
 
 def test_t_eval():
     t_eval = np.linspace(0, 1, 10)
-    y0 = np.array([1, -1])
+    y0 = np.array([1.0, -1.0])
 
     sol = ef.solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=t_eval,
                        dt=0.01)
     assert len(sol.t) == len(t_eval)
 
     t_eval = np.linspace(0, 1, 1000)
-    y0 = np.array([1, -1])
+    y0 = np.array([1.0, -1.0])
 
     sol = ef.solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=t_eval,
                        dt=0.01)

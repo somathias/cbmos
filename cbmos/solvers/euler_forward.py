@@ -32,6 +32,9 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
 
     adaptive_dt = True if dt is None else False
 
+    # make sure input is float
+    y0 = y0.astype('float64')
+
     if len(y0) > 1 and local_adaptivity:
             # choose time step adaptively locally (if we have a system of eqs)
 #        eps = eps*m0*m1 #scale local epsilon with level ratios
