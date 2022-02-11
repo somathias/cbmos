@@ -828,7 +828,7 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
             # find corresponding indices
             min_ind_1 = len(y0) - _np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
             n_eqs = _np.array([min_ind_1, len(y) - min_ind_1])
-            _logging.debug("i_min^1={}, dt_0={}, dt_1={}".format(min_ind_1, dt_0, dt_1))
+            _logging.debug("i_min^1={}, dt_0={}, dt_1={}, dt_a={}, dt_s={}".format(min_ind_1, dt_0, dt_1, dt_a, dt_s))
             (y, dt) = _do_levels2(fun, t, y, tf, F, dt_0, dt_1, inds,
                                   min_ind_1, m0, dts_local, update_F, dim, rA)
 
@@ -999,13 +999,17 @@ def _do_levels2(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0,
 
     dt_0 = _np.minimum(dt_0, (tf-t)/m0)
     for j in range(m0):
+        y_old = copy.deepcopy(y)
         y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
-        if update_F:
-            F = fun(t, y)
-        elif dim is not None:
+        if dim is not None:
             # do partial update
+            # calculate perturbed indices
             pinds = _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
-            F[pinds] = fun(t, y[pinds])
+            # subtract old force interactions between perturbed cells and add new ones
+            F[pinds] += fun(t+(j+1)*dt_0, y[pinds]) - fun(t+j*dt_0, y_old[pinds])
+        else:
+            F = fun(t+(j+1)*dt_0, y)
+
         dts_local.append(dt_0)
 
     dt_1 = _np.minimum(dt_1, (tf-t))
