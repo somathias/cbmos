@@ -340,19 +340,49 @@ def test_calculate_perturbed_indices_min_ind_1_is_length_of_y():
 
 def test_partial_update():
 
-    rA = 1.5
-    dim = 3
-    y0 = np.array([0.0, 0.0, 0.0, 0.75, 0.0, 0.0, 2.0, 0.0, 0.0])
+    import cbmos.cbmodel as cbmos
+    import cbmos.force_functions as ff
 
-    sol_full_update = ef.solve_ivp(func, [0.0, 1.0], y0, jacobian=jacobian,
+    dim = 3
+    s = 1.0
+    rA = 1.5
+    model = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim )
+    params_cubic = {"mu": 5.70, "s": s, "rA": rA}
+
+
+    y0 = np.array([0.        , 0.        , 0.        , 0.5       , 0.28867513,
+       0.81649658, 0.        , 0.        , 1.63299316, 0.5       ,
+       0.8660254 , 0.        , 0.        , 1.15470054, 0.81649658,
+       0.5       , 0.8660254 , 1.63299316, 0.        , 1.73205081,
+       0.        , 0.5       , 2.02072594, 0.81649658, 0.        ,
+       1.73205081, 1.63299316, 1.        , 0.        , 0.        ,
+       1.5       , 0.28867513, 0.81649658, 1.        , 0.        ,
+       1.63299316, 1.5       , 0.8660254 , 0.        , 1.10014613,
+       1.18437756, 0.7088396 , 1.5       , 0.8660254 , 1.63299316,
+       1.        , 1.73205081, 0.        , 1.5       , 2.02072594,
+       0.81649658, 1.        , 1.73205081, 1.63299316, 2.        ,
+       0.        , 0.        , 2.5       , 0.28867513, 0.81649658,
+       2.        , 0.        , 1.63299316, 2.5       , 0.8660254 ,
+       0.        , 2.        , 1.15470054, 0.81649658, 2.5       ,
+       0.8660254 , 1.63299316, 2.        , 1.73205081, 0.        ,
+       2.5       , 2.02072594, 0.81649658, 2.        , 1.73205081,
+       1.63299316, 0.89985387, 1.12502352, 0.92415356])
+
+
+    sol_full_update = ef.solve_ivp(model._ode_system(params_cubic),
+                                   [0.0, 1.0],
+                                   y0, eps=0.001, jacobian=model.jacobian,
+                                   force_args=params_cubic,
                                    local_adaptivity=True,
                                    always_calculate_Jacobian=True,
                                    update_F=True)
-    sol_partial_update = ef.solve_ivp(np.vectorize(func, otypes=[float]), # make sure that test func works with empty list as argument
-                                      [0.0, 1.0], y0, jacobian=jacobian,
+    sol_partial_update = ef.solve_ivp(model._ode_system(params_cubic),
+                                      [0.0, 1.0], y0,
+                                      eps=0.001, jacobian=model.jacobian,
+                                      force_args=params_cubic,
                                       local_adaptivity=True,
                                       always_calculate_Jacobian=True,
                                       dim=dim, rA=rA)
 
     assert(np.all(sol_full_update.t == sol_partial_update.t))
-    assert(np.all(sol_full_update.y == sol_partial_update.y))
+    assert np.allclose(sol_full_update.y, sol_partial_update.y, atol=1e-10)
