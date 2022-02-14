@@ -74,9 +74,11 @@ models = {'EF_glob_adap_acc': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim),
 eta = 1e-4
 
 params = {'EF_glob_adap_acc': {'eta': eta},
-          'EF_glob_adap_stab': {'eta': eta, 'jacobian': models['EF_glob_adap_stab'].jacobian, 'force_args': params_cubic, 'always_calculate_Jacobian': True},
-          'EF_local_adap': {'eta': eta, 'jacobian': models['EF_glob_adap_stab'].jacobian, 'force_args': params_cubic, 'always_calculate_Jacobian': True, 'local_adaptivity': True, 'm0':2, 'm1':1},
-          'EB_global_adap': {'eta': eta}
+          'EF_glob_adap_stab': {'eta': eta, 'jacobian': models['EF_glob_adap_stab'].jacobian, 'force_args': params_cubic,
+                                'always_calculate_Jacobian': True},
+          'EF_local_adap': {'eta': eta, 'jacobian': models['EF_local_adap'].jacobian, 'force_args': params_cubic,
+                            'always_calculate_Jacobian': True, 'local_adaptivity': True, 'm0':4, 'dim': dim, 'rA': rA},
+          'EB_global_adap': {'eta': eta, 'jacobian': models['EB_global_adap'].jacobian, 'force_args': params_cubic}
          }
 
 # ##  Dependence of initial step dt_0 and dt at steady state on spheroid size
