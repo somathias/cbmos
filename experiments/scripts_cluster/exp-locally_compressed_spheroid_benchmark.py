@@ -31,6 +31,8 @@ if len(sys.argv) < 3:
 else:
     size = int(sys.argv[2])
 
+print(size)
+
 seed=67
 npr.seed(seed)
 
@@ -51,6 +53,7 @@ params_cubic = {"mu": 5.70, "s": s, "rA": rA}
 
 
 sheet = ut.setup_locally_compressed_spheroid(size, size, size, seed=seed)
+print(len(sheet))
 
 algorithms = ['EF_glob_adap_acc', 'EF_glob_adap_stab' ,  'EF_local_adap', 'EB_global_adap', 'fixed_dt' ]
 
