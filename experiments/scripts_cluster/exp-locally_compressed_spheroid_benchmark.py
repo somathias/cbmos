@@ -27,10 +27,14 @@ if len(sys.argv) < 2:
     raise IOError("Must provide output file")
 
 if len(sys.argv) < 3:
-    seed=67
+    size = 10
 else:
-    seed = int(sys.argv[2])
+    size = int(sys.argv[2])
+
+seed=67
 npr.seed(seed)
+
+
 
 # Simulation parameters
 s = 1.0    # rest length
@@ -46,7 +50,7 @@ force = 'cubic'
 params_cubic = {"mu": 5.70, "s": s, "rA": rA}
 
 
-sheet = ut.setup_locally_compressed_spheroid(10, 10, 10, seed=seed)
+sheet = ut.setup_locally_compressed_spheroid(size, size, size, seed=seed)
 
 algorithms = ['EF_glob_adap_acc', 'EF_glob_adap_stab' ,  'EF_local_adap', 'EB_global_adap', 'fixed_dt' ]
 
@@ -61,7 +65,8 @@ eta = 1e-4
 
 params = {'EF_glob_adap_acc': {'eps':eps, 'eta': eta},
           'EF_glob_adap_stab': {'eps':eps, 'eta': eta, 'jacobian': models['EF_glob_adap_stab'].jacobian, 'force_args': params_cubic, 'always_calculate_Jacobian': True},
-          'EF_local_adap': {'eps':eps, 'eta': eta, 'jacobian': models['EF_local_adap'].jacobian, 'force_args': params_cubic, 'always_calculate_Jacobian': True, 'local_adaptivity': True, 'm0': 4},
+          'EF_local_adap': {'eps':eps, 'eta': eta, 'jacobian': models['EF_local_adap'].jacobian, 'force_args': params_cubic,
+                            'always_calculate_Jacobian': True, 'local_adaptivity': True, 'm0': 4, 'dim': dim, 'rA': rA},
           'EB_global_adap': {'eps':eps, 'eta': eta, 'jacobian': models['EB_global_adap'].jacobian, 'force_args': params_cubic},
           'fixed_dt': {'dt': 0.011758452836496444}
          }
