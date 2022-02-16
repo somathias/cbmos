@@ -17,7 +17,7 @@ plt.style.use('seaborn')
 
 def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
               out='', write_to_file=False,
-              local_adaptivity=False, m0=2, m1=2, update_F=False,
+              local_adaptivity=False, m0=2, m1=2,
               jacobian=None, force_args={}, calculate_eigenvalues=False,
               always_calculate_Jacobian=False,
               fix_eqs=0, switch=False, K=5, dim=None, rA=1.5,
@@ -49,11 +49,8 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
 #                                               measure_wall_time)
         return _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
                                                 out, write_to_file, m0,
-                                                update_F,
                                                 jacobian, force_args,
                                                 calculate_eigenvalues,
-                                                always_calculate_Jacobian,
-                                                n_av, av_tol,
                                                 switch, K, dim, rA,
                                                 measure_wall_time)
 
@@ -749,10 +746,10 @@ def _do_three_levels(fun, t, y, tf, F, dt_0, dt_1, dt_2, inds, min_ind_1,
 
 def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
                                      out, write_to_file,
-                                     m0, update_F, jacobian, force_args,
+                                     m0, jacobian, force_args,
                                      calculate_eigenvalues,
-                                     always_calculate_Jacobian,
-                                     n_av, av_tol,
+#                                     always_calculate_Jacobian,
+#                                     n_av, av_tol,
                                      switch, K, dim, rA,
                                      measure_wall_time):
     _logging.debug("Using EF, local adaptive time stepping with eps={}, eta={}, m={}".format(
@@ -782,7 +779,7 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
     dt_as = []
     n_eq_per_level = []
 
-    do_not_update_dt_s = False
+#    do_not_update_dt_s = False
 
     while t < tf:
         if measure_wall_time:
@@ -796,23 +793,19 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
         n_F_evaluations += 1
         #_logging.debug("F={}".format(F))
 
+        A = jacobian(y, force_args)
+        n_A_evaluations += 1
+
         # choose time step adaptively locally (if we have a system of eqs)
         (dt_0, dt_1,
          dt_a,
          dt_s,
          inds, af,
          Xi_1,
-         do_not_update_dt_s,
-         EB_beneficial,
-         n_F_evaluations,
-         n_A_evaluations) = _choose_dts2(fun, t, y, tf, F, eps, eta, out,
-                                         write_to_file, m0, jacobian,
-                                         force_args, calculate_eigenvalues,
-                                         always_calculate_Jacobian,
-                                         do_not_update_dt_s, dt_ss,
-                                         n_av, av_tol,
-                                         K, switch,
-                                         n_F_evaluations, n_A_evaluations)
+         EB_beneficial) = _choose_dts2(fun, t, y, tf, F, eps, eta, out,
+                                       write_to_file, m0, A,
+                                       calculate_eigenvalues,
+                                       K, switch)
 
         if EB_beneficial:
             n_eqs = _np.array([0, len(y)])
@@ -830,7 +823,8 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
             n_eqs = _np.array([min_ind_1, len(y) - min_ind_1])
             _logging.debug("i_min^1={}, dt_0={}, dt_1={}, dt_a={}, dt_s={}".format(min_ind_1, dt_0, dt_1, dt_a, dt_s))
             (y, dt) = _do_levels2(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                  min_ind_1, m0, dts_local, update_F, dim, rA)
+                                  min_ind_1, m0, dts_local, update_F, dim, rA,
+                                  A)
 
         _logging.debug("y={}".format(y))
         t = t + dt
@@ -888,116 +882,101 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
 
 
 def _choose_dts2(fun, t, y, tf, F, eps, eta, out, write_to_file, m0,
-                 jacobian, force_args, calculate_eigenvalues,
-                 always_calculate_Jacobian, do_not_update_dt_s, dt_ss,
-                 n_av, av_tol,
-                 K, switch,
-                 n_F_evaluations, n_A_evaluations):
+                 A, calculate_eigenvalues,
+#                 always_calculate_Jacobian, do_not_update_dt_s, dt_ss,
+#                 n_av, av_tol,
+                 K, switch):
 
     EB_beneficial = False
 
-    if jacobian is None:
-        # accuracy limit based only
-        af = 1/eta*(fun(t, y + eta * F) - F)
-        n_F_evaluations += 1
-        # sort the indices such that abs(AF(inds)) is decreasing
-        inds = _np.argsort(-abs(af))
-        # find largest and smallest eta_k
-        Xi_0 = abs(af[inds[0]])
+#    # check if dt_s average has converged
+#    if not always_calculate_Jacobian and len(dt_ss) >= n_av and not do_not_update_dt_s:
+#        old_av_dts = _np.mean(dt_ss[-n_av:-1])
+#        new_av_dts = _np.mean(dt_ss[-n_av + 1:])
+##            _logging.debug("old_av_dts={}".format(old_av_dts))
+##            _logging.debug("new_av_dts={}".format(new_av_dts))
+#
+#        if _np.abs(old_av_dts - new_av_dts) < av_tol*_np.abs(new_av_dts):
+#            do_not_update_dt_s = True
+##                dt_ss.append(new_av_dts)
+#            _logging.debug("Stopped updating Jacobian at t={}. Using dt_s={}".format(t, dt_ss[-1]))
+#
+#    if do_not_update_dt_s:
+#        dt_s = dt_ss[-1]
+#        af = 1/eta*(fun(t, y + eta * F) - F)
+#        A = None
+#        n_F_evaluations += 1
+#
+#    else:
+    # calculate stability bound
 
-        dt_a = _np.sqrt(2*eps*m0/Xi_0) if Xi_0 > 0.0 else tf - t
-        dt_1 = dt_a
-        Xi_1 = Xi_0/m0
-        dt_0 = dt_1/m0
+    if calculate_eigenvalues:
+        #w = _np.linalg.eigvalsh(A)
+        w, v = _np.linalg.eigh(A)
+        _logging.debug("Eigenvalues w={}".format(w))
+        _logging.debug("Eigenvectors v={}".format(v))
 
-        dt_s = None
-
+        if write_to_file:
+            with open('eigenvalues'+out+'.txt', 'ab') as f:
+                _np.savetxt(f, w.reshape((1, -1)))
+        w = w[0]
     else:
 
-        # check if dt_s average has converged
-        if not always_calculate_Jacobian and len(dt_ss) >= n_av and not do_not_update_dt_s:
-            old_av_dts = _np.mean(dt_ss[-n_av:-1])
-            new_av_dts = _np.mean(dt_ss[-n_av + 1:])
-#            _logging.debug("old_av_dts={}".format(old_av_dts))
-#            _logging.debug("new_av_dts={}".format(new_av_dts))
+        # use gershgorin estimate
+        xi = _np.diag(A)
+        rho = _np.sum(_np.abs(A), axis=1) - _np.abs(xi)
 
-            if _np.abs(old_av_dts - new_av_dts) < av_tol*_np.abs(new_av_dts):
-                do_not_update_dt_s = True
-#                dt_ss.append(new_av_dts)
-                _logging.debug("Stopped updating Jacobian at t={}. Using dt_s={}".format(t, dt_ss[-1]))
+        w = _np.amin(xi-rho)
 
-        if do_not_update_dt_s:
-            dt_s = dt_ss[-1]
-            af = 1/eta*(fun(t, y + eta * F) - F)
-            n_F_evaluations += 1
+        if write_to_file:
+            with open('gershgorin'+out+'.txt', 'ab') as f:
+                _np.savetxt(f, [w])
 
-        else:
-            # calculate stability bound
-            A = jacobian(y, force_args)
-            n_A_evaluations += 1
+    # the eigenvalues are sorted in ascending order
+    dt_s = 2.0/abs(w)
 
-            if calculate_eigenvalues:
-                #w = _np.linalg.eigvalsh(A)
-                w, v = _np.linalg.eigh(A)
-                _logging.debug("Eigenvalues w={}".format(w))
-                _logging.debug("Eigenvectors v={}".format(v))
+    # calculate the accuracy bound
+    af = A @ F
 
-                if write_to_file:
-                    with open('eigenvalues'+out+'.txt', 'ab') as f:
-                        _np.savetxt(f, w.reshape((1, -1)))
-                w = w[0]
-            else:
+    # sort the indices such that abs(AF(inds)) is decreasing
+    inds = _np.argsort(-abs(af))
+    # find largest eta_k
+    Xi_0 = abs(af[inds[0]])
 
-                # use gershgorin estimate
-                xi = _np.diag(A)
-                rho = _np.sum(_np.abs(A), axis=1) - _np.abs(xi)
+    dt_a = _np.sqrt(2*eps*m0/Xi_0) if Xi_0 > 0.0 else tf - t
 
-                w = _np.amin(xi-rho)
-
-                if write_to_file:
-                    with open('gershgorin'+out+'.txt', 'ab') as f:
-                        _np.savetxt(f, [w])
-
-            # the eigenvalues are sorted in ascending order
-            dt_s = 2.0/abs(w)
-
-            # calculate the accuracy bound
-            af = A @ F
-
-        # sort the indices such that abs(AF(inds)) is decreasing
-        inds = _np.argsort(-abs(af))
-        # find largest eta_k
-        Xi_0 = abs(af[inds[0]])
-
-        dt_a = _np.sqrt(2*eps*m0/Xi_0) if Xi_0 > 0.0 else tf - t
-
-        # do not overshoot the final time
+    # do not overshoot the final time
 #        dt_a = _np.minimum(dt_a, tf - t)
 
-        if dt_a > K * dt_s and switch:
-            EB_beneficial = True
-            dt_0 = dt_a
-            dt_1 = dt_a
-            Xi_1 = None
-        else:
-            # stick with EF
-            dt_1 = _np.minimum(dt_a, dt_s)
-            Xi_1 = 2.0*eps/(dt_1**2)
-            dt_0 = dt_1/m0
+    if dt_a > K * dt_s and switch:
+        EB_beneficial = True
+        dt_0 = dt_a
+        dt_1 = dt_a
+        Xi_1 = None
+    else:
+        # stick with EF
+        dt_1 = _np.minimum(dt_a, dt_s)
+        Xi_1 = 2.0*eps/(dt_1**2)
+        dt_0 = dt_1/m0
 
     if write_to_file:
         with open('AFs'+out+'.txt', 'ab') as f:
             _np.savetxt(f, _np.abs(af).reshape((1, -1)))
 
     return (dt_0, dt_1, dt_a, dt_s, inds, af, Xi_1,
-            do_not_update_dt_s,
-            EB_beneficial, n_F_evaluations, n_A_evaluations)
+            EB_beneficial)
 
 
 def _do_levels2(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0,
-                   dts_local, update_F, dim, rA):
+                   dts_local, update_F, dim, rA, A):
 
     dt_0 = _np.minimum(dt_0, (tf-t)/m0)
+
+    # use the sparsity pattern of A to calculate perturbed indices
+    pinds = _np.argwhere(A[inds[min_ind_1], :] > 0)[:, 1]
+    # make sure that updated equations are included
+    pinds =  _np.union1d(inds[:min_ind_1], pinds)
+
     for j in range(m0):
         y_old = copy.deepcopy(y)
         y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
@@ -1006,9 +985,9 @@ def _do_levels2(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0,
             # calculate perturbed indices
             pinds = _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
             # subtract old force interactions between perturbed cells and add new ones
-            F[pinds] += fun(t+(j+1)*dt_0, y[pinds]) - fun(t+j*dt_0, y_old[pinds])
-        else:
-            F = fun(t+(j+1)*dt_0, y)
+        F[pinds] += fun(t+(j+1)*dt_0, y[pinds]) - fun(t+j*dt_0, y_old[pinds])
+#        else:
+#            F = fun(t+(j+1)*dt_0, y)
 
         dts_local.append(dt_0)
 
