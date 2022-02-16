@@ -3,6 +3,7 @@
 
 import numpy as _np
 from scipy.integrate._ivp.ivp import OdeResult
+from scipy.linalg import eigh
 import copy
 import logging as _logging
 import time
@@ -294,9 +295,9 @@ def _do_global_adaptive_timestepping_with_stability(fun, t_span, y0, eps,
 
             if calculate_eigenvalues:
             #w = _np.linalg.eigvalsh(A)
-                w, v = _np.linalg.eigh(A[fix_eqs:, fix_eqs:])  # adjust dimensions if equations are fixed
+                w = eigh(A[fix_eqs:, fix_eqs:], eigvals_only=True)  # adjust dimensions if equations are fixed
                 _logging.debug("Eigenvalues w={}".format(w))
-                _logging.debug("Eigenvectors v={}".format(v))
+                #_logging.debug("Eigenvectors v={}".format(v))
 
                 if write_to_file:
                     with open('eigenvalues'+out+'.txt', 'ab') as f:
@@ -754,7 +755,7 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
                                      measure_wall_time):
     _logging.debug("Using EF, local adaptive time stepping with eps={}, eta={}, m={}".format(
             eps, eta, m0))
-    n_F_evaluations = 0
+    n_F_evaluations = 0.0
     n_A_evaluations = 0
 
 
@@ -802,8 +803,8 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
          dt_s,
          inds, af,
          Xi_1,
-         EB_beneficial) = _choose_dts2(fun, t, y, tf, F, eps, eta, out,
-                                       write_to_file, m0, A,
+         EB_beneficial) = _choose_dts2(fun, t, y, tf, F, A, eps, eta, out,
+                                       write_to_file, m0,
                                        calculate_eigenvalues,
                                        K, switch)
 
@@ -822,9 +823,11 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
             min_ind_1 = len(y0) - _np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
             n_eqs = _np.array([min_ind_1, len(y) - min_ind_1])
             _logging.debug("i_min^1={}, dt_0={}, dt_1={}, dt_a={}, dt_s={}".format(min_ind_1, dt_0, dt_1, dt_a, dt_s))
-            (y, dt) = _do_levels2(fun, t, y, tf, F, dt_0, dt_1, inds,
-                                  min_ind_1, m0, dts_local, update_F, dim, rA,
-                                  A)
+            (y, dt, n_F_evaluations) = _do_levels2(fun, t, y, tf, F, A,
+                                                   dt_0, dt_1, inds,
+                                                   min_ind_1, m0, dts_local,
+                                                   dim, rA,
+                                                   n_F_evaluations)
 
         _logging.debug("y={}".format(y))
         t = t + dt
@@ -881,8 +884,8 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
     return OdeResult(t=ts, y=ys)
 
 
-def _choose_dts2(fun, t, y, tf, F, eps, eta, out, write_to_file, m0,
-                 A, calculate_eigenvalues,
+def _choose_dts2(fun, t, y, tf, F, A, eps, eta, out, write_to_file, m0,
+                 calculate_eigenvalues,
 #                 always_calculate_Jacobian, do_not_update_dt_s, dt_ss,
 #                 n_av, av_tol,
                  K, switch):
@@ -908,24 +911,23 @@ def _choose_dts2(fun, t, y, tf, F, eps, eta, out, write_to_file, m0,
 #        n_F_evaluations += 1
 #
 #    else:
-    # calculate stability bound
 
+    # calculate stability bound
     if calculate_eigenvalues:
         #w = _np.linalg.eigvalsh(A)
-        w, v = _np.linalg.eigh(A)
+        w = eigh(A, eigvals_only=True)
         _logging.debug("Eigenvalues w={}".format(w))
-        _logging.debug("Eigenvectors v={}".format(v))
+        #_logging.debug("Eigenvectors v={}".format(v))
 
         if write_to_file:
             with open('eigenvalues'+out+'.txt', 'ab') as f:
                 _np.savetxt(f, w.reshape((1, -1)))
         w = w[0]
-    else:
 
+    else:
         # use gershgorin estimate
         xi = _np.diag(A)
         rho = _np.sum(_np.abs(A), axis=1) - _np.abs(xi)
-
         w = _np.amin(xi-rho)
 
         if write_to_file:
@@ -967,34 +969,33 @@ def _choose_dts2(fun, t, y, tf, F, eps, eta, out, write_to_file, m0,
             EB_beneficial)
 
 
-def _do_levels2(fun, t, y, tf, F, dt_0, dt_1, inds, min_ind_1, m0,
-                   dts_local, update_F, dim, rA, A):
+def _do_levels2(fun, t, y, tf, F, A, dt_0, dt_1, inds, min_ind_1, m0,
+                dts_local, dim, rA, n_F_evals):
 
     dt_0 = _np.minimum(dt_0, (tf-t)/m0)
 
     # use the sparsity pattern of A to calculate perturbed indices
-    pinds = _np.argwhere(A[inds[min_ind_1], :] > 0)[:, 1]
+    pinds = _np.unique(_np.argwhere(A[inds[:min_ind_1], :] != 0)[:, 1])
     # make sure that updated equations are included
-    pinds =  _np.union1d(inds[:min_ind_1], pinds)
+    pinds = _np.union1d(inds[:min_ind_1], pinds)
 
     for j in range(m0):
         y_old = copy.deepcopy(y)
         y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
         if dim is not None:
-            # do partial update
             # calculate perturbed indices
             pinds = _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
             # subtract old force interactions between perturbed cells and add new ones
         F[pinds] += fun(t+(j+1)*dt_0, y[pinds]) - fun(t+j*dt_0, y_old[pinds])
+        n_F_evals += 2*len(pinds)/float(len(y))
 #        else:
 #            F = fun(t+(j+1)*dt_0, y)
-
         dts_local.append(dt_0)
 
     dt_1 = _np.minimum(dt_1, (tf-t))
     y[inds[min_ind_1:]] += dt_1*F[inds[min_ind_1:]]
 
-    return (y, dt_1)
+    return (y, dt_1, n_F_evals)
 
 
 def _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1):
@@ -1090,8 +1091,7 @@ if __name__ == "__main__":
 
     sol_full_update = solve_ivp(func, [0.0, 1.0], y0, jacobian=jacobian,
                                    local_adaptivity=True,
-                                   always_calculate_Jacobian=True,
-                                   update_F=True)
+                                   always_calculate_Jacobian=True)
     sol_partial_update = solve_ivp(func, [0.0, 1.0], y0, jacobian=jacobian,
                                       local_adaptivity=True,
                                       always_calculate_Jacobian=True,
