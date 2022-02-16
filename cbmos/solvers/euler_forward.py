@@ -972,25 +972,27 @@ def _choose_dts2(fun, t, y, tf, F, A, eps, eta, out, write_to_file, m0,
 def _do_levels2(fun, t, y, tf, F, A, dt_0, dt_1, inds, min_ind_1, m0,
                 dts_local, dim, rA, n_F_evals):
 
-    dt_0 = _np.minimum(dt_0, (tf-t)/m0)
+    if min_ind_1 > 0:
+        # Level K_0 non-empty
+        dt_0 = _np.minimum(dt_0, (tf-t)/m0)
 
-    # use the sparsity pattern of A to calculate perturbed indices
-    pinds = _np.unique(_np.argwhere(A[inds[:min_ind_1], :] != 0)[:, 1])
-    # make sure that updated equations are included
-    pinds = _np.union1d(inds[:min_ind_1], pinds)
+        # use the sparsity pattern of A to calculate perturbed indices
+        pinds = _np.unique(_np.argwhere(A[inds[:min_ind_1], :] != 0)[:, 1])
+        # make sure that updated equations are included
+        pinds = _np.union1d(inds[:min_ind_1], pinds)
 
-    for j in range(m0):
-        y_old = copy.deepcopy(y)
-        y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
-        if dim is not None:
-            # calculate perturbed indices
-            pinds = _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
-            # subtract old force interactions between perturbed cells and add new ones
-        F[pinds] += fun(t+(j+1)*dt_0, y[pinds]) - fun(t+j*dt_0, y_old[pinds])
-        n_F_evals += 2*len(pinds)/float(len(y))
-#        else:
-#            F = fun(t+(j+1)*dt_0, y)
-        dts_local.append(dt_0)
+        for j in range(m0):
+            y_old = copy.deepcopy(y)
+            y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
+            if dim is not None:
+                # calculate perturbed indices
+                pinds = _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
+                # subtract old force interactions between perturbed cells and add new ones
+            F[pinds] += fun(t+(j+1)*dt_0, y[pinds]) - fun(t+j*dt_0, y_old[pinds])
+            n_F_evals += 2*len(pinds)/float(len(y))
+    #        else:
+    #            F = fun(t+(j+1)*dt_0, y)
+            dts_local.append(dt_0)
 
     dt_1 = _np.minimum(dt_1, (tf-t))
     y[inds[min_ind_1:]] += dt_1*F[inds[min_ind_1:]]
