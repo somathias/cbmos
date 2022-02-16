@@ -360,12 +360,12 @@ def test_calculate_perturbed_indices_using_A():
     nF = 0
     y1 = copy.deepcopy(y0)
     F1 = copy.deepcopy(F)
-    (y1, dt, nF1) = ef._do_levels2(model._ode_system(params_cubic), 0, y1, 1.0 , F1, A, dt_0, dt_1, inds,
+    (dt, nF1) = ef._do_levels2(model._ode_system(params_cubic), 0, y1, 1.0 , F1, A, dt_0, dt_1, inds,
                                  min_ind_1, m0, [], None, rA, nF)
 
     y2 = copy.deepcopy(y0)
     F2 = copy.deepcopy(F)
-    (y2, dt2, nF2) = ef._do_levels2(model._ode_system(params_cubic), 0, y2, 1.0 , F2, A, dt_0, dt_1, inds,
+    (dt2, nF2) = ef._do_levels2(model._ode_system(params_cubic), 0, y2, 1.0 , F2, A, dt_0, dt_1, inds,
                                  min_ind_1, m0, [], dim, rA, nF)
 
     # assert that both solutions the same
@@ -385,12 +385,12 @@ def test_calculate_perturbed_indices_using_A():
     nF = 0
     y1 = copy.deepcopy(y0)
     F1 = copy.deepcopy(F)
-    (y1, dt, nF1) = ef._do_levels2(model._ode_system(params_cubic), 0, y1, 1.0 , F1, A, dt_0, dt_1, inds,
+    (dt, nF1) = ef._do_levels2(model._ode_system(params_cubic), 0, y1, 1.0 , F1, A, dt_0, dt_1, inds,
                                  min_ind_1, m0, [], None, rA, nF)
 
     y2 = copy.deepcopy(y0)
     F2 = copy.deepcopy(F)
-    (y2, dt2, nF2) = ef._do_levels2(model._ode_system(params_cubic), 0, y2, 1.0 , F2, A, dt_0, dt_1, inds,
+    (dt2, nF2) = ef._do_levels2(model._ode_system(params_cubic), 0, y2, 1.0 , F2, A, dt_0, dt_1, inds,
                                  min_ind_1, m0, [], dim, rA, nF)
 
     assert(np.allclose(y1, y2, 1e-5, 1e-5))

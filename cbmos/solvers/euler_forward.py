@@ -823,7 +823,7 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
             min_ind_1 = len(y0) - _np.searchsorted(abs(af[inds])[::-1], Xi_1, side='right')
             n_eqs = _np.array([min_ind_1, len(y) - min_ind_1])
             _logging.debug("i_min^1={}, dt_0={}, dt_1={}, dt_a={}, dt_s={}".format(min_ind_1, dt_0, dt_1, dt_a, dt_s))
-            (y, dt, n_F_evaluations) = _do_levels2(fun, t, y, tf, F, A,
+            (dt, n_F_evaluations) = _do_levels2(fun, t, y, tf, F, A,
                                                    dt_0, dt_1, inds,
                                                    min_ind_1, m0, dts_local,
                                                    dim, rA,
@@ -995,7 +995,7 @@ def _do_levels2(fun, t, y, tf, F, A, dt_0, dt_1, inds, min_ind_1, m0,
     dt_1 = _np.minimum(dt_1, (tf-t))
     y[inds[min_ind_1:]] += dt_1*F[inds[min_ind_1:]]
 
-    return (y, dt_1, n_F_evals)
+    return (dt_1, n_F_evals)
 
 
 def _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1):
