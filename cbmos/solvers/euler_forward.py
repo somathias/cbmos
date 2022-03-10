@@ -794,8 +794,12 @@ def _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
         n_F_evaluations += 1
         #_logging.debug("F={}".format(F))
 
-        A = jacobian(y, force_args)
-        n_A_evaluations += 1
+        if jacobian is not None:
+            A = jacobian(y, force_args)
+            n_A_evaluations += 1
+        else:
+            A = None
+            n_F_evaluations += 1 # will be used to approximate AF
 
         # choose time step adaptively locally (if we have a system of eqs)
         (dt_0, dt_1,
@@ -912,33 +916,39 @@ def _choose_dts2(fun, t, y, tf, F, A, eps, eta, out, write_to_file, m0,
 #
 #    else:
 
-    # calculate stability bound
-    if calculate_eigenvalues:
-        #w = _np.linalg.eigvalsh(A)
-        w = eigh(A, eigvals_only=True)
-        _logging.debug("Eigenvalues w={}".format(w))
-        #_logging.debug("Eigenvectors v={}".format(v))
+    if A is not None:
 
-        if write_to_file:
-            with open('eigenvalues'+out+'.txt', 'ab') as f:
-                _np.savetxt(f, w.reshape((1, -1)))
-        w = w[0]
+        # calculate stability bound
+        if calculate_eigenvalues:
+            #w = _np.linalg.eigvalsh(A)
+            w = eigh(A, eigvals_only=True)
+            _logging.debug("Eigenvalues w={}".format(w))
+            #_logging.debug("Eigenvectors v={}".format(v))
+
+            if write_to_file:
+                with open('eigenvalues'+out+'.txt', 'ab') as f:
+                    _np.savetxt(f, w.reshape((1, -1)))
+            w = w[0]
+
+        else:
+            # use gershgorin estimate
+            xi = _np.diag(A)
+            rho = _np.sum(_np.abs(A), axis=1) - _np.abs(xi)
+            w = _np.amin(xi-rho)
+
+            if write_to_file:
+                with open('gershgorin'+out+'.txt', 'ab') as f:
+                    _np.savetxt(f, [w])
+
+        # the eigenvalues are sorted in ascending order
+        dt_s = 2.0/abs(w)
+
+        # calculate the accuracy bound
+        af = A @ F
 
     else:
-        # use gershgorin estimate
-        xi = _np.diag(A)
-        rho = _np.sum(_np.abs(A), axis=1) - _np.abs(xi)
-        w = _np.amin(xi-rho)
-
-        if write_to_file:
-            with open('gershgorin'+out+'.txt', 'ab') as f:
-                _np.savetxt(f, [w])
-
-    # the eigenvalues are sorted in ascending order
-    dt_s = 2.0/abs(w)
-
-    # calculate the accuracy bound
-    af = A @ F
+        af = 1/eta*(fun(t, y + eta * F) - F)
+        dt_s = _np.inf
 
     # sort the indices such that abs(AF(inds)) is decreasing
     inds = _np.argsort(-abs(af))
@@ -971,26 +981,36 @@ def _choose_dts2(fun, t, y, tf, F, A, eps, eta, out, write_to_file, m0,
 
 def _do_levels2(fun, t, y, tf, F, A, dt_0, dt_1, inds, min_ind_1, m0,
                 dts_local, dim, rA, n_F_evals):
+    "Note: in order to only do a partial update either dim or A need to be provided."
 
-    dt_0 = _np.minimum(dt_0, (tf-t)/m0)
+    if min_ind_1 > 0:
+        # Level K_0 non-empty
+        dt_0 = _np.minimum(dt_0, (tf-t)/m0)
 
-    # use the sparsity pattern of A to calculate perturbed indices
-    pinds = _np.unique(_np.argwhere(A[inds[:min_ind_1], :] != 0)[:, 1])
-    # make sure that updated equations are included
-    pinds = _np.union1d(inds[:min_ind_1], pinds)
-
-    for j in range(m0):
-        y_old = copy.deepcopy(y)
-        y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
         if dim is not None:
-            # calculate perturbed indices
+            # calculate perturbed indices using the distance matrix
             pinds = _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
+        elif A is not None:
+            # use the sparsity pattern of A to calculate perturbed indices
+            pinds = _np.unique(_np.argwhere(A[inds[:min_ind_1], :] != 0)[:, 1])
+            # make sure that updated equations are included
+            pinds = _np.union1d(inds[:min_ind_1], pinds)
+        else:
+            # do full update (Note that this is very unefficient!)
+            pinds = range(len(y))
+
+        for j in range(m0):
+            y_old = copy.deepcopy(y)
+            y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
+#            if dim is not None:
+#                # calculate perturbed indices
+#                pinds = _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
             # subtract old force interactions between perturbed cells and add new ones
-        F[pinds] += fun(t+(j+1)*dt_0, y[pinds]) - fun(t+j*dt_0, y_old[pinds])
-        n_F_evals += 2*len(pinds)/float(len(y))
-#        else:
-#            F = fun(t+(j+1)*dt_0, y)
-        dts_local.append(dt_0)
+            F[pinds] += fun(t+(j+1)*dt_0, y[pinds]) - fun(t+j*dt_0, y_old[pinds])
+            n_F_evals += 2*len(pinds)/float(len(y))
+    #        else:
+    #            F = fun(t+(j+1)*dt_0, y)
+            dts_local.append(dt_0)
 
     dt_1 = _np.minimum(dt_1, (tf-t))
     y[inds[min_ind_1:]] += dt_1*F[inds[min_ind_1:]]
@@ -1086,19 +1106,19 @@ if __name__ == "__main__":
     dim = 3
     y0 = _np.array([0.0, 0.0, 0.0, 0.75, 0.0, 0.0, 2.0, 0.0, 0.0])
 
-    sol_full_update = solve_ivp(func, [0.0, 1.0], y0, jacobian=jacobian,
-                                   local_adaptivity=True,
-                                   always_calculate_Jacobian=True)
-    sol_partial_update = solve_ivp(func, [0.0, 1.0], y0, jacobian=jacobian,
-                                      local_adaptivity=True,
-                                      always_calculate_Jacobian=True,
-                                      dim=dim, rA=rA)
+#    sol_full_update = solve_ivp(func, [0.0, 1.0], y0, jacobian=jacobian,
+#                                   local_adaptivity=True,
+#                                   always_calculate_Jacobian=True)
+#    sol_partial_update = solve_ivp(func, [0.0, 1.0], y0, jacobian=jacobian,
+#                                      local_adaptivity=True,
+#                                      always_calculate_Jacobian=True,
+#                                      dim=dim, rA=rA)
 
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
                      eps=0.0001, eta = 0.00001, local_adaptivity=True,
-                     write_to_file=True, jacobian=jacobian,
+                     write_to_file=True, jacobian=None,
 #                     always_calculate_Jacobian=True,
-                     switch=False, K=3, dim=1)
+                     switch=False, K=3)
     #plt.plot(sol2.t, sol2.y.T)
     plt.plot(sol2.t, sol2.y.T, '*')
     plt.xlabel('t')
