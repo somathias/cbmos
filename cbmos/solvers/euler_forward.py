@@ -999,18 +999,20 @@ def _do_levels2(fun, t, y, tf, F, A, dt_0, dt_1, inds, min_ind_1, m0,
             # do full update (Note that this is very unefficient!)
             pinds = range(len(y))
 
+        old_contribs = fun(t, y[pinds])
         for j in range(m0):
-            y_old = copy.deepcopy(y)
             y[inds[:min_ind_1]] += dt_0*F[inds[:min_ind_1]]
+            new_contribs = fun(t+(j+1)*dt_0, y[pinds])
 #            if dim is not None:
 #                # calculate perturbed indices
 #                pinds = _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
             # subtract old force interactions between perturbed cells and add new ones
-            F[pinds] += fun(t+(j+1)*dt_0, y[pinds]) - fun(t+j*dt_0, y_old[pinds])
-            n_F_evals += 2*len(pinds)/float(len(y))
+            F[pinds] += new_contribs - old_contribs
+            old_contribs = new_contribs
     #        else:
     #            F = fun(t+(j+1)*dt_0, y)
             dts_local.append(dt_0)
+        n_F_evals += (m0+1)*len(pinds)/float(len(y))
 
     dt_1 = _np.minimum(dt_1, (tf-t))
     y[inds[min_ind_1:]] += dt_1*F[inds[min_ind_1:]]
