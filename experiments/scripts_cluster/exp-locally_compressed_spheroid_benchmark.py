@@ -55,7 +55,8 @@ params_cubic = {"mu": 5.70, "s": s, "rA": rA}
 sheet = ut.setup_locally_compressed_spheroid(size, size, size, seed=seed)
 print(len(sheet))
 
-algorithms = ['EF_glob_adap_acc', 'EF_glob_adap_stab' ,  'EF_local_adap', 'EF_local_adap_stab', 'EB_global_adap', 'fixed_dt' ]
+#algorithms = ['EF_glob_adap_acc', 'EF_glob_adap_stab' ,  'EF_local_adap', 'EF_local_adap_stab', 'EB_global_adap', 'fixed_dt' ]
+algorithms = ['EF_glob_adap_stab', 'EF_local_adap', 'EF_local_adap_stab']
 
 models = {'EF_glob_adap_acc': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim),
           'EF_glob_adap_stab': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim),
@@ -64,14 +65,16 @@ models = {'EF_glob_adap_acc': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim),
           'EB_global_adap': cbmos.CBModel(ff.Cubic(), eb.solve_ivp, dim),
           'fixed_dt': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim) }
 
-eps = 0.01
+eps = 0.005
 eta = 1e-4
+
+m = 6
 
 params = {'EF_glob_adap_acc': {'eps':eps, 'eta': eta},
           'EF_glob_adap_stab': {'eps':eps, 'eta': eta, 'jacobian': models['EF_glob_adap_stab'].jacobian, 'force_args': params_cubic, 'always_calculate_Jacobian': True},
-          'EF_local_adap': {'eps':eps, 'eta': eta, 'local_adaptivity': True, 'm0': 4, 'dim': dim, 'rA': rA},
+          'EF_local_adap': {'eps':eps, 'eta': eta, 'local_adaptivity': True, 'm0': m, 'dim': dim, 'rA': rA},
           'EF_local_adap_stab': {'eps':eps, 'eta': eta, 'jacobian': models['EF_local_adap_stab'].jacobian, 'force_args': params_cubic,
-                            'always_calculate_Jacobian': True, 'local_adaptivity': True, 'm0': 4, 'dim': None, 'rA': rA},
+                            'always_calculate_Jacobian': True, 'local_adaptivity': True, 'm0': m, 'dim': None, 'rA': rA},
           'EB_global_adap': {'eps':eps, 'eta': eta, 'jacobian': models['EB_global_adap'].jacobian, 'force_args': params_cubic},
           'fixed_dt': {'dt': 0.011758452836496444}
          }
@@ -81,7 +84,7 @@ for alg in algorithms:
     params[alg]['measure_wall_time'] = True
 
 
-n = 100
+n = 20
 
 for alg in algorithms:
     # burn in
