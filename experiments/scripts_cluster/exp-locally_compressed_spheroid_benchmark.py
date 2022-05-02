@@ -30,10 +30,22 @@ if len(sys.argv) < 3:
     size = 10
 else:
     size = int(sys.argv[2])
-
 print(size)
 
-seed=67
+
+if len(sys.argv) < 4:
+    eps = 0.01
+else:
+    eps = float(sys.argv[3])
+print(eps)
+
+if len(sys.argv) < 5:
+    m = 7
+else:
+    m = int(sys.argv[4])
+print(m)
+
+seed=17
 npr.seed(seed)
 
 
@@ -55,8 +67,8 @@ params_cubic = {"mu": 5.70, "s": s, "rA": rA}
 sheet = ut.setup_locally_compressed_spheroid(size, size, size, seed=seed)
 print(len(sheet))
 
-#algorithms = ['EF_glob_adap_acc', 'EF_glob_adap_stab' ,  'EF_local_adap', 'EF_local_adap_stab', 'EB_global_adap', 'fixed_dt' ]
-algorithms = ['EF_glob_adap_stab', 'EF_local_adap', 'EF_local_adap_stab']
+algorithms = ['EF_glob_adap_acc', 'EF_glob_adap_stab' ,  'EF_local_adap', 'EF_local_adap_stab', 'EB_global_adap', 'fixed_dt' ]
+#algorithms = ['EF_glob_adap_stab', 'EF_local_adap', 'EF_local_adap_stab']
 
 models = {'EF_glob_adap_acc': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim),
           'EF_glob_adap_stab': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim),
@@ -65,10 +77,7 @@ models = {'EF_glob_adap_acc': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim),
           'EB_global_adap': cbmos.CBModel(ff.Cubic(), eb.solve_ivp, dim),
           'fixed_dt': cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim) }
 
-eps = 0.005
 eta = 1e-4
-
-m = 6
 
 params = {'EF_glob_adap_acc': {'eps':eps, 'eta': eta},
           'EF_glob_adap_stab': {'eps':eps, 'eta': eta, 'jacobian': models['EF_glob_adap_stab'].jacobian, 'force_args': params_cubic, 'always_calculate_Jacobian': True},
@@ -76,7 +85,8 @@ params = {'EF_glob_adap_acc': {'eps':eps, 'eta': eta},
           'EF_local_adap_stab': {'eps':eps, 'eta': eta, 'jacobian': models['EF_local_adap_stab'].jacobian, 'force_args': params_cubic,
                             'always_calculate_Jacobian': True, 'local_adaptivity': True, 'm0': m, 'dim': None, 'rA': rA},
           'EB_global_adap': {'eps':eps, 'eta': eta, 'jacobian': models['EB_global_adap'].jacobian, 'force_args': params_cubic},
-          'fixed_dt': {'dt': 0.011758452836496444}
+          #'fixed_dt': {'dt': 0.011758452836496444}
+          'fixed_dt': {}
          }
 
 for alg in algorithms:
@@ -85,6 +95,8 @@ for alg in algorithms:
 
 
 n = 20
+
+dt_f = 0.007132468456522988
 
 for alg in algorithms:
     # burn in
@@ -104,7 +116,15 @@ for alg in algorithms:
         pass
         #print('Nothing to delete.')
 
+    if alg is 'fixed_dt':
+        params[alg]['dt'] = dt_f
+        print(dt_f)
+
     ts, history = models[alg].simulate(sheet, t_data, params_cubic, params[alg], seed=seed)
+
+    if alg is 'EF_glob_adap_acc':
+        dt_f = ts[1] - ts[0]
+        print(dt_f)
 
     data = {}
     for i in range(n):
