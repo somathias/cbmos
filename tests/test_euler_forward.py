@@ -66,7 +66,7 @@ def test_no_overstep():
 
     # local adaptivity with stability bound
     sol = ef.solve_ivp(np.vectorize(func, otypes=['float']), t_span, y0, jacobian=jacobian,
-                       local_adaptivity=True)
+                       local_adaptivity=True, dim=1)
     assert sol.t[-1] == t_span[1]
 
 
@@ -82,7 +82,7 @@ def test_jacobian_arguments():
     y0 = np.array([0.5, 1.0])
 
     sol = ef.solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
-                       local_adaptivity=True, jacobian=jacobian)
+                       local_adaptivity=True, jacobian=jacobian, dim=1)
 
 
 def test_ordering_ts_when_using_global_adaptivity():
@@ -248,7 +248,7 @@ def test_measure_wall_time_local_adaptivity():
     y0 = np.array([1, 1])
 
     sol = ef.solve_ivp(func, t_span, y0, jacobian=jacobian,
-                     local_adaptivity=True,
+                     local_adaptivity=True, dim=1,
                      always_calculate_Jacobian=True,
                      measure_wall_time=True)
 
@@ -361,11 +361,11 @@ def test_calculate_perturbed_indices_using_A():
     y1 = copy.deepcopy(y0)
     F1 = copy.deepcopy(F)
     (dt, nF1) = ef._do_levels2(model._ode_system(params_cubic), 0, y1, 1.0 , F1, A, dt_0, dt_1, inds,
-                                 min_ind_1, m0, [], None, rA, nF)
+                                 min_ind_1, m0, [], dim, rA, nF)
 
     y2 = copy.deepcopy(y0)
     F2 = copy.deepcopy(F)
-    (dt2, nF2) = ef._do_levels2(model._ode_system(params_cubic), 0, y2, 1.0 , F2, A, dt_0, dt_1, inds,
+    (dt2, nF2) = ef._do_levels2(model._ode_system(params_cubic), 0, y2, 1.0 , F2, None, dt_0, dt_1, inds,
                                  min_ind_1, m0, [], dim, rA, nF)
 
     # assert that both solutions the same
@@ -386,11 +386,11 @@ def test_calculate_perturbed_indices_using_A():
     y1 = copy.deepcopy(y0)
     F1 = copy.deepcopy(F)
     (dt, nF1) = ef._do_levels2(model._ode_system(params_cubic), 0, y1, 1.0 , F1, A, dt_0, dt_1, inds,
-                                 min_ind_1, m0, [], None, rA, nF)
+                                 min_ind_1, m0, [], dim, rA, nF)
 
     y2 = copy.deepcopy(y0)
     F2 = copy.deepcopy(F)
-    (dt2, nF2) = ef._do_levels2(model._ode_system(params_cubic), 0, y2, 1.0 , F2, A, dt_0, dt_1, inds,
+    (dt2, nF2) = ef._do_levels2(model._ode_system(params_cubic), 0, y2, 1.0 , F2, None, dt_0, dt_1, inds,
                                  min_ind_1, m0, [], dim, rA, nF)
 
     assert(np.allclose(y1, y2, 1e-5, 1e-5))
