@@ -48,6 +48,9 @@ def solve_ivp(fun, t_span, y0, t_eval=None, dt=None, eps=0.01, eta=0.001,
 #                                               n_av, av_tol,
 #                                               switch, K,
 #                                               measure_wall_time)
+        if dim is None:
+            print('Dimension not provided for MRFE. Assuming dim=3.')
+            dim = 3
         return _do_local_adaptive_timestepping2(fun, t_span, y0, eps, eta,
                                                 out, write_to_file, m0,
                                                 jacobian, force_args,
@@ -987,17 +990,22 @@ def _do_levels2(fun, t, y, tf, F, A, dt_0, dt_1, inds, min_ind_1, m0,
         # Level K_0 non-empty
         dt_0 = _np.minimum(dt_0, (tf-t)/m0)
 
-        if dim is not None:
-            # calculate perturbed indices using the distance matrix
-            pinds = _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
-        elif A is not None:
+        if A is not None:
             # use the sparsity pattern of A to calculate perturbed indices
             pinds = _np.unique(_np.argwhere(A[inds[:min_ind_1], :] != 0)[:, 1])
             # make sure that updated equations are included
             pinds = _np.union1d(inds[:min_ind_1], pinds)
+            # make sure that for each cell all equations are included so that
+            # ODE system has correct shape (else call to fun will fail)
+            # for cell j the equations are j*dim, j*dim + 1, ... , j*dim + dim -1
+            if len(pinds)%dim != 0:
+                updated_cell_inds = _np.unique(pinds // dim)
+                pinds = _np.array([j*dim + d for d in range(dim) for j in updated_cell_inds], dtype=int)
         else:
+            # calculate perturbed indices using the distance matrix
+            pinds = _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
             # do full update (Note that this is very unefficient!)
-            pinds = range(len(y))
+            #pinds = range(len(y))
 
         old_contribs = fun(t, y[pinds])
         for j in range(m0):
@@ -1118,7 +1126,7 @@ if __name__ == "__main__":
 
     sol2 = solve_ivp(func, [t_eval[0], t_eval[-1]], y0, t_eval=None,
                      eps=0.0001, eta = 0.00001, local_adaptivity=True,
-                     write_to_file=True, jacobian=None,
+                     write_to_file=True, jacobian=jacobian,
 #                     always_calculate_Jacobian=True,
                      switch=False, K=3)
     #plt.plot(sol2.t, sol2.y.T)
