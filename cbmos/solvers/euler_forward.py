@@ -1000,7 +1000,7 @@ def _do_levels2(fun, t, y, tf, F, A, dt_0, dt_1, inds, min_ind_1, m0,
             # for cell j the equations are j*dim, j*dim + 1, ... , j*dim + dim -1
             if len(pinds)%dim != 0:
                 updated_cell_inds = _np.unique(pinds // dim)
-                pinds = _np.array([j*dim + d for d in range(dim) for j in updated_cell_inds], dtype=int)
+                pinds = _np.array([j*dim + d for j in updated_cell_inds for d in range(dim)], dtype=int)
         else:
             # calculate perturbed indices using the distance matrix
             pinds = _calculate_perturbed_indices(y, dim, rA, inds, min_ind_1)
