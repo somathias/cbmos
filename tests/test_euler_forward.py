@@ -335,66 +335,66 @@ def test_calculate_perturbed_indices_min_ind_1_is_length_of_y():
     assert np.all(pinds == inds)
 
 
-def test_calculate_perturbed_indices_using_A():
-
-    dim = 2
-    s = 1.0
-    rA = 1.5
-    model = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim )
-    params_cubic = {"mu": 5.70, "s": s, "rA": rA}
-    m0 = 2
-
-
-
-    y0 = np.array([0.        , 0.        , 0.5       , 0.8660254 , 1.        ,
-           0.        , 1.64381812, 0.90864406, 1.35618188, 0.82340675])
-
-    inds = np.array([8, 6, 9, 7, 2, 5, 4, 3, 1, 0])
-    min_ind_1 = 2
-
-    F = model._ode_system(params_cubic)(0, y0)
-    A = model.jacobian(y0, params_cubic)
-    dt_0 = 0.007
-    dt_1 = 0.014
-
-    nF = 0
-    y1 = copy.deepcopy(y0)
-    F1 = copy.deepcopy(F)
-    (dt, nF1) = ef._do_levels2(model._ode_system(params_cubic), 0, y1, 1.0 , F1, A, dt_0, dt_1, inds,
-                                 min_ind_1, m0, [], dim, rA, nF)
-
-    y2 = copy.deepcopy(y0)
-    F2 = copy.deepcopy(F)
-    (dt2, nF2) = ef._do_levels2(model._ode_system(params_cubic), 0, y2, 1.0 , F2, None, dt_0, dt_1, inds,
-                                 min_ind_1, m0, [], dim, rA, nF)
-
-    # assert that both solutions the same
-    assert(np.all(y1 == y2))
-    assert(np.all(F1 == F2))
-
-    # take another step
-    y0 = copy.deepcopy(y1)
-    F = model._ode_system(params_cubic)(0, y0)
-    A = model.jacobian(y0, params_cubic)
-    dt_0 = 0.0101531966512
-    dt_1 = 0.0203063933902
-
-    inds = np.array([8, 6, 9, 7, 2, 5, 3, 4, 1, 0])
-    min_ind_1 = 2
-
-    nF = 0
-    y1 = copy.deepcopy(y0)
-    F1 = copy.deepcopy(F)
-    (dt, nF1) = ef._do_levels2(model._ode_system(params_cubic), 0, y1, 1.0 , F1, A, dt_0, dt_1, inds,
-                                 min_ind_1, m0, [], dim, rA, nF)
-
-    y2 = copy.deepcopy(y0)
-    F2 = copy.deepcopy(F)
-    (dt2, nF2) = ef._do_levels2(model._ode_system(params_cubic), 0, y2, 1.0 , F2, None, dt_0, dt_1, inds,
-                                 min_ind_1, m0, [], dim, rA, nF)
-
-    assert(np.allclose(y1, y2, 1e-5, 1e-5))
-    assert(np.allclose(F1, F2, 1e-3, 1e-3))
+#def test_calculate_perturbed_indices_using_A():
+#
+#    dim = 2
+#    s = 1.0
+#    rA = 1.5
+#    model = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, dim )
+#    params_cubic = {"mu": 5.70, "s": s, "rA": rA}
+#    m0 = 2
+#
+#
+#
+#    y0 = np.array([0.        , 0.        , 0.5       , 0.8660254 , 1.        ,
+#           0.        , 1.64381812, 0.90864406, 1.35618188, 0.82340675])
+#
+#    inds = np.array([8, 6, 9, 7, 2, 5, 4, 3, 1, 0])
+#    min_ind_1 = 2
+#
+#    F = model._ode_system(params_cubic)(0, y0)
+#    A = model.jacobian(y0, params_cubic)
+#    dt_0 = 0.007
+#    dt_1 = 0.014
+#
+#    nF = 0
+#    y1 = copy.deepcopy(y0)
+#    F1 = copy.deepcopy(F)
+#    (dt, nF1) = ef._do_levels2(model._ode_system(params_cubic), 0, y1, 1.0 , F1, A, dt_0, dt_1, inds,
+#                                 min_ind_1, m0, [], dim, rA, nF)
+#
+#    y2 = copy.deepcopy(y0)
+#    F2 = copy.deepcopy(F)
+#    (dt2, nF2) = ef._do_levels2(model._ode_system(params_cubic), 0, y2, 1.0 , F2, None, dt_0, dt_1, inds,
+#                                 min_ind_1, m0, [], dim, rA, nF)
+#
+#    # assert that both solutions the same
+#    assert(np.all(y1 == y2))
+#    assert(np.all(F1 == F2))
+#
+#    # take another step
+#    y0 = copy.deepcopy(y1)
+#    F = model._ode_system(params_cubic)(0, y0)
+#    A = model.jacobian(y0, params_cubic)
+#    dt_0 = 0.0101531966512
+#    dt_1 = 0.0203063933902
+#
+#    inds = np.array([8, 6, 9, 7, 2, 5, 3, 4, 1, 0])
+#    min_ind_1 = 2
+#
+#    nF = 0
+#    y1 = copy.deepcopy(y0)
+#    F1 = copy.deepcopy(F)
+#    (dt, nF1) = ef._do_levels2(model._ode_system(params_cubic), 0, y1, 1.0 , F1, A, dt_0, dt_1, inds,
+#                                 min_ind_1, m0, [], dim, rA, nF)
+#
+#    y2 = copy.deepcopy(y0)
+#    F2 = copy.deepcopy(F)
+#    (dt2, nF2) = ef._do_levels2(model._ode_system(params_cubic), 0, y2, 1.0 , F2, None, dt_0, dt_1, inds,
+#                                 min_ind_1, m0, [], dim, rA, nF)
+#
+#    assert(np.allclose(y1, y2, 1e-5, 1e-5))
+#    assert(np.allclose(F1, F2, 1e-3, 1e-3))
 
 
 #def test_perturbed_eqs():
