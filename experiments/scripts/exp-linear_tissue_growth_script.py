@@ -120,8 +120,10 @@ event_times = np.arange(0.0, tf, time_between_events)
 events = [ev.PickRandomCellToDivideEvent(time) for time in event_times]
 
 initial_cell_count = size**3
-target_cell_counts = [initial_cell_count + i*10 for i in range(3)]
-max_execution_time = 10*60 # 10 minutes in seconds
+target_cell_counts = [initial_cell_count + 10]
+max_execution_time = 20*60 # 20 minutes in seconds
+
+repetitions = 4
 
 for alg in algorithms:
     print(alg)
@@ -131,23 +133,26 @@ for alg in algorithms:
         print(dt_f)
 
     data = {}
-    ts, history = models[alg].simulate(tissue,
-                                      [0, tf],
-                                      params_cubic,
-                                      params[alg],
-                                      seed=seed,
-                                      event_list=events,
-                                      n_target_cells=target_cell_counts,
-                                      max_execution_time=max_execution_time,
-                                      throw_away_history=True
-                                     )
+    counts = []
+    for i in range(repetitions):
+        ts, _ = models[alg].simulate(tissue,
+                                          [0, tf],
+                                          params_cubic,
+                                          params[alg],
+                                          seed=seed,
+                                          event_list=events,
+                                          n_target_cells=target_cell_counts,
+                                          max_execution_time=max_execution_time,
+                                          throw_away_history=True
+                                         )
+        counts.append(models[alg].target_cell_count_checkpoints)
     if alg is 'EF_glob_adap_acc':
         dt_f = ts[1] - ts[0]
         print(dt_f)
 
 
     data['ts'] = ts
-    data['counts'] = models[alg].target_cell_count_checkpoints
+    data['counts'] = counts
 
     with open(sys.argv[1]+'_'+str(size)+'_'+str(time_between_events)+'_'+alg+'.json', 'w') as f:
             json.dump(data, f)
