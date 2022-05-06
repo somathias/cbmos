@@ -83,7 +83,7 @@ params = {'EF_glob_adap_acc': {'eps':eps, 'eta': eta},
           'EF_glob_adap_stab': {'eps':eps, 'eta': eta, 'jacobian': models['EF_glob_adap_stab'].jacobian, 'force_args': params_cubic, 'always_calculate_Jacobian': True},
           'EF_local_adap': {'eps':eps, 'eta': eta, 'local_adaptivity': True, 'm0': m, 'dim': dim, 'rA': rA},
           'EF_local_adap_stab': {'eps':eps, 'eta': eta, 'jacobian': models['EF_local_adap_stab'].jacobian, 'force_args': params_cubic,
-                            'always_calculate_Jacobian': True, 'local_adaptivity': True, 'm0': m, 'dim': None, 'rA': rA},
+                            'always_calculate_Jacobian': True, 'local_adaptivity': True, 'm0': m, 'dim': dim, 'rA': rA},
           'EB_global_adap': {'eps':eps, 'eta': eta, 'jacobian': models['EB_global_adap'].jacobian, 'force_args': params_cubic},
           #'fixed_dt': {'dt': 0.011758452836496444}
           'fixed_dt': {}

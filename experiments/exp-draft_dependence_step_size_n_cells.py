@@ -43,11 +43,11 @@ plt.rcParams.update(params)
 
 # Simulation parameters
 s = 1.0    # rest length
-tf = 5.0  # final time
+tf = 6.0  # final time
 rA = 1.5   # maximum interaction distance
 
 dim = 3
-seed = 67
+seed = 17
 
 t_data = [0,tf]
 
