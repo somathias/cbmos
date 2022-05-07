@@ -269,7 +269,7 @@ def _do_newton_iterations(fun, t, y, dt, n_newton, jacobian, force_args, xi,
 #        else:
         counter = gmres_counter()
         dy, exitCode = gmres(J, -F_curly, callback=counter, tol=tol,
-                             atol=atol, restart=10, maxiter=5,
+                             atol=atol, restart=10, maxiter=1,
                              callback_type='x') # maxiter= number of outer iterations/restarts, restart= number of inner iterations (between restarts)
         _logging.debug("Number of GMRes iterations = {}, exitCode={}".format(counter.niter, exitCode))
 
