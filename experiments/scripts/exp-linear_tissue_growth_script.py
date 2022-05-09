@@ -121,7 +121,7 @@ events = [ev.PickRandomCellToDivideEvent(time) for time in event_times]
 
 initial_cell_count = size**3
 target_cell_counts = [initial_cell_count + 10]
-max_execution_time = 20*60 # 20 minutes in seconds
+max_execution_time = 40*60 # 40 minutes in seconds
 
 repetitions = 4
 
