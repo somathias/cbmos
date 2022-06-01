@@ -98,3 +98,6 @@ The package's documentation, as well as a few examples are available at
 - Mathias, S., Coulier, A., Bouchnita, A. et al. Impact of Force Function
   Formulations on the Numerical Simulation of Centre-Based Models. Bull Math
   Biol 82, 132 (2020). [DOI](https://doi.org/10.1007/s11538-020-00810-2) (tag `exp-Mathias2020`)
+- Mathias, S., Coulier, A. & Hellander, A. CBMOS: a GPU-enabled Python
+  framework for the numerical study of center-based models. BMC Bioinformatics
+  23, 55 (2022). [DOI](https://doi.org/10.1186/s12859-022-04575-4) (tag `exp-Mathias2022`)
