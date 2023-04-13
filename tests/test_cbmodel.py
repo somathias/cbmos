@@ -139,7 +139,7 @@ def test_two_events_at_once():
     t_data = np.linspace(0, 10, 100)
     _, history = cbm_solver.simulate(
             cell_list, t_data, {}, {},
-            raw_t=False, event_list=[])
+            raw_t=False, event_list=event_list)
 
     assert len(history) == 100
 
@@ -229,6 +229,7 @@ def test_cell_list_copied():
             cl.ProliferatingCell(0, [0], proliferating=True),
             cl.ProliferatingCell(1, [0.3], proliferating=True)
             ]
+
     t_data = np.linspace(0, 1, 101)
 
     event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
@@ -248,7 +249,6 @@ def test_tdata():
     n = 100
 
     s = 1.0    # rest length
-    tf = 1.0  # final time
     rA = 1.5   # maximum interaction distance
 
     params_cubic = {"mu": 6.91, "s": s, "rA": rA}
@@ -273,15 +273,14 @@ def test_tdata():
 
 def test_tdata_raw():
     n = 100
-
     s = 1.0    # rest length
-    tf = 1.0  # final time
     rA = 1.5   # maximum interaction distance
 
     params_cubic = {"mu": 6.91, "s": s, "rA": rA}
 
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
     t_data = np.linspace(0, 1, n)
+
     cell_list = [
             cl.ProliferatingCell(0, [0], proliferating=False),
             cl.ProliferatingCell(1, [0.3], proliferating=False)
@@ -291,20 +290,20 @@ def test_tdata_raw():
             cell_list, t_data, params_cubic, {'dt': 0.03},
             raw_t=True, event_list=[])
 
+
     assert len(t_data_sol) == len(sols)
 
 
 def test_tdata_raw_division():
     n = 100
-
     s = 1.0    # rest length
-    tf = 1.0  # final time
     rA = 1.5   # maximum interaction distance
 
     params_cubic = {"mu": 6.91, "s": s, "rA": rA}
 
     solver_ef = cbmos.CBModel(ff.Cubic(), ef.solve_ivp, 1)
     t_data = np.linspace(0, 50, n)
+
     cell_list = [
             cl.ProliferatingCell(0, [0], proliferating=True),
             cl.ProliferatingCell(1, [0.3], proliferating=True)
@@ -452,6 +451,7 @@ def test_cell_list_order():
     _, history = solver.simulate(
             sheet, t_data, {"mu": 6.91}, {'dt': dt},
             seed=17, event_list=event_list)
+
     history = history[1:]  # delete initial data because that's less cells
 
     ids = [cell.ID for cell in history[0]]
@@ -536,7 +536,7 @@ def test_jacobian_2DN3():
 
 def test_jacobian_3DN3():
 
-    g = ff.Linear()
+    g = ff.Cubic()
     g_prime = g.derive()
 
     y = np.array([[0., 0., 0.], [0.7, 0.1, -0.6], [0.3, -1., -2.0]])
@@ -575,9 +575,40 @@ def test_jacobian_3DN3():
     assert(np.all(A == A2))
 
 
+def test_n_target_cells():
+    dim = 1
+    cbmodel = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
+
+    cell_list = [cl.ProliferatingCell(0, [0])]
+
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
+
+    n_target = 3
+    tf = 50.0
+    ts, history = cbmodel.simulate(cell_list, [0, tf], {}, {},
+                                   event_list=event_list,
+                                   n_target_cells=[1, 2, n_target])
+
+    assert len(history[-1]) >= n_target
+    assert ts[-1] < tf
+
+
+def test_throw_away_history():
+    dim = 1
+    cbmodel = cbmos.CBModel(ff.Linear(), scpi.solve_ivp, dim)
+    cell_list = [cl.ProliferatingCell(0, [0])]
+    event_list = [ev.CellDivisionEvent(cell) for cell in cell_list]
+    tf = 50.0
+    ts, history = cbmodel.simulate(cell_list, [0, tf], {}, {},
+                                   event_list=event_list,
+                                   throw_away_history=True)
+
+    assert len(history) == 1
+
+
 def test_queue_event():
     dim = 1
     cbm_solver = cbmos.CBModel(ff.Cubic(), scpi.solve_ivp, dim)
 
     with pytest.raises(AttributeError):
-        cbm_solver.queue(CellDivisionEvent(cl.ProliferatingCell(0, [0])))
+        cbm_solver.queue(ev.CellDivisionEvent(cl.ProliferatingCell(0, [0])))

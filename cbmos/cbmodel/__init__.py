@@ -53,6 +53,8 @@ class CBModel:
             max_execution_time=None,
             min_event_resolution=0.,
             event_list=[],
+            n_target_cells=[],
+            throw_away_history=False
             ):
         """
         Run the simulation with the given arguments and return the position
@@ -129,6 +131,10 @@ class CBModel:
                 min_resolution=min_event_resolution,
                 )
 
+        if n_target_cells:
+            self.target_cell_count_checkpoints = []
+            n_target_cells_index = 0
+
         while t < t_end:
 
             # check if max_execution_time has elapsed
@@ -139,6 +145,17 @@ class CBModel:
                     ):
                 self.last_exec_time = exec_time
                 return (self.t_data, self.history)
+
+            # check if max_n_cells is reached
+            if n_target_cells:
+                if len(self.history[-1]) >= n_target_cells[-1]:
+                    # target number of cells has been reached
+                    self.target_cell_count_checkpoints.append((t, len(self.history[-1]), exec_time))
+                    self.last_exec_time = exec_time
+                    return (self.t_data, self.history)
+                elif len(self.history[-1]) >= n_target_cells[n_target_cells_index]:
+                    self.target_cell_count_checkpoints.append((t, len(self.history[-1]), exec_time))
+                    n_target_cells_index += 1
 
             # generate next event(s)
             # NB: if events are aggregated,
@@ -228,6 +245,9 @@ class CBModel:
 
             # update current time t to min(tau, t_end)
             t = min(tau, t_end)
+
+            if throw_away_history:
+                self.history = [self.history[-1]]
 
         exec_time = time.time() - exec_time_start
         self.last_exec_time = exec_time

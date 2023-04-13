@@ -100,3 +100,52 @@ class CellDivisionEvent(Event):
                 _np.cos(random_zenith_angle)])
 
         return division_direction
+
+class PickRandomCellToDivideEvent(Event):
+    """
+    Pick a random cell from the current population and let it divide
+    """
+    def __init__(self, time):
+        self.tau = time
+
+    def apply(self, cbmodel):
+        target_cell_index = _npr.choice(_np.array([cell.ID for cell in cbmodel.cell_list]))
+        target_cell = cbmodel.cell_list[target_cell_index]
+
+        division_direction = self._get_division_direction(cbmodel)
+        updated_position_parent = target_cell.position \
+            - 0.5 * cbmodel.separation * division_direction
+        position_daughter = target_cell.position \
+            + 0.5 * cbmodel.separation * division_direction
+
+        daughter_cell = _cl.Cell(
+                cbmodel.next_cell_index, position_daughter)
+        cbmodel.next_cell_index += 1
+        cbmodel.cell_list.append(daughter_cell)
+
+        target_cell.position = updated_position_parent
+
+        _logging.debug("Division event: t={}, direction={}".format(
+            self.tau, division_direction))
+
+    def _get_division_direction(self, cbmodel):
+        if cbmodel.dim == 1:
+            division_direction = _np.array([-1.0 + 2.0 * _npr.randint(2)])
+
+        elif cbmodel.dim == 2:
+            random_angle = 2.0 * _np.pi * _npr.rand()
+            division_direction = _np.array([
+                _np.cos(random_angle),
+                _np.sin(random_angle)])
+
+        elif cbmodel.dim == 3:
+            u = _npr.rand()
+            v = _npr.rand()
+            random_azimuth_angle = 2 * _np.pi * u
+            random_zenith_angle = _np.arccos(2 * v - 1)
+            division_direction = _np.array([
+                _np.cos(random_azimuth_angle) * _np.sin(random_zenith_angle),
+                _np.sin(random_azimuth_angle) * _np.sin(random_zenith_angle),
+                _np.cos(random_zenith_angle)])
+
+        return division_direction
