@@ -1,18 +1,17 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
     <title>cbmos.cbmodel package &#8212; CBMOS 0.0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="cbmos.solvers package" href="cbmos.solvers.html" />
@@ -34,15 +33,15 @@
           <div class="body" role="main">
             
   <section id="cbmos-cbmodel-package">
-<h1>cbmos.cbmodel package<a class="headerlink" href="#cbmos-cbmodel-package" title="Permalink to this headline">¶</a></h1>
+<h1>cbmos.cbmodel package<a class="headerlink" href="#cbmos-cbmodel-package" title="Permalink to this heading">¶</a></h1>
 <section id="module-cbmos.cbmodel">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-cbmos.cbmodel" title="Permalink to this headline">¶</a></h2>
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-cbmos.cbmodel" title="Permalink to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="cbmos.cbmodel.CBModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.cbmodel.</span></span><span class="sig-name descname"><span class="pre">CBModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">force</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimension=3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separation=0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hpc_backend=&lt;module</span> <span class="pre">'numpy'</span> <span class="pre">from</span> <span class="pre">'/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/numpy/__init__.py'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cbmodel.CBModel" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cbmos.cbmodel.</span></span><span class="sig-name descname"><span class="pre">CBModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">force</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimension=3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separation=0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hpc_backend=&lt;module</span> <span class="pre">'numpy'</span> <span class="pre">from</span> <span class="pre">'/opt/hostedtoolcache/Python/3.8.16/x64/lib/python3.8/site-packages/numpy/__init__.py'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cbmodel.CBModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>force</strong> (<cite>f(ndarray(dtype=float), **kwargs)</cite> -&gt; float) – forces to be applied between cells</p></li>
 <li><p><strong>solver</strong> (<cite>f(fun, t_span, y0)</cite> -&gt; scipy.intergrade._ivp.ivp.OdeResult) – ODE solver, e.g. solve_ivp from scipy.integrate</p></li>
@@ -58,13 +57,13 @@ Numpy itself.</p></li>
 <span class="sig-name descname"><span class="pre">jacobian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cbmodel.CBModel.jacobian" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the jacobian of the given ode system.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>y</strong> (<em>np.ndarray</em><em>(</em><em>size=</em><em>(</em><em>n_cell*dim</em><em>,</em><em>)</em><em>)</em>) – cell vector</p></li>
 <li><p><strong>force_args</strong> (<em>{str: float}</em>) – extra arguments for the force function</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>np.ndarray(size=(n_cell*dim, n_cell*dim))</p>
 </dd>
 </dl>
@@ -75,7 +74,7 @@ Numpy itself.</p></li>
 <span class="sig-name descname"><span class="pre">queue_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cbmodel.CBModel.queue_event" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add an event to the queue after the simulation has started.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>event</strong> (<a class="reference internal" href="cbmos.html#cbmos.events.Event" title="cbmos.events.Event"><em>Event</em></a>) – </p>
 </dd>
 </dl>
@@ -83,11 +82,11 @@ Numpy itself.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="cbmos.cbmodel.CBModel.simulate">
-<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cell_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_execution_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_event_resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cbmodel.CBModel.simulate" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">simulate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cell_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_execution_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_event_resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_target_cells</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">throw_away_history</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cbmos.cbmodel.CBModel.simulate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run the simulation with the given arguments and return the position
 of the cells at each time steps in <cite>t_data</cite></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>cell_list</strong> (<em>[</em><a class="reference internal" href="cbmos.html#cbmos.cell.Cell" title="cbmos.cell.Cell"><em>Cell</em></a><em>]</em>) – Initial cell layout</p></li>
 <li><p><strong>event_list</strong> (<em>[</em><a class="reference internal" href="cbmos.html#cbmos.events.Event" title="cbmos.events.Event"><em>Event</em></a><em>]</em>) – Scheduled events</p></li>
@@ -110,7 +109,7 @@ in self.last_exec_time</p></li>
 immediately.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>(t_data, history)</p>
 </dd>
 </dl>
@@ -142,7 +141,15 @@ simulation.</p></li>
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">cbmos.cbmodel package</a><ul>
-<li><a class="reference internal" href="#module-cbmos.cbmodel">Module contents</a></li>
+<li><a class="reference internal" href="#module-cbmos.cbmodel">Module contents</a><ul>
+<li><a class="reference internal" href="#cbmos.cbmodel.CBModel"><code class="docutils literal notranslate"><span class="pre">CBModel</span></code></a><ul>
+<li><a class="reference internal" href="#cbmos.cbmodel.CBModel.jacobian"><code class="docutils literal notranslate"><span class="pre">CBModel.jacobian()</span></code></a></li>
+<li><a class="reference internal" href="#cbmos.cbmodel.CBModel.queue_event"><code class="docutils literal notranslate"><span class="pre">CBModel.queue_event()</span></code></a></li>
+<li><a class="reference internal" href="#cbmos.cbmodel.CBModel.simulate"><code class="docutils literal notranslate"><span class="pre">CBModel.simulate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -157,7 +164,7 @@ simulation.</p></li>
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -166,8 +173,8 @@ simulation.</p></li>
       &copy;2021, Sonja Mathias, Adrien Coulier, Andreas Hellander.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.4.0</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
       <a href="_sources/cbmos.cbmodel.rst.txt"

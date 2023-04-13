@@ -1,18 +1,17 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
     <title>Exploring Convergence &#8212; CBMOS 0.0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
    
@@ -32,7 +31,7 @@
           <div class="body" role="main">
             
   <section id="exploring-convergence">
-<h1>Exploring Convergence<a class="headerlink" href="#exploring-convergence" title="Permalink to this headline">¶</a></h1>
+<h1>Exploring Convergence<a class="headerlink" href="#exploring-convergence" title="Permalink to this heading">¶</a></h1>
 <p>CBMOS is aimed at performing numerical studies of Center-Based
 overlapping Spheres Models. In this section, we present a minimal
 example to study the convergence of the Euler forward and
@@ -40,7 +39,7 @@ Adams-Bashforth methods for a few non-proliferating cells and for three
 of the most popular force functions (namely GLS, Cubic and Piecewise
 Quadratic) can be studied.</p>
 <section id="setup">
-<h2>Setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h2>
+<h2>Setup<a class="headerlink" href="#setup" title="Permalink to this heading">¶</a></h2>
 <p>After importing relevant modules, we set up the simulation parameters as
 well as all three models (one per force function). Each model takes
 three parameters: the force function to be used, the solver, and the
@@ -86,7 +85,7 @@ will use Euler Forward for all models.</p>
 </div>
 </section>
 <section id="initial-conditions">
-<h2>Initial Conditions<a class="headerlink" href="#initial-conditions" title="Permalink to this headline">¶</a></h2>
+<h2>Initial Conditions<a class="headerlink" href="#initial-conditions" title="Permalink to this heading">¶</a></h2>
 <p>Then, we create a list a cells using a list of (x, y) coordinates. Each
 cell takes at least 2 parameters: a (unique) id, and some coordinates.
 Optional parameters can be used to define if and when each cell should
@@ -109,7 +108,7 @@ and relax to a new configuration.</p>
 </div>
 </section>
 <section id="model-parameters">
-<h2>Model Parameters<a class="headerlink" href="#model-parameters" title="Permalink to this headline">¶</a></h2>
+<h2>Model Parameters<a class="headerlink" href="#model-parameters" title="Permalink to this heading">¶</a></h2>
 <p>The parameters of each force function can be set with a dictionnary
 containing all keywords argument to be passed to the force functions. In
 this case, the parameters are taken from [1], where they were set so
@@ -146,7 +145,7 @@ that the relaxation time between the cells is one hour.</p>
 </div>
 </section>
 <section id="reference-solutions">
-<h2>Reference Solutions<a class="headerlink" href="#reference-solutions" title="Permalink to this headline">¶</a></h2>
+<h2>Reference Solutions<a class="headerlink" href="#reference-solutions" title="Permalink to this heading">¶</a></h2>
 <p>Here we compute the reference solutions for each force functions, using
 fine timesteps. The <code class="docutils literal notranslate"><span class="pre">simulate</span></code> function takes the inital configuration
 of the cell sheet, the time span over which to perform the simulation,
@@ -185,7 +184,7 @@ numpy array for efficiency.</p>
 </div>
 </section>
 <section id="error-computation">
-<h2>Error computation<a class="headerlink" href="#error-computation" title="Permalink to this headline">¶</a></h2>
+<h2>Error computation<a class="headerlink" href="#error-computation" title="Permalink to this heading">¶</a></h2>
 <p>We now compute the error between the reference solution and solutions
 computed with coarser timesteps.</p>
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dt_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.001</span><span class="o">*</span><span class="mf">1.25</span><span class="o">**</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">22</span><span class="p">)])</span>
@@ -231,7 +230,7 @@ computed with coarser timesteps.</p>
 </div>
 </section>
 <section id="convergence-plot">
-<h2>Convergence Plot<a class="headerlink" href="#convergence-plot" title="Permalink to this headline">¶</a></h2>
+<h2>Convergence Plot<a class="headerlink" href="#convergence-plot" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;seaborn-whitegrid&#39;</span><span class="p">)</span>
@@ -301,7 +300,7 @@ computed with coarser timesteps.</p>
 <img alt="_images/convergence_example_11_0.png" src="_images/convergence_example_11_0.png" />
 </section>
 <section id="references">
-<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<h2>References<a class="headerlink" href="#references" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
 <li><p>Mathias, S., Coulier, A., Bouchnita, A., &amp; Hellander, A. (2020).
 Impact of force function formulations on the numerical simulation of
@@ -342,7 +341,7 @@ centre-based models. Bulletin of Mathematical Biology, 82(10), 1-43.</p></li>
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -351,8 +350,8 @@ centre-based models. Bulletin of Mathematical Biology, 82(10), 1-43.</p></li>
       &copy;2021, Sonja Mathias, Adrien Coulier, Andreas Hellander.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.4.0</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
       <a href="_sources/convergence_example.rst.txt"

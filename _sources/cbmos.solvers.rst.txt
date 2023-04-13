@@ -28,6 +28,14 @@ cbmos.solvers.euler\_forward module
    :undoc-members:
    :show-inheritance:
 
+cbmos.solvers.geshgorin module
+------------------------------
+
+.. automodule:: cbmos.solvers.geshgorin
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 cbmos.solvers.heun module
 -------------------------
 
